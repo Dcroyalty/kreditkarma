@@ -1,0 +1,91 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model LedgerScore {
+  id             String   @id @default(cuid())
+  address        String   @unique
+  score          Int      // 300–850
+  tier           String   // POOR / FAIR / GOOD / EXCELLENT
+  breakdown      String   // JSON: { accountAge, txVolume, ammLp, ... }
+  rawData        String   // JSON: full on-chain snapshot
+  calculatedAt   DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  grants         GrantRequest[]
+
+  @@index([address])
+}
+
+model GrantRequest {
+  id              String    @id @default(cuid())
+  walletAddress   String
+  category        String    // RENT / UTILITIES / GROCERIES / MEDICAL / OTHER
+  amountRequested Float     // in USD equivalent
+  currency        String    @default("RLUSD") // RLUSD or XRP
+  description     String
+  urgency         String    // LOW / MEDIUM / HIGH / EMERGENCY
+
+  // AI Underwriting
+  aiScore         Float?    // 0–100 legitimacy score
+  aiReasoning     String?   // AI explanation
+  riskFlags       String?   // JSON array of flags
+  approvedAmount  Float?    // may be less than requested
+
+  // Status lifecycle
+  status          String    @default("PENDING")
+  // PENDING → REVIEWING → APPROVED / REJECTED → PAID / FAILED
+
+  // Payout
+  txHash          String?
+  paidAt          DateTime?
+  paidAmount      Float?
+
+  // Scoring context at time of request
+  ledgerScoreId   String?
+  ledgerScore     LedgerScore? @relation(fields: [ledgerScoreId], references: [id])
+  scoreSnapshot   Int?
+
+  reviewedBy      String?   // "AI" or admin address
+  rejectionReason String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  fromAddress   String
+  amount        Float
+  currency      String   // XRP or RLUSD
+  txHash        String   @unique
+  message       String?
+  createdAt     DateTime @default(now())
+}
+
+model DailyLimit {
+  id          String   @id @default(cuid())
+  date        String   @unique // YYYY-MM-DD
+  totalPaid   Float    @default(0)
+  grantCount  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  action    String
+  actor     String
+  target    String?
+  details   String?  // JSON
+  createdAt DateTime @default(now())
+}
