@@ -19,6 +19,7 @@
     "@anthropic-ai/sdk": "^0.24.3",
     "@prisma/client": "6.19.3",
     "@tailwindcss/postcss": "^4.3.0",
+    "canvas-confetti": "^1.9.4",
     "dotenv": "^17.4.2",
     "next": "15.5.15",
     "react": "^19.0.0",

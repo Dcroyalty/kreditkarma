@@ -1,152 +1,121 @@
-"use client";
+'use client';
+import React, { useState } from 'react';
+import confetti from 'canvas-confetti';
 
-import { useState } from "react";
+const TREASURY = "rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF";
 
-export default function Home() {
-  const [address, setAddress] = useState("");
-  const [score, setScore] = useState<any>(null);
+export default function KreditKarmaHome() {
+  const [wallet, setWallet] = useState("");
+  const [scoreData, setScoreData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  async function lookupScore(e: React.FormEvent) {
-    e.preventDefault();
-    if (!address) return;
+  const checkLedgerScore = async () => {
+    if (!wallet) return alert("Enter a wallet address");
     setLoading(true);
-    setError("");
-    setScore(null);
     try {
-      const res = await fetch(`/api/score/${address}`);
-      if (!res.ok) throw new Error("Could not fetch score for this address");
+      const res = await fetch(`/api/score/${wallet}`);
       const data = await res.json();
-      setScore(data);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
+      setScoreData(data);
+      confetti({ particleCount: 100, spread: 70 });
+    } catch (e) {
+      alert("Error fetching score");
     }
-  }
+    setLoading(false);
+  };
+
+  const xamanDeepLink = (amount: string, memo: string = "KreditKarma Treasury") => {
+    const encodedMemo = encodeURIComponent(memo);
+    return `https://xumm.app/detect/request?uri=xrp://${TREASURY}?amount=${amount}&dt=1&memo=${encodedMemo}`;
+  };
 
   return (
-    <main>
-      <section className="hero">
-        <div className="container">
-          <h1>The XRPL-Native Financial Inclusion Platform</h1>
-          <p>
-            On-chain credit scoring. Multi-sig micro grants. Credit Builder reporting to all 3 bureaus.
-            XRPL Vaults with built-in loss protection. 100% transparent. Built for everyone.
+    <div className="min-h-screen text-white">
+      {/* Hero */}
+      <section className="relative h-screen flex items-center justify-center text-center px-6">
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tighter">
+            KREDITKARMA
+          </h1>
+          <p className="text-2xl md:text-3xl mb-8 text-green-400">
+            On-Chain Credit • XRPL Services • Real Grants
           </p>
-          <div className="hero-cta">
-            <a href="#score" className="btn btn-primary">Check My LedgerScore</a>
-            <a href="/donate" className="btn btn-secondary">Donate to Treasury</a>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              onClick={() => document.getElementById('score')?.scrollIntoView({ behavior: 'smooth' })}
+              className="btn-green text-xl px-10 py-4"
+            >
+              Check My LedgerScore
+            </button>
+            <a href="/donate" className="border border-white/60 hover:bg-white/10 text-xl px-10 py-4 rounded-full transition">
+              Donate to Treasury
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="features">
-        <div className="container">
-          <h2 className="section-title">Our Products</h2>
-          <p className="section-subtitle">Five XRPL-native ways to build, borrow, and give</p>
-          <div className="features-grid">
-            <div className="card">
-              <div className="feature-icon">📊</div>
-              <h3 className="feature-title">LedgerScore</h3>
-              <p className="feature-desc">
-                Your credit score derived 100% from XRPL on-chain activity—account age,
-                transaction history, AMM participation, trustline diversity. No SSN. No credit pull.
-              </p>
-            </div>
-            <div className="card">
-              <div className="feature-icon">💰</div>
-              <h3 className="feature-title">Micro Grants</h3>
-              <p className="feature-desc">
-                Apply for grants up to $1,000 in RLUSD or XRP for rent, utilities, groceries, or medical.
-                AI underwriting in seconds. Multi-sig treasury. Daily caps. Fully on-chain.
-              </p>
-            </div>
-            <div className="card">
-              <div className="feature-icon">🏗️</div>
-              <h3 className="feature-title">Credit Builder</h3>
-              <p className="feature-desc">
-                Make monthly on-chain payments that we report to all 3 major credit bureaus.
-                Build real-world FICO from XRPL activity, tiered by your LedgerScore.
-              </p>
-            </div>
-            <div className="card">
-              <div className="feature-icon">🏦</div>
-              <h3 className="feature-title">XRPL Vaults</h3>
-              <p className="feature-desc">
-                Collateralized loan products using XRPL native vaults. Built-in claw-back and loss
-                protection via XRPL amendments. No middlemen, no rehypothecation.
-              </p>
-            </div>
-            <div className="card">
-              <div className="feature-icon">🛡️</div>
-              <h3 className="feature-title">Community Treasury</h3>
-              <p className="feature-desc">
-                Mutual aid + loss coverage funded by donations. 2-of-3 multi-signature protected.
-                Daily caps prevent misuse. Every transaction visible on-chain forever.
-              </p>
-            </div>
-            <div className="card">
-              <div className="feature-icon">⚡</div>
-              <h3 className="feature-title">Instant Settlement</h3>
-              <p className="feature-desc">
-                XRPL transactions settle in 3-5 seconds with fees under a cent.
-                Approved grants and loans arrive immediately. No banking delays.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Live Ticker already in layout */}
 
-      <section className="score-section" id="score">
-        <div className="container">
-          <h2 className="section-title">Check Your LedgerScore</h2>
-          <p className="section-subtitle">Enter your XRPL wallet address for an instant on-chain credit score</p>
-          <div className="card score-card">
-            <form onSubmit={lookupScore}>
-              <div className="form-group">
-                <label htmlFor="address">XRPL Wallet Address</label>
-                <input
-                  id="address"
-                  type="text"
-                  placeholder="rXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-                {loading ? "Checking..." : "Get My LedgerScore"}
-              </button>
-            </form>
+      {/* LedgerScore Section */}
+      <section id="score" className="py-20 bg-black/40">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-5xl font-bold text-center mb-12">LedgerScore</h2>
+          <div className="card p-8 max-w-md mx-auto">
+            <input
+              type="text"
+              placeholder="Enter XRPL Wallet Address"
+              value={wallet}
+              onChange={(e) => setWallet(e.target.value)}
+              className="w-full bg-black/50 border border-white/20 rounded-2xl px-6 py-4 text-lg mb-6"
+            />
+            <button 
+              onClick={checkLedgerScore}
+              disabled={loading}
+              className="btn-green w-full py-4 text-xl"
+            >
+              {loading ? "Checking on XRPL..." : "Get My Score"}
+            </button>
 
-            {error && <div style={{ marginTop: 16, color: 'var(--danger)' }}>{error}</div>}
-
-            {score && (
-              <div className="score-result">
-                <div className="score-number">{score.score || score.ledgerScore || "—"}</div>
-                <div className="score-tier">{score.tier || "FAIR"}</div>
-                {score.address && (
-                  <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)', wordBreak: 'break-all' }}>
-                    {score.address}
-                  </div>
-                )}
+            {scoreData && (
+              <div className="mt-8 text-center">
+                <div className="text-7xl font-bold text-green-400">{scoreData.ledgerScore}</div>
+                <div className="text-2xl mt-2">{scoreData.grade}</div>
+                <p className="text-sm text-white/60 mt-4">Real-time on XRPL Testnet</p>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      <section className="cta">
-        <div className="container">
-          <div className="cta-card">
-            <h2>Help Build Financial Inclusion on XRPL</h2>
-            <p>Every donation funds grants for people who need them most. 100% on-chain. 100% transparent.</p>
-            <a href="/donate" className="btn btn-primary">Donate to the Treasury</a>
+      {/* Products / Services */}
+      <section className="py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-5xl font-bold text-center mb-16">XRPL Amendment Services</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { name: "Clawback Protection", price: "25 RLUSD", desc: "Protect against unauthorized sends" },
+              { name: "Vault Collateral", price: "50 RLUSD", desc: "Secure lending & borrowing" },
+              { name: "Loss Coverage", price: "35 RLUSD", desc: "On-chain insurance alternative" },
+            ].map((p, i) => (
+              <div key={i} className="card p-8 hover:scale-105 transition">
+                <h3 className="text-2xl font-bold mb-3">{p.name}</h3>
+                <p className="text-green-400 text-3xl font-bold mb-6">{p.price}</p>
+                <p className="text-white/70 mb-8">{p.desc}</p>
+                <a href={`/donate?service=${p.name}`} className="btn-green block text-center py-4">
+                  Purchase Now
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </section>
-    </main>
+
+      {/* Donate Quick Link */}
+      <div className="text-center py-12">
+        <a href="/donate" className="inline-block btn-green text-2xl px-16 py-6">
+          Support the Treasury → Fill with XRP / RLUSD
+        </a>
+      </div>
+    </div>
   );
 }
