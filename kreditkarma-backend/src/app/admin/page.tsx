@@ -1,4 +1,4 @@
-'use client';
+'use client'; <h1 style={{color: '#10b981', textAlign: 'center', padding: '20px'}}>🚀 FULL CLAUDE VERSION LIVE - MAY 10</h1>
 
 import React, { useState, useEffect, useCallback } from 'react';
 
