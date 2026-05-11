@@ -7,7 +7,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 // ─────────────────────────────────────────────────────────────────────────────
 const API_URL  = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
 const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
+const TREASURY_DOMAIN = 'kreditkarma.xrp'; // XRPNS primary domain → resolves to TREASURY
 const XAMAN_DOWNLOAD = 'https://xaman.app/';
+
+// Neural background image (header + footer only). Save the supplied file to /public/neural-background.jpg
+const NEURAL_BG = '/neural-background.jpg';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // XRPL HELPERS
@@ -300,6 +304,7 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
   const [email, setEmail]             = useState('');
   const [step, setStep]               = useState<'info'|'checkout'|'processing'|'success'|'preregister'>('info');
   const [copied, setCopied]           = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
   const [qrErr, setQrErr]             = useState(false);
   const [selectedTier, setSelectedTier] = useState(0);
   const [walletPre, setWalletPre]     = useState('');
@@ -317,6 +322,7 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
 
   const deepLink = xamanLink(TREASURY, price, currency);
   const copy = () => { navigator.clipboard.writeText(TREASURY); setCopied(true); setTimeout(() => setCopied(false), 2200); };
+  const copyDomain = () => { navigator.clipboard.writeText(TREASURY_DOMAIN); setCopiedDomain(true); setTimeout(() => setCopiedDomain(false), 2200); };
 
   const handleSent = async () => {
     setStep('processing');
@@ -342,7 +348,7 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setStep('info'); setEmail(''); setCopied(false); setQrErr(false); setSelectedTier(0); setWalletPre(''); }, 300);
+    setTimeout(() => { setStep('info'); setEmail(''); setCopied(false); setCopiedDomain(false); setQrErr(false); setSelectedTier(0); setWalletPre(''); }, 300);
   };
 
   // ── Coming Soon: pre-register ──
@@ -459,6 +465,12 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
         </a>
       </p>
 
+      {/* XRPNS domain — easier to share than the raw address */}
+      <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.28)', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono',monospace" }}>XRPNS</span>
+        <code style={{ fontSize: 13, color: '#10b981', flex: 1, minWidth: 0, wordBreak: 'break-all', lineHeight: 1.5, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{TREASURY_DOMAIN}</code>
+        <button onClick={copyDomain} style={{ ...B('ghost', undefined, { padding: '5px 10px', fontSize: 11 }), flexShrink: 0 }}>{copiedDomain ? '✓' : 'Copy'}</button>
+      </div>
       <div style={{ background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.18)', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <code style={{ fontSize: 11, color: '#34d399', flex: 1, minWidth: 0, wordBreak: 'break-all', lineHeight: 1.5, fontFamily: "'IBM Plex Mono',monospace" }}>{TREASURY}</code>
         <button onClick={copy} style={{ ...B('ghost', undefined, { padding: '5px 10px', fontSize: 11 }), flexShrink: 0 }}>{copied ? '✓' : 'Copy'}</button>
@@ -468,7 +480,7 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom: 16 }} />
 
       <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 11, padding: '11px 14px', marginBottom: 18, fontSize: 12, color: 'rgba(255,255,255,.38)', lineHeight: 1.7 }}>
-        Send <strong style={{ color: '#fff' }}>{price} {currency}</strong> to the address above via Xaman → then tap below. AI activates your service within one ledger close (~4 seconds).
+        Send <strong style={{ color: '#fff' }}>{price} {currency}</strong> to <strong style={{ color: '#10b981' }}>{TREASURY_DOMAIN}</strong> (or the raw address above) via Xaman → then tap below. AI activates your service within one ledger close (~4 seconds).
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
@@ -571,17 +583,19 @@ function DonateModal({ show, onClose }: { show: boolean; onClose: () => void }) 
   const [amount, setAmount]   = useState('');
   const [currency, setCurrency] = useState<Currency>('XRP');
   const [copied, setCopied]   = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
   const [txHash, setTxHash]   = useState('');
   const [step, setStep]       = useState<'form'|'confirmed'>('form');
   const [qrErr, setQrErr]     = useState(false);
 
   const deepLink = xamanLink(TREASURY, parseFloat(amount)||0, currency);
   const copy = () => { navigator.clipboard.writeText(TREASURY); setCopied(true); setTimeout(()=>setCopied(false),2200); };
+  const copyDomain = () => { navigator.clipboard.writeText(TREASURY_DOMAIN); setCopiedDomain(true); setTimeout(()=>setCopiedDomain(false),2200); };
   const handleSent = async () => {
     try { await fetch(`${API_URL}/api/donation/report`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,currency,txHash})}); } catch {}
     setStep('confirmed');
   };
-  const handleClose = () => { onClose(); setTimeout(()=>{setStep('form');setAmount('');setTxHash('');setQrErr(false);},300); };
+  const handleClose = () => { onClose(); setTimeout(()=>{setStep('form');setAmount('');setTxHash('');setQrErr(false);setCopiedDomain(false);},300); };
 
   if (step === 'confirmed') return (
     <Overlay show={show} onClose={handleClose}>
@@ -617,6 +631,13 @@ function DonateModal({ show, onClose }: { show: boolean; onClose: () => void }) 
           📱 Open in Xaman{amount&&parseFloat(amount)>0?` — ${amount} ${currency} pre-filled`:''}
         </a>
       </p>
+
+      {/* XRPNS domain — primary, friendlier than the raw address */}
+      <div style={{ background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.28)',borderRadius:12,padding:'10px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
+        <span style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.1em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS</span>
+        <code style={{ fontSize:13,color:'#10b981',flex:1,minWidth:0,wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700 }}>{TREASURY_DOMAIN}</code>
+        <button onClick={copyDomain} style={{ ...B('ghost',undefined,{padding:'5px 10px',fontSize:11}),flexShrink:0 }}>{copiedDomain?'✓':'Copy'}</button>
+      </div>
       <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.18)',borderRadius:12,padding:'10px 14px',marginBottom:16,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
         <code style={{ fontSize:11,color:'#34d399',flex:1,minWidth:0,wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
         <button onClick={copy} style={{ ...B('ghost',undefined,{padding:'5px 10px',fontSize:11}),flexShrink:0 }}>{copied?'✓':'Copy'}</button>
@@ -893,7 +914,7 @@ function FAQModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
     ['What is Credit Builder?', 'Three monthly subscription tiers (Starter $20/Builder $50/Pro $100 in RLUSD) paid on the XRPL. Each payment builds your LedgerScore. Pro tier furnishes payment history to Equifax, TransUnion, and Experian — the first blockchain-to-FICO pathway ever built.'],
     ['Do I need a Xaman wallet?', 'Yes. Xaman is the official XRPL wallet we integrate with — free, takes 60 seconds to install on iOS or Android. Download at xaman.app. Once installed, all payments are a single QR scan and swipe.'],
     ['Is KreditKarma a bank?', 'No. Not a bank, broker, insurer, or FDIC institution. We are a financial technology platform on the XRP Ledger. All payments are in XRP or RLUSD. All services are on-chain operational tools.'],
-    ['What partnerships do you have?', 'We are actively pursuing institutional partnerships with Evernorth, the XRPL Foundation, Ripple\'s community investment programs, and the XRPL DEUS community. We accept reviews on Trustpilot and welcome ecosystem fund applications from any aligned organization. Contact partners@kreditkarma.us.'],
+    ['What is kreditkarma.xrp?', 'kreditkarma.xrp is our XRPNS (XRP Naming Service) primary domain on xrpns.co. It resolves directly to our treasury wallet, so donors and customers can send funds to a human-readable name instead of the long raw address. Either works — both land in the same on-chain treasury.'],
   ];
   return (
     <Overlay show={show} onClose={onClose} wide>
@@ -994,17 +1015,6 @@ export default function KreditKarmaHome() {
   const featuredProducts = PRODUCTS.filter(p=>p.featured);
   const otherProducts    = PRODUCTS.filter(p=>!p.featured);
 
-  // Partner logos for marketing strategy section
-  const partners = [
-    { name: 'Trustpilot',           sub: 'Verified Reviews' },
-    { name: 'XRPL Grants',          sub: 'Active Application' },
-    { name: 'Ecosystem Fund',       sub: 'Submitted' },
-    { name: 'XRPL DEUS Community',  sub: 'Active Member' },
-    { name: 'Evernorth',            sub: 'In Discussions' },
-    { name: 'XRPL Foundation',      sub: 'Partnership Pending' },
-    { name: 'Ripple',               sub: 'Community Investment' },
-  ];
-
   return (
     <>
       <style>{`
@@ -1056,6 +1066,17 @@ export default function KreditKarmaHome() {
         }
         .xaman-banner:hover{background:rgba(16,185,129,.22);border-color:#10b981;transform:translateY(-1px)}
 
+        /* Neural background for header + footer ONLY */
+        .neural-surface{
+          position:relative;
+          background-image:
+            linear-gradient(to bottom, rgba(3,3,10,.62), rgba(3,3,10,.78)),
+            url('${NEURAL_BG}');
+          background-size:cover;
+          background-position:center center;
+          background-repeat:no-repeat;
+        }
+
         /* MOBILE NAV */
         .nav-desktop{display:flex}
         .nav-mobile-toggle{display:none}
@@ -1081,7 +1102,7 @@ export default function KreditKarmaHome() {
         }
       `}</style>
 
-      {/* ── FIXED BACKGROUND (seamless across header AND footer) ── */}
+      {/* ── FIXED BACKGROUND (body — header & footer get the neural overlay separately) ── */}
       <div style={{ position:'fixed',inset:0,zIndex:-1 }}>
         <div style={{ position:'absolute',inset:0,backgroundImage:"url('/xrpl-background.jpg')",backgroundSize:'cover',backgroundPosition:'center center',backgroundAttachment:'fixed',backgroundRepeat:'no-repeat' }} />
         <div style={{ position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(3,3,10,.74) 0%,rgba(3,3,10,.66) 25%,rgba(3,3,10,.74) 65%,rgba(3,3,10,.86) 100%)' }} />
@@ -1089,8 +1110,8 @@ export default function KreditKarmaHome() {
 
       <div style={{ minHeight:'100vh',fontFamily:"'Syne',sans-serif",color:'#eeeef5' }}>
 
-        {/* ── NAV (transparent so the seamless bg shows through) ── */}
-        <nav style={{ position:'sticky',top:0,zIndex:100,backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',background:'rgba(3,3,10,.55)',borderBottom:'1px solid rgba(16,185,129,.18)' }}>
+        {/* ── NAV (neural background image — header only) ── */}
+        <nav className="neural-surface" style={{ position:'sticky',top:0,zIndex:100,backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',borderBottom:'1px solid rgba(16,185,129,.18)' }}>
           <div style={{ padding:'0 20px',minHeight:68,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:9 }}>
               <div style={{ width:34,height:34,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:16,color:'#000',flexShrink:0 }}>K</div>
@@ -1148,21 +1169,14 @@ export default function KreditKarmaHome() {
         <section className="section-pad" style={{ textAlign:'center',padding:'72px 24px 60px',position:'relative',overflow:'hidden' }}>
           <div style={{ position:'absolute',top:'35%',left:'50%',transform:'translate(-50%,-50%)',width:'min(700px, 95vw)',height:'min(700px, 95vw)',borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 68%)',pointerEvents:'none',animation:'float 9s ease-in-out infinite' }} />
 
-          <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.28)',color:'#10b981',padding:'6px 16px',borderRadius:99,fontSize:10,fontWeight:700,marginBottom:24,letterSpacing:'.09em',fontFamily:"'IBM Plex Mono',monospace",flexWrap:'wrap',justifyContent:'center' }}>
-            <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',display:'inline-block',animation:'pulse 2.5s infinite' }} />
-            FIRST-TO-MARKET · XRPL BLOCKCHAIN CREDIT · {new Date().getFullYear()}
-          </div>
-
-          {/* NEW HEADLINE per notes */}
-          <h1 style={{ fontSize:'clamp(38px,8vw,92px)',fontWeight:900,letterSpacing:'-3px',lineHeight:.95,marginBottom:22 }}>
+          {/* HEADLINE — per markup, replaced with brand name */}
+          <h1 style={{ fontSize:'clamp(48px,11vw,140px)',fontWeight:900,letterSpacing:'-4px',lineHeight:.95,marginBottom:22 }}>
             <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text' }}>
-              On-Chain Credit.
-            </span><br />
-            Credit Builder.<br />
-            Fund Real Grants.
+              Kredit Karma
+            </span>
           </h1>
 
-          {/* Tagline updated with the keywords from notes */}
+          {/* Tagline keywords */}
           <div style={{ display:'flex',flexWrap:'wrap',gap:'8px 14px',justifyContent:'center',marginBottom:24,maxWidth:680,marginLeft:'auto',marginRight:'auto' }}>
             {['On-Chain Credit','Credit Builder','Fund Real Grants','Give Directly','XRPL Services','Instant Grants'].map((kw,i)=>(
               <span key={kw} style={{ fontSize:13,fontWeight:700,color:i%2===0?'#34d399':'#fff',letterSpacing:'.04em',fontFamily:"'IBM Plex Mono',monospace" }}>
@@ -1172,12 +1186,8 @@ export default function KreditKarmaHome() {
             ))}
           </div>
 
-          <p style={{ fontSize:17,color:'rgba(255,255,255,.55)',maxWidth:540,margin:'0 auto 32px',lineHeight:1.65 }}>
-            The world's first on-chain credit score. AI-delivered XRPL Amendment Services. Direct wallet-to-wallet grants. Zero overhead. 100% blockchain.
-          </p>
-
           {/* Xaman wallet required notice with download link */}
-          <div style={{ marginBottom:36 }}>
+          <div style={{ marginBottom:36,marginTop:8 }}>
             <a className="xaman-banner" href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ fontSize:14,padding:'10px 22px' }}>
               📲 Xaman Wallet Required — Download Free (iOS / Android) →
             </a>
@@ -1367,6 +1377,12 @@ export default function KreditKarmaHome() {
                   </div>
                 ))}
               </div>
+
+              {/* XRPNS primary domain — shown above raw address */}
+              <div style={{ background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.3)',borderRadius:11,padding:'10px 13px',marginBottom:8,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
+                <span style={{ fontSize:9,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS · Primary</span>
+                <code style={{ fontSize:13,color:'#10b981',fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",wordBreak:'break-all' }}>{TREASURY_DOMAIN}</code>
+              </div>
               <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'9px 13px',marginBottom:18 }}>
                 <code style={{ fontSize:10,color:'#34d399',wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
               </div>
@@ -1392,38 +1408,6 @@ export default function KreditKarmaHome() {
                 Apply for Emergency Grant →
               </button>
             </div>
-          </div>
-        </section>
-
-        {/* ── MARKETING / PARTNERS STRATEGY (NEW from notes) ── */}
-        <section id="partners" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
-          <div style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,.08)',borderRadius:22,padding:'40px 32px' }}>
-            <div style={{ textAlign:'center',marginBottom:32 }}>
-              <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}>
-                <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',display:'inline-block' }} />
-                <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>Partnerships & Ecosystem</span>
-              </div>
-              <h2 style={{ fontSize:'clamp(22px,3.5vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>Built with the XRPL community</h2>
-              <p style={{ fontSize:13,color:'rgba(255,255,255,.45)',maxWidth:560,margin:'0 auto',lineHeight:1.7 }}>
-                Trusted reviews. Active grant applications. Community-driven. We're working alongside the people building the future of the ledger.
-              </p>
-            </div>
-
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12 }}>
-              {partners.map(p=>(
-                <div key={p.name} style={{ background:'rgba(16,185,129,.04)',border:'1px solid rgba(16,185,129,.14)',borderRadius:14,padding:'18px 14px',textAlign:'center' as const,transition:'all .18s' }}
-                  onMouseEnter={e=>{(e.currentTarget as HTMLDivElement).style.borderColor='rgba(16,185,129,.4)';(e.currentTarget as HTMLDivElement).style.background='rgba(16,185,129,.08)';}}
-                  onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.borderColor='rgba(16,185,129,.14)';(e.currentTarget as HTMLDivElement).style.background='rgba(16,185,129,.04)';}}
-                >
-                  <div style={{ fontSize:14,fontWeight:800,color:'#fff',marginBottom:4 }}>{p.name}</div>
-                  <div style={{ fontSize:10,color:'#34d399',letterSpacing:'.08em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>{p.sub}</div>
-                </div>
-              ))}
-            </div>
-
-            <p style={{ textAlign:'center',fontSize:12,color:'rgba(255,255,255,.35)',marginTop:24 }}>
-              Institutional partnerships welcome — <a href="mailto:partners@kreditkarma.us" style={{ color:'#10b981',fontWeight:600 }}>partners@kreditkarma.us</a>
-            </p>
           </div>
         </section>
 
@@ -1467,16 +1451,14 @@ export default function KreditKarmaHome() {
           </div>
         </section>
 
-        {/* ── TICKER right over footer ── */}
-        <Ticker position="bottom" />
-
-        {/* ── FOOTER (transparent so xrpl-background.jpg shows through seamlessly) ── */}
-        <footer style={{ backdropFilter:'blur(14px)',background:'rgba(3,3,10,.55)',borderTop:'1px solid rgba(255,255,255,.07)',padding:'32px 24px 24px' }}>
+        {/* ── FOOTER (neural background image — footer only) ── */}
+        <footer className="neural-surface" style={{ backdropFilter:'blur(14px)',borderTop:'1px solid rgba(255,255,255,.07)',padding:'32px 24px 24px' }}>
           <div style={{ maxWidth:1240,margin:'0 auto',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18 }}>
             <div>
               <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:6 }}>
                 <div style={{ width:28,height:28,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000' }}>K</div>
                 <span style={{ fontWeight:800,fontSize:15 }}>kreditkarma</span>
+                <span style={{ fontSize:10,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginLeft:6,background:'rgba(16,185,129,.1)',padding:'2px 8px',borderRadius:99,border:'1px solid rgba(16,185,129,.25)' }}>{TREASURY_DOMAIN}</span>
               </div>
               <p style={{ fontSize:11,color:'rgba(255,255,255,.22)' }}>© {new Date().getFullYear()} KreditKarma.us · Social Impact Finance · Powered by the XRP Ledger</p>
               <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
