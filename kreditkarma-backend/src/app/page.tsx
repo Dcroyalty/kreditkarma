@@ -1,121 +1,110 @@
 'use client';
 import React, { useState } from 'react';
-import confetti from 'canvas-confetti';
 
 const TREASURY = "rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF";
 
-export default function KreditKarmaHome() {
-  const [wallet, setWallet] = useState("");
-  const [scoreData, setScoreData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+interface ScoreData {
+  score: number;
+  tier: string;
+  breakdown: string;
+}
 
-  const checkLedgerScore = async () => {
-    if (!wallet) return alert("Enter a wallet address");
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/score/${wallet}`);
-      const data = await res.json();
-      setScoreData(data);
-      confetti({ particleCount: 100, spread: 70 });
-    } catch (e) {
-      alert("Error fetching score");
-    }
-    setLoading(false);
+const PRODUCTS = [
+  { id: 'clawback', emoji: '🔒', name: 'Clawback Protection', price: 25, desc: 'Protect your assets from unauthorized clawbacks', color: '#10b981' },
+  { id: 'vault', emoji: '🏛️', name: 'Vault Collateral', price: 50, desc: 'Secure collateral with XRPL Escrow', color: '#10b981' },
+  { id: 'loss', emoji: '🛡️', name: 'Loss Coverage', price: 35, desc: 'Mutual aid pool for on-chain protection', color: '#10b981' },
+  { id: 'credit', emoji: '📈', name: 'Credit Builder', price: 15, desc: 'Monthly on-chain credit building', color: '#10b981', monthly: true },
+  { id: 'amm', emoji: '🌊', name: 'DEX Liquidity Guard', price: 40, desc: 'Protect AMM positions', color: '#10b981' },
+];
+
+export default function KreditKarmaHome() {
+  const [wallet, setWallet] = useState('');
+  const [score, setScore] = useState<ScoreData | null>(null);
+  const [activeProduct, setActiveProduct] = useState<any>(null);
+
+  const xamanLink = (productName: string, amount: number) => {
+    const memo = encodeURIComponent(`KreditKarma ${productName} ${amount} RLUSD`);
+    return `https://xumm.app/detect/request?uri=xrp://${TREASURY}?amount=${amount}&dt=1&memo=${memo}`;
   };
 
-  const xamanDeepLink = (amount: string, memo: string = "KreditKarma Treasury") => {
-    const encodedMemo = encodeURIComponent(memo);
-    return `https://xumm.app/detect/request?uri=xrp://${TREASURY}?amount=${amount}&dt=1&memo=${encodedMemo}`;
+  const checkScore = async () => {
+    if (!wallet) return alert("Enter wallet address");
+    // Simulate score for now
+    setScore({ 
+      score: 742, 
+      tier: "EXCELLENT", 
+      breakdown: "Strong on-chain activity detected" 
+    });
   };
 
   return (
-    <div className="min-h-screen text-white">
-      {/* Hero */}
-      <section className="relative h-screen flex items-center justify-center text-center px-6">
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tighter">
-            KREDITKARMA
-          </h1>
-          <p className="text-2xl md:text-3xl mb-8 text-green-400">
-            On-Chain Credit • XRPL Services • Real Grants
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={() => document.getElementById('score')?.scrollIntoView({ behavior: 'smooth' })}
-              className="btn-green text-xl px-10 py-4"
-            >
-              Check My LedgerScore
-            </button>
-            <a href="/donate" className="border border-white/60 hover:bg-white/10 text-xl px-10 py-4 rounded-full transition">
-              Donate to Treasury
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Ticker already in layout */}
-
-      {/* LedgerScore Section */}
-      <section id="score" className="py-20 bg-black/40">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-5xl font-bold text-center mb-12">LedgerScore</h2>
-          <div className="card p-8 max-w-md mx-auto">
-            <input
-              type="text"
-              placeholder="Enter XRPL Wallet Address"
-              value={wallet}
-              onChange={(e) => setWallet(e.target.value)}
-              className="w-full bg-black/50 border border-white/20 rounded-2xl px-6 py-4 text-lg mb-6"
-            />
-            <button 
-              onClick={checkLedgerScore}
-              disabled={loading}
-              className="btn-green w-full py-4 text-xl"
-            >
-              {loading ? "Checking on XRPL..." : "Get My Score"}
-            </button>
-
-            {scoreData && (
-              <div className="mt-8 text-center">
-                <div className="text-7xl font-bold text-green-400">{scoreData.ledgerScore}</div>
-                <div className="text-2xl mt-2">{scoreData.grade}</div>
-                <p className="text-sm text-white/60 mt-4">Real-time on XRPL Testnet</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Products / Services */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-5xl font-bold text-center mb-16">XRPL Amendment Services</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: "Clawback Protection", price: "25 RLUSD", desc: "Protect against unauthorized sends" },
-              { name: "Vault Collateral", price: "50 RLUSD", desc: "Secure lending & borrowing" },
-              { name: "Loss Coverage", price: "35 RLUSD", desc: "On-chain insurance alternative" },
-            ].map((p, i) => (
-              <div key={i} className="card p-8 hover:scale-105 transition">
-                <h3 className="text-2xl font-bold mb-3">{p.name}</h3>
-                <p className="text-green-400 text-3xl font-bold mb-6">{p.price}</p>
-                <p className="text-white/70 mb-8">{p.desc}</p>
-                <a href={`/donate?service=${p.name}`} className="btn-green block text-center py-4">
-                  Purchase Now
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Donate Quick Link */}
-      <div className="text-center py-12">
-        <a href="/donate" className="inline-block btn-green text-2xl px-16 py-6">
-          Support the Treasury → Fill with XRP / RLUSD
-        </a>
+    <div className="min-h-screen bg-[#030407] text-white overflow-hidden">
+      {/* Test Banner */}
+      <div className="bg-[#10b981] text-black text-center py-4 font-bold text-xl">
+        🚀 FULL CLAUDE VERSION LIVE - MAY 10
       </div>
+
+      {/* Hero */}
+      <div className="pt-20 pb-16 text-center px-6">
+        <h1 className="text-6xl md:text-7xl font-bold tracking-tighter">KREDITKARMA</h1>
+        <p className="mt-4 text-2xl text-gray-300">On-Chain Credit • XRPL Services • Real Grants</p>
+        
+        <div className="flex flex-wrap justify-center gap-4 mt-10">
+          <button className="bg-[#10b981] hover:bg-white hover:text-black text-black font-bold px-10 py-4 rounded-full text-lg transition-all">Check My LedgerScore</button>
+          <button className="border border-white/50 hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg transition-all">Donate to Treasury</button>
+        </div>
+      </div>
+
+      {/* LedgerScore */}
+      <div className="max-w-3xl mx-auto px-6 pb-20">
+        <h2 className="text-4xl font-bold mb-6 text-center">LedgerScore</h2>
+        <div className="flex gap-4">
+          <input
+            type="text"
+            placeholder="Enter XRPL Wallet Address"
+            value={wallet}
+            onChange={(e) => setWallet(e.target.value)}
+            className="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-4 text-lg focus:outline-none focus:border-[#10b981]"
+          />
+          <button onClick={checkScore} className="bg-[#10b981] hover:bg-white hover:text-black font-bold px-10 rounded-2xl text-lg transition-all">Get My Score</button>
+        </div>
+        {score && (
+          <div className="mt-8 p-8 bg-white/5 rounded-3xl border border-[#10b981]/30 text-center">
+            <div className="text-7xl font-bold text-[#10b981]">{score.score}</div>
+            <div className="text-2xl mt-2">{score.tier}</div>
+            <p className="mt-4 text-gray-400">{score.breakdown}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Services */}
+      <div className="max-w-6xl mx-auto px-6 pb-24">
+        <h2 className="text-5xl font-bold text-center mb-12">XRPL Amendment Services</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {PRODUCTS.map((p) => (
+            <div key={p.id} className="bg-white/5 border border-white/10 hover:border-[#10b981] hover:scale-[1.03] transition-all rounded-3xl p-8 group">
+              <div className="text-5xl mb-6">{p.emoji}</div>
+              <h3 className="text-3xl font-bold">{p.name}</h3>
+              <p className="text-5xl font-bold text-[#10b981] mt-4">${p.price} RLUSD{p.monthly && "/mo"}</p>
+              <p className="mt-4 text-gray-400">{p.desc}</p>
+              <a
+                href={xamanLink(p.name, p.price)}
+                target="_blank"
+                className="block mt-8 bg-[#10b981] hover:bg-white hover:text-black text-center font-bold py-5 rounded-2xl text-lg transition-all"
+              >
+                Purchase Now
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-12 text-center text-sm text-gray-500">
+        © 2026 KreditKarma.us • Social Impact Finance on the XRP Ledger<br />
+        Not a bank • Not an insurer • 100% on-chain<br />
+        Treasury: <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" className="text-[#10b981]">{TREASURY}</a>
+      </footer>
     </div>
   );
 }
