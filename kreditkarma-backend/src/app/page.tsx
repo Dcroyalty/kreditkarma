@@ -10,8 +10,8 @@ const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
 const TREASURY_DOMAIN = 'kreditkarma.xrp'; // XRPNS primary domain → resolves to TREASURY
 const XAMAN_DOWNLOAD = 'https://xaman.app/';
 
-// Neural background image (header + footer only). Save the supplied file to /public/neural-background.jpg
-const NEURAL_BG = '/neural-background.jpg';
+// Neural background image (header + footer only). File lives at /public/xrpl-background.jpg
+const NEURAL_BG = '/xrpl-background.jpg';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // XRPL HELPERS
@@ -32,16 +32,16 @@ function qrSrc(data: string, size = 210): string {
 // TICKER MESSAGES — strobing across top + bottom
 // ─────────────────────────────────────────────────────────────────────────────
 const TICKER_MESSAGES = [
-  'No Banks',
-  'No Brokers',
-  'Spend Smarter',
-  'A Credit Score That Actually Helps People',
-  'You DONATE → They Submit HELP FORM → AI Uses Treasury',
-  'ALL DONATIONS RECEIVED Go To SEND "HELP IS ON THE WAY"',
-  'XRPL Direct-to-Wallet',
-  'NO NGO · NO Money Going Missing',
-  'People Who Need Help Just Ask',
-  'AI Helps Every Submission Down To The Last Penny',
+  'Homeless — Apply for Grants',
+  'Build Real Credit',
+  'Protect Your Assets',
+  'Transparent AI Community Grants',
+  'Buy Powerful XRPL Amendments',
+  'Turn XRP / RLUSD Into Credit',
+  'Blockchain LedgerScore',
+  'Every Donation Uses AI To Send Help',
+  'Donations → Treasury → Apply for Grants → AI → Help Is On The Way',
+  'Borrow / Lend XRPL Amendment Coming Soon',
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ const PRODUCTS = [
     priceRLUSD: 25,
     priceXRP: 80,
     aiDelivery: 'AI broadcasts SetAccountFlag (asfNoFreeze) · Confirmed within 1 ledger close (~4s)',
-    aiDetail: 'Our Grok AI agent constructs and submits a SetAccountFlag transaction with the asfNoFreeze flag (0x00000002) to XRPL mainnet. The transaction is signed via the treasury multi-sig and permanently recorded on your wallet\'s account root. Issuer clawback is now cryptographically impossible.',
+    aiDetail: "Our Grok AI agent constructs and submits a SetAccountFlag transaction with the asfNoFreeze flag (0x00000002) to XRPL mainnet. The transaction is signed via the treasury multi-sig and permanently recorded on your wallet's account root. Issuer clawback is now cryptographically impossible.",
     featured: true,
     comingSoon: false,
     color: '#10b981',
@@ -102,7 +102,7 @@ const PRODUCTS = [
     name: 'Credit Builder',
     amendment: 'Payment · Bureau Reporting',
     tagline: 'Build LedgerScore + FICO simultaneously with monthly on-chain payments',
-    desc: 'The world\'s first blockchain credit builder. Each monthly RLUSD payment creates a verifiable on-chain record our algorithm uses to grow your LedgerScore. Pro tier furnishes data to Equifax, TransUnion, and Experian — the first-ever pathway from XRPL activity to a traditional FICO score.',
+    desc: "The world's first blockchain credit builder. Each monthly RLUSD payment creates a verifiable on-chain record our algorithm uses to grow your LedgerScore. Pro tier furnishes data to Equifax, TransUnion, and Experian — the first-ever pathway from XRPL activity to a traditional FICO score.",
     priceRLUSD: 20,
     priceXRP: 65,
     aiDelivery: 'AI records payment, updates LedgerScore, queues bureau furnishing · Next cycle auto-scheduled',
@@ -211,7 +211,6 @@ function B(v: 'green'|'ghost'|'color', color?: string, extra?: React.CSSProperti
 // SCROLLING TICKER — strobes brand messages
 // ─────────────────────────────────────────────────────────────────────────────
 function Ticker({ position = 'top' }: { position?: 'top' | 'bottom' }) {
-  // Duplicate content so animation loops seamlessly
   const repeated = [...TICKER_MESSAGES, ...TICKER_MESSAGES];
   return (
     <div
@@ -357,15 +356,15 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
       <div style={{ fontSize: 10, fontWeight: 700, color: product.color, letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'IBM Plex Mono',monospace" }}>{product.amendment}</div>
       <h3 style={{ fontSize: 22, fontWeight: 900, marginBottom: 8 }}>Pre-Register for Early Access</h3>
       <p style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', marginBottom: 18, lineHeight: 1.7 }}>
-        The XRPL Borrow/Lend amendment goes live soon. Drop your email + wallet and we'll notify you the moment it activates — you'll get first-day access.
+        The XRPL Borrow/Lend amendment goes live soon. Drop your email + wallet and we&apos;ll notify you the moment it activates — you&apos;ll get first-day access.
       </p>
       <label style={LBL}>Email</label>
       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom: 14 }} />
       <label style={LBL}>XRPL Wallet (optional)</label>
-      <input type="text" value={walletPre} onChange={e => setWalletPre(e.target.value)} placeholder="rXXXXX..." style={{ ...INP, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, marginBottom: 18 }} />
+      <input type="text" value={walletPre} onChange={e => setWalletPre(e.target.value)} placeholder="rXXXXX…" style={{ ...INP, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, marginBottom: 18 }} />
 
       <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 11, padding: '11px 14px', marginBottom: 18, fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.7 }}>
-        Don't have Xaman wallet yet? <a href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ color: product.color, fontWeight: 700 }}>Download free →</a>
+        Don&apos;t have Xaman wallet yet? <a href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ color: product.color, fontWeight: 700 }}>Download free →</a>
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
@@ -408,7 +407,7 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
         <h3 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>{isComingSoon ? `You're on the list` : `${product.name} Activated`}</h3>
         <div style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 14, padding: 18, margin: '14px 0 18px', textAlign: 'left' }}>
           <p style={{ fontSize: 11, color: product.color, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>🤖 AI Agent Report</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.65)', lineHeight: 1.75 }}>{isComingSoon ? 'You\'ll be notified by email the moment the XRPL Borrow/Lend amendment activates on mainnet. First-day access guaranteed.' : product.aiDetail}</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.65)', lineHeight: 1.75 }}>{isComingSoon ? "You'll be notified by email the moment the XRPL Borrow/Lend amendment activates on mainnet. First-day access guaranteed." : product.aiDetail}</p>
         </div>
         {email && <p style={{ fontSize: 12, color: 'rgba(255,255,255,.38)', marginBottom: 18 }}>✅ Receipt sent to <strong style={{ color: '#fff' }}>{email}</strong></p>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -465,7 +464,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
         </a>
       </p>
 
-      {/* XRPNS domain — easier to share than the raw address */}
       <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.28)', borderRadius: 12, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono',monospace" }}>XRPNS</span>
         <code style={{ fontSize: 13, color: '#10b981', flex: 1, minWidth: 0, wordBreak: 'break-all', lineHeight: 1.5, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{TREASURY_DOMAIN}</code>
@@ -606,7 +604,7 @@ function DonateModal({ show, onClose }: { show: boolean; onClose: () => void }) 
           <strong style={{ color: '#fff' }}>{amount} {currency}</strong> is flowing directly to people in need.
         </p>
         <p style={{ color: 'rgba(255,255,255,.35)', fontSize: 13, lineHeight: 1.75, marginBottom: 26 }}>
-          No NGOs. No dark money. No election funneling. No charity overhead skimming the top. Your {currency} goes wallet-to-wallet — permanently recorded on the XRP Ledger for anyone to verify. That's not a promise. That's math.
+          No NGOs. No dark money. No election funneling. No charity overhead skimming the top. Your {currency} goes wallet-to-wallet — permanently recorded on the XRP Ledger for anyone to verify. That&apos;s not a promise. That&apos;s math.
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...B('ghost',undefined,{fontSize:13,textDecoration:'none'}) }}>Verify on XRPScan ↗</a>
@@ -632,7 +630,6 @@ function DonateModal({ show, onClose }: { show: boolean; onClose: () => void }) 
         </a>
       </p>
 
-      {/* XRPNS domain — primary, friendlier than the raw address */}
       <div style={{ background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.28)',borderRadius:12,padding:'10px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
         <span style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.1em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS</span>
         <code style={{ fontSize:13,color:'#10b981',flex:1,minWidth:0,wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700 }}>{TREASURY_DOMAIN}</code>
@@ -699,7 +696,7 @@ function GrantModal({ show, onClose }: { show: boolean; onClose: () => void }) {
         <h3 style={{ fontSize:24,fontWeight:900,color:'#10b981',marginBottom:10 }}>Request Received</h3>
         <p style={{ color:'rgba(255,255,255,.55)',fontSize:14,lineHeight:1.75,marginBottom:10 }}>Your ${form.amount} grant application is with our AI reviewer.</p>
         <p style={{ color:'rgba(255,255,255,.35)',fontSize:13,lineHeight:1.75,marginBottom:26 }}>
-          Approved funds go <strong style={{ color:'#fff' }}>directly to your XRPL wallet</strong> — not to a program, not to an NGO, not to overhead. Wallet to wallet. Every time. You'll receive a status update at {form.email||form.wallet}.
+          Approved funds go <strong style={{ color:'#fff' }}>directly to your XRPL wallet</strong> — not to a program, not to an NGO, not to overhead. Wallet to wallet. Every time. You&apos;ll receive a status update at {form.email||form.wallet}.
         </p>
         <button onClick={handleClose} style={B('green')}>Done</button>
       </div>
@@ -787,7 +784,7 @@ function ScoreModal({ show, onClose, scoreData, loading, error, onRetry, walletA
       {error&&!loading&&(
         <div style={{ textAlign:'center',padding:'28px 0' }}>
           <div style={{ fontSize:44,marginBottom:12 }}>⚠️</div>
-          <p style={{ color:'#f87171',fontWeight:600,fontSize:17,marginBottom:8 }}>Couldn't fetch score</p>
+          <p style={{ color:'#f87171',fontWeight:600,fontSize:17,marginBottom:8 }}>Couldn&apos;t fetch score</p>
           <p style={{ color:'rgba(255,255,255,.4)',fontSize:13,marginBottom:22 }}>{error}</p>
           <div style={{ display:'flex',gap:10,justifyContent:'center' }}>
             <button onClick={onRetry} style={B('green')}>Retry</button>
@@ -891,11 +888,11 @@ function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
       <div style={{ fontSize:14,color:'rgba(255,255,255,.65)',lineHeight:1.9,display:'flex',flexDirection:'column',gap:16 }}>
         <p>KreditKarma was built because the people who need financial services most are the ones legacy systems were designed to exclude. No wallet. No credit history. No bank account. No access.</p>
         <p>We changed that equation by building entirely on the <strong style={{ color:'#fff' }}>XRP Ledger</strong> — the fastest, cheapest, most energy-efficient public blockchain ever built. Every payment is XRP or RLUSD. Every grant is on-chain. Every service is delivered by AI in seconds. No gatekeepers.</p>
-        <p><strong style={{ color:'#10b981' }}>LedgerScore</strong> is our flagship — the world's first on-chain credit standard. 300–850, built purely from wallet activity. No SSN. No bureau access required to start.</p>
+        <p><strong style={{ color:'#10b981' }}>LedgerScore</strong> is our flagship — the world&apos;s first on-chain credit standard. 300–850, built purely from wallet activity. No SSN. No bureau access required to start.</p>
         <p>Our <strong style={{ color:'#fff' }}>XRPL Amendment Services</strong> are AI-wrapped on-chain operational tools: real transactions (asfNoFreeze, EscrowCreate, TrustSet, AMMWithdraw) that AI agents file automatically to protect your positions. You pay once. AI watches forever. And our <strong style={{ color:'#ec4899' }}>Borrow/Lend</strong> service launches the moment the XRPL amendment goes live.</p>
         <p>The <strong style={{ color:'#10b981' }}>Grant System</strong> is the most important part. No NGOs. No middlemen. Donors send RLUSD/XRP to the treasury — publicly visible at xrpscan.com. AI reviews applications. Approved funds go wallet-to-wallet in under 5 seconds. Permanently on-chain. Verifiable by anyone. Forever.</p>
         <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:14,padding:18 }}>
-          <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75,fontStyle:'italic' }}>"We're not disrupting finance. We're replacing the parts that were never worth keeping — with math you can verify yourself."</p>
+          <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75,fontStyle:'italic' }}>&ldquo;We&apos;re not disrupting finance. We&apos;re replacing the parts that were never worth keeping — with math you can verify yourself.&rdquo;</p>
           <p style={{ fontSize:12,color:'rgba(255,255,255,.3)',marginTop:8 }}>— KreditKarma Founding Team</p>
         </div>
       </div>
@@ -907,10 +904,10 @@ function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 function FAQModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
   const [open, setOpen] = useState<number|null>(0);
   const faqs: [string,string][] = [
-    ['What is LedgerScore?', 'LedgerScore is the world\'s first on-chain credit score — 300 to 850, calculated entirely from your XRP Ledger wallet activity. Account age, transaction count, trust line diversity, DEX participation, escrow history. No SSN. No bureau. Just your on-chain truth, scored in real time.'],
+    ['What is LedgerScore?', "LedgerScore is the world's first on-chain credit score — 300 to 850, calculated entirely from your XRP Ledger wallet activity. Account age, transaction count, trust line diversity, DEX participation, escrow history. No SSN. No bureau. Just your on-chain truth, scored in real time."],
     ['What are XRPL Amendment Services?', 'Amendment Services are AI-delivered on-chain operational tools. You pay in RLUSD or XRP. Our Grok AI agent then files the specific XRPL transaction type for that service (asfNoFreeze, EscrowCreate, TrustSet, AMMWithdraw, etc.) to mainnet on your behalf — within one ledger close (~4 seconds). You get an email receipt with the TX hash.'],
     ['What is the Borrow/Lend service?', 'The XRPL Borrow/Lend amendment is being finalized for mainnet. KreditKarma will offer the first integrated borrow-against-LedgerScore product on launch day. Pre-register your wallet now to get early access the moment it activates.'],
-    ['How does the grant system work?', 'Anyone donates XRP/RLUSD to the treasury wallet (public, verifiable at xrpscan.com). Anyone in need submits a grant application. AI reviews for legitimacy within 24 hours. Approved grants are sent directly from the treasury to the recipient\'s XRPL wallet. No overhead. No NGO. Wallet to wallet.'],
+    ['How does the grant system work?', "Anyone donates XRP/RLUSD to the treasury wallet (public, verifiable at xrpscan.com). Anyone in need submits a grant application. AI reviews for legitimacy within 24 hours. Approved grants are sent directly from the treasury to the recipient's XRPL wallet. No overhead. No NGO. Wallet to wallet."],
     ['What is Credit Builder?', 'Three monthly subscription tiers (Starter $20/Builder $50/Pro $100 in RLUSD) paid on the XRPL. Each payment builds your LedgerScore. Pro tier furnishes payment history to Equifax, TransUnion, and Experian — the first blockchain-to-FICO pathway ever built.'],
     ['Do I need a Xaman wallet?', 'Yes. Xaman is the official XRPL wallet we integrate with — free, takes 60 seconds to install on iOS or Android. Download at xaman.app. Once installed, all payments are a single QR scan and swipe.'],
     ['Is KreditKarma a bank?', 'No. Not a bank, broker, insurer, or FDIC institution. We are a financial technology platform on the XRP Ledger. All payments are in XRP or RLUSD. All services are on-chain operational tools.'],
@@ -966,8 +963,7 @@ function PrivacyModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 // MAIN PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function KreditKarmaHome() {
-  const [walletAddress, setWalletAddress]     = useState('');
-  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress]                       = useState('');
   const [user, setUser]                       = useState<User|null>(null);
   const [scoreData, setScoreData]             = useState<ScoreData|null>(null);
   const [scoreLoading, setScoreLoading]       = useState(false);
@@ -1056,7 +1052,6 @@ export default function KreditKarmaHome() {
         .footer-lnk{background:none;border:none;color:rgba(255,255,255,.38);font-size:13px;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}
         .footer-lnk:hover{color:#fff}
 
-        /* Xaman required banner */
         .xaman-banner{
           display:inline-flex;align-items:center;gap:10px;
           background:linear-gradient(90deg,rgba(16,185,129,.14),rgba(16,185,129,.04));
@@ -1077,7 +1072,6 @@ export default function KreditKarmaHome() {
           background-repeat:no-repeat;
         }
 
-        /* MOBILE NAV */
         .nav-desktop{display:flex}
         .nav-mobile-toggle{display:none}
         .nav-tagline-full{display:inline}
@@ -1093,7 +1087,6 @@ export default function KreditKarmaHome() {
           .nav-mobile-drawer .navbtn{width:100%;text-align:center;padding:12px}
         }
 
-        /* GENERAL MOBILE TUNING */
         @media (max-width: 600px){
           h1{letter-spacing:-2px!important}
           .section-pad{padding-left:16px!important;padding-right:16px!important}
@@ -1102,11 +1095,8 @@ export default function KreditKarmaHome() {
         }
       `}</style>
 
-      {/* ── FIXED BACKGROUND (body — header & footer get the neural overlay separately) ── */}
-      <div style={{ position:'fixed',inset:0,zIndex:-1 }}>
-        <div style={{ position:'absolute',inset:0,backgroundImage:"url('/xrpl-background.jpg')",backgroundSize:'cover',backgroundPosition:'center center',backgroundAttachment:'fixed',backgroundRepeat:'no-repeat' }} />
-        <div style={{ position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(3,3,10,.74) 0%,rgba(3,3,10,.66) 25%,rgba(3,3,10,.74) 65%,rgba(3,3,10,.86) 100%)' }} />
-      </div>
+      {/* ── FIXED BACKGROUND — solid dark only (neural goes on header/footer only) ── */}
+      <div style={{ position:'fixed',inset:0,zIndex:-1,background:'#030310' }} />
 
       <div style={{ minHeight:'100vh',fontFamily:"'Syne',sans-serif",color:'#eeeef5' }}>
 
@@ -1138,13 +1128,11 @@ export default function KreditKarmaHome() {
               <button onClick={()=>fetchScore()} style={{ padding:'8px 18px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:13,cursor:'pointer',border:'none',background:'#10b981',color:'#000',transition:'all .15s',whiteSpace:'nowrap' }}>Get LedgerScore</button>
             </div>
 
-            {/* Mobile hamburger */}
             <button className="nav-mobile-toggle" onClick={()=>setMobileMenu(!mobileMenu)} style={{ alignItems:'center',justifyContent:'center',width:42,height:42,borderRadius:10,background:'rgba(16,185,129,.12)',border:'1px solid rgba(16,185,129,.28)',color:'#10b981',cursor:'pointer',fontSize:20,fontWeight:700 }} aria-label="Toggle menu">
               {mobileMenu ? '✕' : '☰'}
             </button>
           </div>
 
-          {/* Mobile drawer */}
           {mobileMenu && (
             <div className="nav-mobile-drawer">
               <a className="xaman-banner" href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ justifyContent:'center' }}>
@@ -1169,16 +1157,15 @@ export default function KreditKarmaHome() {
         <section className="section-pad" style={{ textAlign:'center',padding:'72px 24px 60px',position:'relative',overflow:'hidden' }}>
           <div style={{ position:'absolute',top:'35%',left:'50%',transform:'translate(-50%,-50%)',width:'min(700px, 95vw)',height:'min(700px, 95vw)',borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 68%)',pointerEvents:'none',animation:'float 9s ease-in-out infinite' }} />
 
-          {/* HEADLINE — per markup, replaced with brand name */}
           <h1 style={{ fontSize:'clamp(48px,11vw,140px)',fontWeight:900,letterSpacing:'-4px',lineHeight:.95,marginBottom:22 }}>
             <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text' }}>
               Kredit Karma
             </span>
           </h1>
 
-          {/* Tagline keywords */}
+          {/* ── Tagline keywords: Community Grants · LedgerScore · XRPL Services ── */}
           <div style={{ display:'flex',flexWrap:'wrap',gap:'8px 14px',justifyContent:'center',marginBottom:24,maxWidth:680,marginLeft:'auto',marginRight:'auto' }}>
-            {['On-Chain Credit','Credit Builder','Fund Real Grants','Give Directly','XRPL Services','Instant Grants'].map((kw,i)=>(
+            {['Community Grants','LedgerScore','XRPL Services'].map((kw,i)=>(
               <span key={kw} style={{ fontSize:13,fontWeight:700,color:i%2===0?'#34d399':'#fff',letterSpacing:'.04em',fontFamily:"'IBM Plex Mono',monospace" }}>
                 {i>0 && <span style={{ color:'rgba(255,255,255,.2)',marginRight:14 }}>·</span>}
                 {kw}
@@ -1186,7 +1173,6 @@ export default function KreditKarmaHome() {
             ))}
           </div>
 
-          {/* Xaman wallet required notice with download link */}
           <div style={{ marginBottom:36,marginTop:8 }}>
             <a className="xaman-banner" href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ fontSize:14,padding:'10px 22px' }}>
               📲 Xaman Wallet Required — Download Free (iOS / Android) →
@@ -1212,7 +1198,7 @@ export default function KreditKarmaHome() {
           </div>
         </section>
 
-        {/* ── PRODUCTS — TOP 3 FEATURED + OTHERS (incl. Borrow/Lend Coming Soon) ── */}
+        {/* ── PRODUCTS ── */}
         <section id="products" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
           <div style={{ textAlign:'center',marginBottom:40 }}>
             <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}>
@@ -1225,7 +1211,6 @@ export default function KreditKarmaHome() {
             </p>
           </div>
 
-          {/* Featured big cards */}
           <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:18,marginBottom:18 }}>
             {featuredProducts.map(p=>(
               <div key={p.id} className="pcard-featured" onClick={()=>setActiveProduct(p)}
@@ -1255,7 +1240,6 @@ export default function KreditKarmaHome() {
             ))}
           </div>
 
-          {/* Other products including Borrow/Lend Coming Soon */}
           <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:14 }}>
             {otherProducts.map(p=>(
               <div key={p.id} className="pcard" onClick={()=>setActiveProduct(p)}
@@ -1289,7 +1273,7 @@ export default function KreditKarmaHome() {
           </div>
         </section>
 
-        {/* ── LEDGERSCORE + CREDIT BUILDER (NEW PRICING $20/$50/$100) ── */}
+        {/* ── LEDGERSCORE + CREDIT BUILDER ── */}
         <section id="score" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
           <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.18)',borderRadius:24,padding:'40px 32px',backdropFilter:'blur(20px)',animation:'borderPulse 4s ease-in-out infinite' }}>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:36,alignItems:'center' }}>
@@ -1318,7 +1302,6 @@ export default function KreditKarmaHome() {
                 </div>
               </div>
 
-              {/* Credit Builder tiers — UPDATED PRICING $20/$50/$100 */}
               <div>
                 <div style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16 }}>Credit Builder — Monthly on XRPL</div>
                 <div style={{ display:'flex',flexDirection:'column',gap:11 }}>
@@ -1378,7 +1361,6 @@ export default function KreditKarmaHome() {
                 ))}
               </div>
 
-              {/* XRPNS primary domain — shown above raw address */}
               <div style={{ background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.3)',borderRadius:11,padding:'10px 13px',marginBottom:8,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
                 <span style={{ fontSize:9,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS · Primary</span>
                 <code style={{ fontSize:13,color:'#10b981',fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",wordBreak:'break-all' }}>{TREASURY_DOMAIN}</code>
@@ -1420,7 +1402,7 @@ export default function KreditKarmaHome() {
             </div>
             <h2 style={{ fontSize:'clamp(22px,3.5vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>The only blockchain built for this.</h2>
             <p style={{ fontSize:13,color:'rgba(255,255,255,.44)',maxWidth:480,margin:'0 auto 32px',lineHeight:1.7 }}>
-              Not a trend. Not a whitepaper. Over a decade of continuous operation. Sub-cent fees. 3–5 second finality. And an AMM that's live right now.
+              Not a trend. Not a whitepaper. Over a decade of continuous operation. Sub-cent fees. 3–5 second finality. And an AMM that&apos;s live right now.
             </p>
             <div style={{ display:'flex',justifyContent:'center',gap:'16px 28px',flexWrap:'wrap' }}>
               {[['3–5s','Finality'],['$0.000001','Avg Fee'],['10+','Years Live'],['1,500','TPS'],['0.0079kWh','Per TX']].map(([v,l])=>(
