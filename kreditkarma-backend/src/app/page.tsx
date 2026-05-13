@@ -7,10 +7,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 // ─────────────────────────────────────────────────────────────────────────────
 const API_URL  = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
 const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
-const TREASURY_DOMAIN = 'kreditkarma.xrp'; // XRPNS primary domain → resolves to TREASURY
+const TREASURY_DOMAIN = 'kreditkarma.xrp';
 const XAMAN_DOWNLOAD = 'https://xaman.app/';
-
-// Neural background image (header + footer only). File lives at /public/xrpl-background.jpg
 const NEURAL_BG = '/xrpl-background.jpg';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -29,7 +27,7 @@ function qrSrc(data: string, size = 210): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TICKER MESSAGES — strobing across top + bottom
+// TICKER MESSAGES
 // ─────────────────────────────────────────────────────────────────────────────
 const TICKER_MESSAGES = [
   'Homeless — Apply for Grants',
@@ -45,7 +43,7 @@ const TICKER_MESSAGES = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRODUCTS — each maps to a real XRPL transaction type
+// PRODUCTS
 // ─────────────────────────────────────────────────────────────────────────────
 const PRODUCTS = [
   {
@@ -208,7 +206,7 @@ function B(v: 'green'|'ghost'|'color', color?: string, extra?: React.CSSProperti
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCROLLING TICKER — strobes brand messages
+// SCROLLING TICKER
 // ─────────────────────────────────────────────────────────────────────────────
 function Ticker({ position = 'top' }: { position?: 'top' | 'bottom' }) {
   const repeated = [...TICKER_MESSAGES, ...TICKER_MESSAGES];
@@ -350,7 +348,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
     setTimeout(() => { setStep('info'); setEmail(''); setCopied(false); setCopiedDomain(false); setQrErr(false); setSelectedTier(0); setWalletPre(''); }, 300);
   };
 
-  // ── Coming Soon: pre-register ──
   if (isComingSoon && step === 'preregister') return (
     <Overlay show={show} onClose={handleClose}>
       <div style={{ fontSize: 10, fontWeight: 700, color: product.color, letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'IBM Plex Mono',monospace" }}>{product.amendment}</div>
@@ -362,11 +359,9 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom: 14 }} />
       <label style={LBL}>XRPL Wallet (optional)</label>
       <input type="text" value={walletPre} onChange={e => setWalletPre(e.target.value)} placeholder="rXXXXX…" style={{ ...INP, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, marginBottom: 18 }} />
-
       <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 11, padding: '11px 14px', marginBottom: 18, fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.7 }}>
         Don&apos;t have Xaman wallet yet? <a href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" style={{ color: product.color, fontWeight: 700 }}>Download free →</a>
       </div>
-
       <div style={{ display: 'flex', gap: 10 }}>
         <button onClick={() => setStep('info')} style={{ ...B('ghost', undefined, { flex: 1 }) }}>← Back</button>
         <button onClick={handlePreRegister} disabled={!email} style={{ ...B('color', product.color, { flex: 2, opacity: !email ? 0.4 : 1 }) }}>
@@ -376,7 +371,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
     </Overlay>
   );
 
-  // ── Processing ──
   if (step === 'processing') return (
     <Overlay show={show} onClose={() => {}}>
       <div style={{ textAlign: 'center', padding: '44px 0' }}>
@@ -393,7 +387,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
     </Overlay>
   );
 
-  // ── Success ──
   if (step === 'success') return (
     <Overlay show={show} onClose={handleClose}>
       <div style={{ textAlign: 'center', padding: '20px 0' }}>
@@ -418,7 +411,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
     </Overlay>
   );
 
-  // ── Checkout ──
   if (step === 'checkout') return (
     <Overlay show={show} onClose={handleClose}>
       <div style={{ fontSize: 10, fontWeight: 700, color: product.color, letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'IBM Plex Mono',monospace" }}>
@@ -490,7 +482,6 @@ function ProductModal({ show, onClose, product }: { show: boolean; onClose: () =
     </Overlay>
   );
 
-  // ── Info / Product detail ──
   return (
     <Overlay show={show} onClose={handleClose} wide>
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 22, flexWrap: 'wrap' }}>
@@ -972,7 +963,6 @@ export default function KreditKarmaHome() {
   const [activeProduct, setActiveProduct]     = useState<Product|null>(null);
   const [mobileMenu, setMobileMenu]           = useState(false);
 
-  // Modal flags
   const [showScore,   setShowScore]   = useState(false);
   const [showDonate,  setShowDonate]  = useState(false);
   const [showGrant,   setShowGrant]   = useState(false);
@@ -1061,16 +1051,31 @@ export default function KreditKarmaHome() {
         }
         .xaman-banner:hover{background:rgba(16,185,129,.22);border-color:#10b981;transform:translateY(-1px)}
 
-        /* Neural background for header + footer ONLY */
+        /* ── Neural background: header + footer only ── */
         .neural-surface{
           position:relative;
           background-image:
-            linear-gradient(to bottom, rgba(3,3,10,.62), rgba(3,3,10,.78)),
+            linear-gradient(to bottom, rgba(3,4,14,.70) 0%, rgba(3,4,14,.82) 100%),
             url('${NEURAL_BG}');
           background-size:cover;
           background-position:center center;
           background-repeat:no-repeat;
+          background-attachment:local;
         }
+
+        /* Trustpilot badge */
+        .tp-badge{
+          display:inline-flex;align-items:center;gap:7px;
+          background:rgba(0,182,122,.10);
+          border:1px solid rgba(0,182,122,.28);
+          border-radius:99px;padding:6px 14px;
+          text-decoration:none;transition:all .18s;
+          white-space:nowrap;
+        }
+        .tp-badge:hover{background:rgba(0,182,122,.20);border-color:rgba(0,182,122,.55);transform:translateY(-1px)}
+        .tp-stars{color:#00b67a;font-size:13px;letter-spacing:1px}
+        .tp-text{font-size:12px;font-weight:700;color:#00b67a}
+        .tp-logo{font-size:11px;font-weight:900;color:#fff;letter-spacing:-.3px}
 
         .nav-desktop{display:flex}
         .nav-mobile-toggle{display:none}
@@ -1095,12 +1100,12 @@ export default function KreditKarmaHome() {
         }
       `}</style>
 
-      {/* ── FIXED BACKGROUND — solid dark only (neural goes on header/footer only) ── */}
+      {/* ── FIXED BACKGROUND — solid dark ── */}
       <div style={{ position:'fixed',inset:0,zIndex:-1,background:'#030310' }} />
 
       <div style={{ minHeight:'100vh',fontFamily:"'Syne',sans-serif",color:'#eeeef5' }}>
 
-        {/* ── NAV (neural background image — header only) ── */}
+        {/* ── NAV (neural background — header only) ── */}
         <nav className="neural-surface" style={{ position:'sticky',top:0,zIndex:100,backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',borderBottom:'1px solid rgba(16,185,129,.18)' }}>
           <div style={{ padding:'0 20px',minHeight:68,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:9 }}>
@@ -1150,7 +1155,7 @@ export default function KreditKarmaHome() {
           )}
         </nav>
 
-        {/* ── TICKER right under Header ── */}
+        {/* ── TICKER ── */}
         <Ticker position="top" />
 
         {/* ── HERO ── */}
@@ -1163,7 +1168,6 @@ export default function KreditKarmaHome() {
             </span>
           </h1>
 
-          {/* ── Tagline keywords: Community Grants · LedgerScore · XRPL Services ── */}
           <div style={{ display:'flex',flexWrap:'wrap',gap:'8px 14px',justifyContent:'center',marginBottom:24,maxWidth:680,marginLeft:'auto',marginRight:'auto' }}>
             {['Community Grants','LedgerScore','XRPL Services'].map((kw,i)=>(
               <span key={kw} style={{ fontSize:13,fontWeight:700,color:i%2===0?'#34d399':'#fff',letterSpacing:'.04em',fontFamily:"'IBM Plex Mono',monospace" }}>
@@ -1360,7 +1364,6 @@ export default function KreditKarmaHome() {
                   </div>
                 ))}
               </div>
-
               <div style={{ background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.3)',borderRadius:11,padding:'10px 13px',marginBottom:8,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
                 <span style={{ fontSize:9,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS · Primary</span>
                 <code style={{ fontSize:13,color:'#10b981',fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",wordBreak:'break-all' }}>{TREASURY_DOMAIN}</code>
@@ -1433,31 +1436,68 @@ export default function KreditKarmaHome() {
           </div>
         </section>
 
-        {/* ── FOOTER (neural background image — footer only) ── */}
+        {/* ── FOOTER (neural background — footer only) ── */}
         <footer className="neural-surface" style={{ backdropFilter:'blur(14px)',borderTop:'1px solid rgba(255,255,255,.07)',padding:'32px 24px 24px' }}>
-          <div style={{ maxWidth:1240,margin:'0 auto',display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18 }}>
-            <div>
-              <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:6 }}>
-                <div style={{ width:28,height:28,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000' }}>K</div>
-                <span style={{ fontWeight:800,fontSize:15 }}>kreditkarma</span>
-                <span style={{ fontSize:10,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginLeft:6,background:'rgba(16,185,129,.1)',padding:'2px 8px',borderRadius:99,border:'1px solid rgba(16,185,129,.25)' }}>{TREASURY_DOMAIN}</span>
+          <div style={{ maxWidth:1240,margin:'0 auto' }}>
+
+            {/* Top row: brand + links */}
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18,marginBottom:20 }}>
+              <div>
+                <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:6 }}>
+                  <div style={{ width:28,height:28,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000' }}>K</div>
+                  <span style={{ fontWeight:800,fontSize:15 }}>kreditkarma</span>
+                  <span style={{ fontSize:10,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginLeft:6,background:'rgba(16,185,129,.1)',padding:'2px 8px',borderRadius:99,border:'1px solid rgba(16,185,129,.25)' }}>{TREASURY_DOMAIN}</span>
+                </div>
+                <p style={{ fontSize:11,color:'rgba(255,255,255,.22)' }}>© {new Date().getFullYear()} KreditKarma.us · Social Impact Finance · Powered by the XRP Ledger</p>
+                <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
               </div>
-              <p style={{ fontSize:11,color:'rgba(255,255,255,.22)' }}>© {new Date().getFullYear()} KreditKarma.us · Social Impact Finance · Powered by the XRP Ledger</p>
-              <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
+
+              <div style={{ display:'flex',gap:'10px 18px',flexWrap:'wrap',alignItems:'center' }}>
+                <a href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" className="footer-lnk" style={{ color:'#10b981',textDecoration:'none' }}>📲 Get Xaman</a>
+                <button className="footer-lnk" onClick={()=>setShowAbout(true)}>About</button>
+                <button className="footer-lnk" onClick={()=>setShowFaq(true)}>FAQ</button>
+                <button className="footer-lnk" onClick={()=>setShowTerms(true)}>Terms</button>
+                <button className="footer-lnk" onClick={()=>setShowPrivacy(true)}>Privacy</button>
+                <a href="mailto:support@kreditkarma.us" style={{ fontSize:13,color:'rgba(255,255,255,.38)',textDecoration:'none' }}>support@kreditkarma.us</a>
+                <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize:11,color:'#10b981',textDecoration:'none',display:'flex',alignItems:'center',gap:5,fontFamily:"'IBM Plex Mono',monospace" }}>
+                  <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',animation:'pulse 2.5s infinite',display:'inline-block' }} />
+                  Treasury Live ↗
+                </a>
+              </div>
             </div>
-            <div style={{ display:'flex',gap:'10px 18px',flexWrap:'wrap',alignItems:'center' }}>
-              <a href={XAMAN_DOWNLOAD} target="_blank" rel="noopener noreferrer" className="footer-lnk" style={{ color:'#10b981',textDecoration:'none' }}>📲 Get Xaman</a>
-              <button className="footer-lnk" onClick={()=>setShowAbout(true)}>About</button>
-              <button className="footer-lnk" onClick={()=>setShowFaq(true)}>FAQ</button>
-              <button className="footer-lnk" onClick={()=>setShowTerms(true)}>Terms</button>
-              <button className="footer-lnk" onClick={()=>setShowPrivacy(true)}>Privacy</button>
-              <a href="mailto:support@kreditkarma.us" style={{ fontSize:13,color:'rgba(255,255,255,.38)',textDecoration:'none' }}>support@kreditkarma.us</a>
-              <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer"
-                style={{ fontSize:11,color:'#10b981',textDecoration:'none',display:'flex',alignItems:'center',gap:5,fontFamily:"'IBM Plex Mono',monospace" }}>
-                <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',animation:'pulse 2.5s infinite',display:'inline-block' }} />
-                Treasury Live ↗
+
+            {/* Trustpilot badge row */}
+            <div style={{ borderTop:'1px solid rgba(255,255,255,.06)',paddingTop:16,display:'flex',alignItems:'center',justifyContent:'center' }}>
+              <a
+                href="https://www.trustpilot.com/review/kreditkarma.us"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="tp-badge"
+                aria-label="Trusted on Trustpilot"
+              >
+                {/* Trustpilot "tp" logo mark — rendered as styled text */}
+                <span style={{
+                  display:'inline-flex',alignItems:'center',justifyContent:'center',
+                  width:20,height:20,borderRadius:4,
+                  background:'#00b67a',
+                  fontWeight:900,fontSize:11,color:'#fff',
+                  letterSpacing:'-.5px',flexShrink:0,
+                }}>★</span>
+                <span style={{ display:'flex',flexDirection:'column',gap:1 }}>
+                  <span style={{ display:'flex',alignItems:'center',gap:4 }}>
+                    <span className="tp-stars">★★★★★</span>
+                    <span className="tp-logo" style={{ fontSize:12,fontWeight:900,color:'#fff',letterSpacing:'-.3px' }}>
+                      Trust<span style={{ color:'#00b67a' }}>pilot</span>
+                    </span>
+                  </span>
+                  <span className="tp-text" style={{ fontSize:10,color:'rgba(255,255,255,.45)',fontWeight:600 }}>
+                    Trusted on Trustpilot
+                  </span>
+                </span>
               </a>
             </div>
+
           </div>
         </footer>
       </div>
