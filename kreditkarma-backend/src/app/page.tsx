@@ -293,6 +293,39 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
   const pollRef   = useRef<ReturnType<typeof setTimeout>|null>(null);
   const cancelRef = useRef(false);
 
+  // ── ALL useEffects MUST be before any early return (Rules of Hooks) ──────
+  useEffect(() => {
+    if (payStatus !== 'waiting' || !uuid || !product) return;
+    cancelRef.current = false;
+    const prod = product;
+    const poll = async () => {
+      if (cancelRef.current) return;
+      try {
+        const isCBLocal = prod.id === 'credit';
+        const tiersLocal = isCBLocal ? (prod as typeof PRODUCTS[9]).tiers : null;
+        const atLocal = tiersLocal ? tiersLocal[tierIdx] : null;
+        const priceLocal = isCBLocal && atLocal ? (currency==='RLUSD' ? atLocal.priceRLUSD : atLocal.priceXRP) : (currency==='RLUSD' ? prod.priceRLUSD : prod.priceXRP);
+        const params = new URLSearchParams({ uuid, productId:prod.id, amount:String(priceLocal), currency, email });
+        const res  = await fetch(`${API_URL}/api/check-payment?${params}`);
+        const data = await res.json();
+        if (cancelRef.current) return;
+        if (data.status === 'verified') { setVerifiedTx(data.txHash || ''); setPayStatus('done'); setStep('success'); }
+        else if (data.status === 'expired') { setPayStatus('idle'); setPayError('Payment expired. Try again.'); }
+        else if (data.status === 'rejected') { setPayStatus('idle'); setPayError(data.reason || 'Payment declined.'); }
+        else { pollRef.current = setTimeout(poll, 3000); }
+      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 5000); }
+    };
+    poll();
+    return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
+  }, [payStatus, uuid]); // eslint-disable-line
+
+  useEffect(() => {
+    if (payStatus !== 'waiting') return;
+    const iv = setInterval(() => setCountdown(c => { if (c <= 1) { clearInterval(iv); if (!cancelRef.current) { setPayStatus('idle'); setPayError('Payment expired.'); } return 0; } return c - 1; }), 1000);
+    return () => clearInterval(iv);
+  }, [payStatus]);
+
+  // ── Safe to return null after all hooks ───────────────────────────────────
   if (!product) return null;
   const isCB    = product.id === 'credit';
   const isSoon  = product.comingSoon;
@@ -315,32 +348,6 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
       setUuid(data.uuid); setQrUrl(data.qr_png); setDeepLnk(data.deep_link); setCountdown(data.expires_in || 900); setPayStatus('waiting');
     } catch (e: unknown) { setPayError(e instanceof Error ? e.message : 'Payment failed'); setPayStatus('idle'); }
   };
-
-  useEffect(() => {
-    if (payStatus !== 'waiting' || !uuid) return;
-    cancelRef.current = false;
-    const poll = async () => {
-      if (cancelRef.current) return;
-      try {
-        const params = new URLSearchParams({ uuid, productId:product.id, amount:String(price), currency, email });
-        const res  = await fetch(`${API_URL}/api/check-payment?${params}`);
-        const data = await res.json();
-        if (cancelRef.current) return;
-        if (data.status === 'verified') { setVerifiedTx(data.txHash || ''); setPayStatus('done'); setStep('success'); }
-        else if (data.status === 'expired') { setPayStatus('idle'); setPayError('Payment expired. Try again.'); }
-        else if (data.status === 'rejected') { setPayStatus('idle'); setPayError(data.reason || 'Payment declined.'); }
-        else { pollRef.current = setTimeout(poll, 3000); }
-      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 5000); }
-    };
-    poll();
-    return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [payStatus, uuid]); // eslint-disable-line
-
-  useEffect(() => {
-    if (payStatus !== 'waiting') return;
-    const iv = setInterval(() => setCountdown(c => { if (c <= 1) { clearInterval(iv); if (!cancelRef.current) { setPayStatus('idle'); setPayError('Payment expired.'); } return 0; } return c - 1; }), 1000);
-    return () => clearInterval(iv);
-  }, [payStatus]);
 
   const handlePreReg = async () => {
     try { await fetch(`${API_URL}/api/preregister`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ productId:product.id, email, wallet:walletPre||connectedWallet }) }); } catch {}
