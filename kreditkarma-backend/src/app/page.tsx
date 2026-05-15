@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/next';
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_URL         = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
@@ -975,9 +976,12 @@ export default function KreditKarmaHome() {
         {/* HERO */}
         <section className="section-pad" style={{ textAlign:'center',padding:'72px 24px 60px',position:'relative',overflow:'hidden' }}>
           <div style={{ position:'absolute',top:'35%',left:'50%',transform:'translate(-50%,-50%)',width:'min(700px,95vw)',height:'min(700px,95vw)',borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 68%)',pointerEvents:'none',animation:'float 9s ease-in-out infinite' }} />
-          <h1 style={{ fontSize:'clamp(48px,11vw,140px)',fontWeight:900,letterSpacing:'-4px',lineHeight:.95,marginBottom:22 }}>
+          <h1 style={{ fontSize:'clamp(48px,11vw,140px)',fontWeight:900,letterSpacing:'-4px',lineHeight:.95,marginBottom:10 }}>
             <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text' }}>Kredit Karma</span>
           </h1>
+          <div style={{ fontSize:'clamp(11px,1.8vw,16px)',fontWeight:800,letterSpacing:'.35em',textTransform:'uppercase',color:'rgba(255,255,255,.28)',marginBottom:20,fontFamily:"'IBM Plex Mono',monospace" }}>
+            ON BLOCKCHAIN
+          </div>
           <div style={{ display:'flex',flexWrap:'wrap',gap:'8px 14px',justifyContent:'center',marginBottom:24,maxWidth:680,margin:'0 auto 24px' }}>
             {['Community Grants','LedgerScore','XRPL Services'].map((kw,i)=>(
               <span key={kw} style={{ fontSize:13,fontWeight:700,color:i%2===0?'#34d399':'#fff',letterSpacing:'.04em',fontFamily:"'IBM Plex Mono',monospace" }}>
@@ -1227,6 +1231,7 @@ export default function KreditKarmaHome() {
       <FAQModal show={showFaq} onClose={()=>setShowFaq(false)} />
       <TermsModal show={showTerms} onClose={()=>setShowTerms(false)} />
       <PrivacyModal show={showPrivacy} onClose={()=>setShowPrivacy(false)} />
+      <Analytics />
     </>
   );
 }
