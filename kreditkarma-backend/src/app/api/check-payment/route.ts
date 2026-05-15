@@ -6,7 +6,6 @@ async function fetchTx(hash: string) { try { const r = await fetch(XRPL_API, { m
 export async function GET(req: NextRequest) {
   try {
     const p = req.nextUrl.searchParams
-const p = req.nextUrl.searchParams
     const uuid = p.get('uuid'), productId = p.get('productId') || '', amount = parseFloat(p.get('amount') || '0'), currency = p.get('currency') || 'XRP', email = p.get('email') || ''
     if (!uuid) return NextResponse.json({ status: 'error', reason: 'Missing payment ID' }, { status: 400 })
     const apiKey = process.env.XUMM_API_KEY, apiSecret = process.env.XUMM_API_SECRET
