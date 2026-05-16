@@ -27,62 +27,197 @@ const TICKER = [
 ];
 
 // ─── 10 PRODUCTS ──────────────────────────────────────────────────────────────
+// ─── GLOBAL DISCLAIMER (shown on every product) ──────────────────────────────
+const GLOBAL_DISCLAIMER = 'KreditKarma.us provides on-chain configuration and transaction services on the XRP Ledger. All services configure blockchain-native protocol features — not financial products, securities, insurance, or investment instruments. All XRPL transactions are irrevocable by nature of the protocol. Results depend on your wallet configuration and XRPL network state. This is a technology service, not financial advice. Use at your own risk.';
+
+// ─── PRODUCT CATEGORIES ───────────────────────────────────────────────────────
+const CATEGORIES = ['All','Protection','DEX & AMM','NFT','Identity','Payments','Tokens','Credit','Coming Soon'] as const;
+type Category = typeof CATEGORIES[number];
+
 const PRODUCTS = [
-  { id:'clawback',  emoji:'🔒', name:'Clawback Shield',    featured:true,  comingSoon:false, color:'#10b981', priceRLUSD:25,  priceXRP:80,
+  // ── FEATURED 3 ────────────────────────────────────────────────────────────
+  { id:'clawback', emoji:'🔒', name:'Clawback Shield', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:25, priceXRP:80, category:'Protection' as Category,
     amendment:'SetAccountFlag · asfNoFreeze', tagline:'Permanently block issuers from reclaiming your tokens',
-    desc:'AI broadcasts a SetAccountFlag (asfNoFreeze) transaction on your behalf. Permanently prevents any issuer from freezing or clawing back assets in your trust lines.',
-    aiDetail:"AI submits SetAccountFlag with asfNoFreeze flag to XRPL mainnet. Permanently recorded on your account root. Clawback is cryptographically impossible.",
+    desc:'AI broadcasts SetAccountFlag (asfNoFreeze) on your behalf. Permanently prevents any issuer from freezing or clawing back assets in your trust lines. One payment. Permanent on-chain protection.',
+    aiDetail:'AI submits SetAccountFlag with asfNoFreeze to XRPL mainnet. Permanently recorded on your account root. Clawback is cryptographically impossible.',
     features:['asfNoFreeze flag set on-chain','Issuer clawback permanently disabled','On-chain proof','Xaman notification','Email receipt + TX hash'] },
 
-  { id:'escrow',    emoji:'🏛️', name:'Escrow Vault',        featured:true,  comingSoon:false, color:'#f59e0b', priceRLUSD:50,  priceXRP:160,
+  { id:'escrow', emoji:'🏛️', name:'Escrow Vault', featured:true, comingSoon:false, color:'#f59e0b', priceRLUSD:50, priceXRP:160, category:'Protection' as Category,
     amendment:'EscrowCreate · Time-locked', tagline:'AI-managed escrow with custom release conditions',
     desc:'AI files EscrowCreate locking your XRP with a custom finish-after timestamp or crypto-condition. Funds release automatically on your terms.',
     aiDetail:'AI constructs EscrowCreate with your FinishAfter epoch. Filed to XRPL mainnet and monitored continuously. AI auto-files EscrowFinish or EscrowCancel at the right time.',
     features:['EscrowCreate filed to mainnet','Custom release conditions','AI monitors + auto-finalises','EscrowCancel protection','Full audit trail'] },
 
-  { id:'mutual',    emoji:'🤝', name:'Mutual Aid Pool',     featured:true,  comingSoon:false, color:'#8b5cf6', priceRLUSD:35,  priceXRP:115,
+  { id:'mutual', emoji:'🤝', name:'Mutual Aid Pool', featured:true, comingSoon:false, color:'#8b5cf6', priceRLUSD:35, priceXRP:115, category:'Protection' as Category,
     amendment:'TrustSet · MultiSig Registry', tagline:'On-chain mutual aid certificate — no insurance company',
-    desc:'AI issues a TrustSet coverage certificate to your wallet and adds you to the KreditKarma multisig pool registry. Pool disbursements AI-triggered.',
+    desc:'AI issues a TrustSet coverage certificate to your wallet and adds you to the KreditKarma multisig pool registry.',
     aiDetail:'AI files TrustSet issuing KK-COVERAGE trust line to your wallet. Added to multisig pool registry. Pool balance visible on xrpscan.com.',
     features:['TrustSet certificate issued','Added to multisig pool registry','AI-triggered disbursement','Pool visible on XRPScan','Email + wallet proof'] },
 
-  { id:'multisig',  emoji:'🏰', name:'Multi-Sig Fortress',  featured:false, comingSoon:false, color:'#f97316', priceRLUSD:60,  priceXRP:195,
+  // ── PROTECTION SUITE ──────────────────────────────────────────────────────
+  { id:'multisig', emoji:'🏰', name:'Multi-Sig Fortress', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:60, priceXRP:195, category:'Protection' as Category,
     amendment:'SignerListSet · Multi-Signature', tagline:'Require M-of-N signatures for every transaction',
     desc:'AI files SignerListSet configuring your wallet to require multiple signatures. No single point of failure. Perfect for treasuries and DAOs.',
-    aiDetail:'AI constructs SignerListSet with your quorum and signer list. Wallet now requires multiple signatures for every outgoing transaction.',
+    aiDetail:'AI constructs SignerListSet with your quorum and signer list. Wallet now requires multiple independent signatures for every outgoing transaction.',
     features:['SignerListSet filed to mainnet','M-of-N signature requirement','Xaman multi-sign ready','DAO-grade security','On-chain proof'] },
 
-  { id:'nft',       emoji:'🎨', name:'NFT Vault Lock',      featured:false, comingSoon:false, color:'#ec4899', priceRLUSD:45,  priceXRP:145,
-    amendment:'NFTokenMint · Burn-locked', tagline:'Mint NFTs with protocol-level royalties up to 50%',
-    desc:'AI mints your NFT with custom transfer fees and flags. Full royalty enforcement at the protocol level on every secondary sale.',
-    aiDetail:'AI constructs NFTokenMint with your custom URI, transfer fee (0–50000 bps), and flags. Royalties enforced at the protocol level.',
-    features:['NFTokenMint filed to mainnet','Up to 50% royalties','Custom URI + metadata','Protocol-level enforcement','Batch minting available'] },
+  { id:'depositauth', emoji:'🚪', name:'Deposit Auth Shield', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Protection' as Category,
+    amendment:'AccountSet · asfDepositAuth', tagline:'Block all unsolicited incoming payments to your wallet',
+    desc:'AI enables DepositAuth on your wallet. No one can send you XRP or tokens without your explicit pre-authorization. Stop spam, scams, and unwanted airdrops permanently.',
+    aiDetail:'AI files AccountSet with asfDepositAuth flag. Your wallet now rejects any incoming payment not explicitly pre-authorized. You control who can send to you.',
+    features:['DepositAuth enabled on-chain','Blocks unsolicited payments','Stops airdrop spam permanently','DepositPreauth for allowlist','Full XRPL mainnet proof'] },
 
-  { id:'channel',   emoji:'⚡', name:'Payment Channel',     featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:55,  priceXRP:175,
-    amendment:'PaymentChannelCreate · Streaming', tagline:'Stream instant micropayments off-ledger',
-    desc:'AI creates a PaymentChannel between your wallet and a recipient. Stream thousands of micropayments off-ledger with a single settlement.',
-    aiDetail:'AI constructs PaymentChannelCreate with your destination, amount, and settlement delay. Stream thousands of claims off-chain instantly.',
-    features:['PaymentChannelCreate filed','Instant micropayments','Configurable settlement','Streaming payment support','Single settlement cost'] },
+  { id:'regularkey', emoji:'🔑', name:'Regular Key Rotator', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:30, priceXRP:95, category:'Protection' as Category,
+    amendment:'SetRegularKey · Key Management', tagline:'AI assigns a backup signing key to your wallet',
+    desc:'AI files SetRegularKey linking a secondary signing key to your master wallet. Sign transactions with the regular key while keeping your master key cold and offline.',
+    aiDetail:'AI constructs SetRegularKey transaction assigning your specified regular key. Your master key stays cold. Regular key handles daily signing.',
+    features:['SetRegularKey filed to mainnet','Master key stays offline','Regular key for daily use','Instant key rotation available','Security best practice enforced'] },
 
-  { id:'identity',  emoji:'🪪', name:'On-Chain Identity',   featured:false, comingSoon:false, color:'#34d399', priceRLUSD:20,  priceXRP:65,
-    amendment:'AccountSet · Domain + Email Hash', tagline:'Verify your domain and email on the XRP Ledger',
-    desc:'AI files AccountSet linking your wallet to your verified domain and email hash. Every XRPL dApp can verify your identity on-chain.',
-    aiDetail:'AI constructs AccountSet encoding your domain (hex) and SHA-256 email hash into your account root. Verified badge on XRPL explorers.',
-    features:['AccountSet domain verification','Email hash on-chain','Recognized by explorers','Builds dApp trust score','One-time setup'] },
+  { id:'disallowxrp', emoji:'🛡️', name:'XRP Lockdown', featured:false, comingSoon:false, color:'#ef4444', priceRLUSD:15, priceXRP:50, category:'Protection' as Category,
+    amendment:'AccountSet · asfDisallowXRP', tagline:'Prevent XRP from being sent to your account',
+    desc:'AI enables the asfDisallowXRP flag on your account. Signals to the network and wallets that your account should not receive XRP directly. Ideal for token-only wallets.',
+    aiDetail:'AI files AccountSet with asfDisallowXRP. XRPL clients that respect this flag will warn senders before sending XRP to your address.',
+    features:['asfDisallowXRP flag set','Prevents accidental XRP receives','Token-only wallet setup','Network-level signal','On-chain verification'] },
 
-  { id:'dex',       emoji:'📊', name:'DEX Market Maker',    featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:30,  priceXRP:95,
+  { id:'requiredesttag', emoji:'🏷️', name:'Destination Tag Enforcer', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:15, priceXRP:50, category:'Protection' as Category,
+    amendment:'AccountSet · asfRequireDest', tagline:'Force all senders to include a destination tag',
+    desc:'AI enables asfRequireDest on your wallet. Every incoming payment must include a destination tag or it will be rejected. Essential for exchanges, businesses, and anyone managing multiple users.',
+    aiDetail:'AI files AccountSet with asfRequireDest flag. Payments without a destination tag are rejected by the protocol automatically.',
+    features:['asfRequireDest enabled','Tagless payments auto-rejected','Multi-user wallet ready','Exchange-grade setup','One-time permanent config'] },
+
+  // ── DEX & AMM SUITE ───────────────────────────────────────────────────────
+  { id:'dex', emoji:'📊', name:'DEX Market Maker', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:30, priceXRP:95, category:'DEX & AMM' as Category,
     amendment:'OfferCreate · Automated Orders', tagline:'AI manages limit orders on the XRPL built-in DEX',
-    desc:'AI creates OfferCreate transactions placing limit orders on the XRPL DEX. No smart contracts — native protocol trading with AI management.',
-    aiDetail:'AI constructs OfferCreate with your TakerPays and TakerGets. Placed directly on the XRPL DEX. AI monitors fills and rebalances.',
+    desc:'AI creates OfferCreate transactions placing limit orders on the XRPL DEX. No smart contracts — native protocol trading with AI order management.',
+    aiDetail:'AI constructs OfferCreate with your TakerPays and TakerGets. Placed directly on XRPL DEX. AI monitors fills and rebalances via OfferCancel.',
     features:['OfferCreate filed to XRPL DEX','Limit order support','AI monitors fills','OfferCancel on completion','No smart contract risk'] },
 
-  { id:'amm',       emoji:'🌊', name:'DEX Liquidity Guard', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:40,  priceXRP:130,
+  { id:'amm', emoji:'🌊', name:'DEX Liquidity Guard', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:40, priceXRP:130, category:'DEX & AMM' as Category,
     amendment:'AMMWithdraw · Position Monitor', tagline:'AI auto-exits AMM positions before impermanent loss hits',
     desc:'AI watches your XRPL AMM positions. When IL exceeds your threshold or an exploit is detected, AI fires AMMWithdraw automatically.',
     aiDetail:'AI polls XRPL AMM ledger objects every 4 seconds. On IL breach, AMMWithdraw is constructed and filed within the same ledger close.',
     features:['Real-time AMM polling (4s)','IL breach auto-withdrawal','Exploit pattern detection','AMMWithdraw < 1 ledger close','On-chain action log'] },
 
-  { id:'credit',    emoji:'📈', name:'Credit Builder',      featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20,  priceXRP:65,
+  { id:'ammcreate', emoji:'🏊', name:'AMM Pool Creator', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:75, priceXRP:245, category:'DEX & AMM' as Category,
+    amendment:'AMMCreate · Liquidity Pool', tagline:'Deploy your own AMM liquidity pool on XRPL',
+    desc:'AI files AMMCreate deploying a brand new automated market maker pool between any two XRPL assets. Earn trading fees from every swap through your pool.',
+    aiDetail:'AI constructs AMMCreate with your chosen asset pair and initial liquidity. Pool is live on XRPL mainnet. Earn LP fees on every trade through the pool.',
+    features:['AMMCreate filed to mainnet','Custom asset pair','Earn LP trading fees','LP tokens issued to you','Real-time pool monitoring'] },
+
+  { id:'ammdeposit', emoji:'💧', name:'AMM Liquidity Injector', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:35, priceXRP:115, category:'DEX & AMM' as Category,
+    amendment:'AMMDeposit · Liquidity Add', tagline:'Add liquidity to any XRPL AMM pool and earn fees',
+    desc:'AI files AMMDeposit adding your assets to an existing XRPL AMM pool. Receive LP tokens representing your share. Earn a portion of every trade fee automatically.',
+    aiDetail:'AI constructs AMMDeposit with your chosen pool and asset amounts. LP tokens issued to your wallet immediately. Fee earnings accrue continuously.',
+    features:['AMMDeposit filed to mainnet','LP tokens issued instantly','Fee earnings start immediately','Single or dual asset deposit','Pool share verified on-chain'] },
+
+  { id:'crosscurrency', emoji:'🔀', name:'Cross-Currency Executor', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:25, priceXRP:80, category:'DEX & AMM' as Category,
+    amendment:'Payment · Path Finding', tagline:'AI finds and executes the best cross-currency swap route',
+    desc:'AI scans the XRPL DEX and AMM pools to find the optimal conversion path between any two assets, then executes the cross-currency payment atomically.',
+    aiDetail:'AI uses XRPL path_find to identify the best route across multiple order books and AMM pools. Executes as a single atomic Payment transaction.',
+    features:['Optimal path computed by AI','Single atomic transaction','DEX + AMM path aggregation','Slippage protection','Best rate guaranteed on-chain'] },
+
+  // ── NFT SUITE ─────────────────────────────────────────────────────────────
+  { id:'nft', emoji:'🎨', name:'NFT Vault Lock', featured:false, comingSoon:false, color:'#ec4899', priceRLUSD:45, priceXRP:145, category:'NFT' as Category,
+    amendment:'NFTokenMint · Burn-locked', tagline:'Mint NFTs with protocol-level royalties up to 50%',
+    desc:'AI mints your NFT with custom transfer fees and flags. Full royalty enforcement at the protocol level on every secondary sale.',
+    aiDetail:'AI constructs NFTokenMint with your custom URI, transfer fee (0–50000 bps), and flags. Royalties enforced at the protocol level.',
+    features:['NFTokenMint filed to mainnet','Up to 50% royalties','Custom URI + metadata','Protocol-level enforcement','Batch minting available'] },
+
+  { id:'nftburn', emoji:'🔥', name:'NFT Burn Certificate', featured:false, comingSoon:false, color:'#ef4444', priceRLUSD:20, priceXRP:65, category:'NFT' as Category,
+    amendment:'NFTokenBurn · Provable Destruction', tagline:'Permanently destroy an NFT with on-chain proof',
+    desc:'AI files NFTokenBurn permanently destroying your NFT and generating verifiable on-chain proof of destruction. Used for redemptions, limited editions, and proof-of-burn campaigns.',
+    aiDetail:'AI constructs NFTokenBurn for your specified NFT ID. Token is permanently removed from the ledger. Destruction is verifiable by anyone on xrpscan.com.',
+    features:['NFTokenBurn filed to mainnet','Permanent irreversible destruction','On-chain proof of burn','XRPScan verifiable','Burn certificate emailed'] },
+
+  { id:'nftoffer', emoji:'🛒', name:'NFT Offer Automator', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:25, priceXRP:80, category:'NFT' as Category,
+    amendment:'NFTokenCreateOffer · Best Offer', tagline:'AI creates and manages NFT buy/sell offers automatically',
+    desc:'AI files NFTokenCreateOffer creating buy or sell offers for your NFTs. Monitors the market and accepts the best available offer on your behalf.',
+    aiDetail:'AI constructs NFTokenCreateOffer with your price and expiry. Monitors competing offers. Accepts best offer via NFTokenAcceptOffer when conditions are met.',
+    features:['NFTokenCreateOffer filed','Sell or buy offer support','AI monitors market prices','Auto-accept best offer','Offer expiry management'] },
+
+  { id:'nftcollection', emoji:'🖼️', name:'NFT Collection Launch', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:90, priceXRP:295, category:'NFT' as Category,
+    amendment:'NFTokenMint · Batch Collection', tagline:'Launch a full NFT collection with AI-managed batch minting',
+    desc:'AI batch-mints your entire NFT collection on XRPL mainnet. Each token gets unique metadata, royalty settings, and optional transfer restrictions. Full collection live in minutes.',
+    aiDetail:'AI queues and executes batch NFTokenMint transactions for your entire collection. Each NFT gets unique URI, transfer fee, and flag configuration.',
+    features:['Batch NFTokenMint execution','Unique metadata per token','Royalties on every NFT','Collection verified on-chain','Full mint report emailed'] },
+
+  // ── IDENTITY SUITE ────────────────────────────────────────────────────────
+  { id:'identity', emoji:'🪪', name:'On-Chain Identity', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:20, priceXRP:65, category:'Identity' as Category,
+    amendment:'AccountSet · Domain + Email Hash', tagline:'Verify your domain and email on the XRP Ledger',
+    desc:'AI files AccountSet linking your wallet to your verified domain and email hash. Every XRPL dApp can verify your identity on-chain.',
+    aiDetail:'AI constructs AccountSet encoding your domain (hex) and SHA-256 email hash into your account root. Verified badge on XRPL explorers.',
+    features:['AccountSet domain verification','Email hash on-chain','Recognized by explorers','Builds dApp trust score','One-time setup'] },
+
+  { id:'did', emoji:'🆔', name:'DID Document Creator', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:35, priceXRP:115, category:'Identity' as Category,
+    amendment:'DID · W3C Decentralized Identity', tagline:'Create a W3C-compliant decentralized identity on XRPL',
+    desc:'AI creates a W3C DID document anchored to your XRPL wallet. Your decentralized identity is portable, self-sovereign, and verifiable by any DID-compatible system worldwide.',
+    aiDetail:'AI constructs and files your DID document to the XRPL DID amendment. Your DID is resolvable globally using standard W3C DID resolution methods.',
+    features:['W3C DID standard compliant','Self-sovereign identity','Global DID resolution','No central authority','XRPL mainnet anchored'] },
+
+  { id:'compliance', emoji:'✅', name:'Compliance Package', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:55, priceXRP:175, category:'Identity' as Category,
+    amendment:'AccountSet · Full Compliance Config', tagline:'Full XRPL account compliance configuration for businesses',
+    desc:'AI configures your XRPL account with the complete set of compliance flags: domain verification, email hash, destination tag enforcement, and deposit auth. Enterprise-grade in one transaction.',
+    aiDetail:'AI bundles AccountSet transactions setting domain, email hash, asfRequireDest, and asfDepositAuth. Your account meets institutional XRPL compliance standards.',
+    features:['Full AccountSet compliance bundle','Domain + email verification','Destination tag required','Deposit auth enabled','Compliance certificate emailed'] },
+
+  { id:'blackhole', emoji:'⚫', name:'Black Hole Wallet', featured:false, comingSoon:false, color:'#6b7280', priceRLUSD:25, priceXRP:80, category:'Identity' as Category,
+    amendment:'AccountSet · Master Key Disable', tagline:'Permanently disable your wallet master key for maximum security',
+    desc:'AI disables the master key on your XRPL account, making it a "black hole" — tokens sent there are permanently locked. Used for provable token burns and permanent reserve wallets.',
+    aiDetail:'AI files AccountSet with asfDisableMaster. Master key is permanently disabled. Wallet becomes a one-way destination. Irreversible — verify thoroughly before use.',
+    features:['Master key permanently disabled','Provable token burn destination','Irreversible on-chain proof','Used by major XRPL projects','XRPScan verified'] },
+
+  // ── PAYMENT SUITE ─────────────────────────────────────────────────────────
+  { id:'channel', emoji:'⚡', name:'Payment Channel', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:55, priceXRP:175, category:'Payments' as Category,
+    amendment:'PaymentChannelCreate · Streaming', tagline:'Stream instant micropayments off-ledger',
+    desc:'AI creates a PaymentChannel between your wallet and a recipient. Stream thousands of micropayments off-ledger with a single settlement.',
+    aiDetail:'AI constructs PaymentChannelCreate with your destination, amount, and settlement delay. Stream thousands of claims off-chain instantly.',
+    features:['PaymentChannelCreate filed','Instant micropayments','Configurable settlement','Streaming payment support','Single settlement cost'] },
+
+  { id:'memoencrypt', emoji:'💬', name:'Memo Encryption Service', featured:false, comingSoon:false, color:'#8b5cf6', priceRLUSD:20, priceXRP:65, category:'Payments' as Category,
+    amendment:'Payment · Encrypted Memo Field', tagline:'Send encrypted on-chain messages with every XRPL payment',
+    desc:'AI appends an encrypted memo to your XRPL payment transaction. Your message is permanently recorded on-chain but readable only by the intended recipient.',
+    aiDetail:'AI constructs Payment transaction with hex-encoded encrypted memo field. Message is stored permanently on the XRPL ledger alongside the payment.',
+    features:['Encrypted memo on-chain','Permanent message storage','Recipient-only readable','Attached to real payment','XRPScan memo visible'] },
+
+  { id:'partialpay', emoji:'🔢', name:'Partial Payment Setup', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:20, priceXRP:65, category:'Payments' as Category,
+    amendment:'Payment · tfPartialPayment Flag', tagline:'Enable partial payments so transactions never fail on insufficient balance',
+    desc:'AI configures your payment transactions with the tfPartialPayment flag. Payments succeed even if the full amount cannot be delivered — ideal for sweeping wallets and drain-to-zero operations.',
+    aiDetail:'AI constructs Payment with tfPartialPayment flag enabled. Transaction succeeds delivering whatever amount is available. Ideal for wallet sweeps and balance drains.',
+    features:['tfPartialPayment flag enabled','Prevents transaction failures','Wallet sweep compatible','Balance drain operations','On-chain delivery proof'] },
+
+  { id:'pathpayment', emoji:'🛤️', name:'Path Payment Router', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:30, priceXRP:95, category:'Payments' as Category,
+    amendment:'PathPayment · StrictSend/StrictReceive', tagline:'Send one asset, recipient receives another — AI handles the route',
+    desc:'AI executes XRPL PathPaymentStrictSend or StrictReceive transactions. Send XRP, recipient gets RLUSD. Send RLUSD, recipient gets any token. AI finds the best route.',
+    aiDetail:'AI selects PathPaymentStrictSend or StrictReceive based on your requirement. Computes optimal path through DEX and AMM. Executes atomically.',
+    features:['PathPayment executed on-chain','Best route computed by AI','StrictSend or StrictReceive','DEX + AMM path aggregation','No intermediate custody'] },
+
+  // ── TOKEN SUITE ───────────────────────────────────────────────────────────
+  { id:'trustline', emoji:'🔗', name:'Trust Line Manager', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Tokens' as Category,
+    amendment:'TrustSet · Trust Line Configuration', tagline:'AI configures trust lines for any XRPL token',
+    desc:'AI files TrustSet establishing trust lines to any XRPL-issued token. Set limits, enable/disable rippling, and configure all trust line flags in one transaction.',
+    aiDetail:'AI constructs TrustSet with your specified issuer, currency, limit, and flags. Trust line is active immediately. Token transfers enabled.',
+    features:['TrustSet filed to mainnet','Custom trust line limit','Rippling flag control','NoRipple configuration','Multi-token batch setup'] },
+
+  { id:'tokenissuer', emoji:'🏦', name:'Token Issuer Setup', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:80, priceXRP:260, category:'Tokens' as Category,
+    amendment:'AccountSet · Token Issuer Configuration', tagline:'Configure your wallet as a full XRPL token issuer',
+    desc:'AI sets up your XRPL account as a professional token issuer. Configures transfer fees, domain verification, rippling controls, and default ripple flag for full IOU issuance capability.',
+    aiDetail:'AI files AccountSet with issuer flags: domain, email hash, transfer fee, and DefaultRipple. Your wallet is ready to issue and manage any XRPL token.',
+    features:['Full issuer config on-chain','Domain + email verified','Transfer fee configured','DefaultRipple controlled','Issuer certificate emailed'] },
+
+  { id:'rippling', emoji:'🌊', name:'Rippling Controller', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65, category:'Tokens' as Category,
+    amendment:'TrustSet · asfNoRipple Management', tagline:'Control rippling on your trust lines to prevent unwanted routing',
+    desc:'AI sets the NoRipple flag on all your trust lines. Prevents your account from being used as an involuntary intermediate in multi-hop payment paths.',
+    aiDetail:'AI files TrustSet with NoRipple flag on each specified trust line. Your account is removed from automatic payment routing paths.',
+    features:['NoRipple flag set per trust line','Prevents involuntary routing','Privacy protection on-chain','Bulk trust line update','Verified on XRPL mainnet'] },
+
+  { id:'transferfee', emoji:'💰', name:'Transfer Fee Optimizer', featured:false, comingSoon:false, color:'#f59e0b', priceRLUSD:25, priceXRP:80, category:'Tokens' as Category,
+    amendment:'AccountSet · TransferRate', tagline:'Set optimal transfer fees on your issued tokens',
+    desc:'AI configures the TransferRate on your token issuer account. Every transfer of your token between non-issuer accounts automatically earns you the configured fee percentage.',
+    aiDetail:'AI files AccountSet with your specified TransferRate (0–100% expressed as billionths). Fee is collected automatically on every third-party transfer of your token.',
+    features:['TransferRate set on-chain','Automatic fee collection','Earns on every transfer','No manual claiming needed','Fee rate verified on XRPL'] },
+
+  // ── CREDIT SUITE ──────────────────────────────────────────────────────────
+  { id:'credit', emoji:'📈', name:'Credit Builder', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Credit' as Category,
     amendment:'Payment · Bureau Reporting', tagline:'Build LedgerScore + FICO simultaneously',
     desc:"The world's first blockchain credit builder. Monthly on-chain payments build your LedgerScore and report to credit bureaus.",
     aiDetail:'Each monthly payment recorded on-chain with a structured memo. AI updates LedgerScore weighting and queues bureau furnishing.',
@@ -94,11 +229,30 @@ const PRODUCTS = [
     ],
     features:['Monthly payment on-chain','LedgerScore updated each cycle','Bureau furnishing (Starter → Pro)','RLUSD rewards on Pro','First blockchain-to-FICO pathway'] },
 
-  { id:'borrowlend', emoji:'🔁', name:'XRPL Borrow / Lend', featured:false, comingSoon:true,  color:'#ec4899', priceRLUSD:0, priceXRP:0,
+  // ── COMING SOON ───────────────────────────────────────────────────────────
+  { id:'borrowlend', emoji:'🔁', name:'XRPL Borrow / Lend', featured:false, comingSoon:true, color:'#ec4899', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
     amendment:'Lending Protocol · Coming Soon', tagline:'Native on-chain borrowing & lending',
     desc:'The XRPL Borrow/Lend amendment is coming to mainnet. KreditKarma will offer borrow-against-LedgerScore on day one.',
     aiDetail:'Once the XRPL Borrow/Lend amendment activates, AI indexes your LedgerScore as on-chain collateral. Borrow against your reputation. Lend to earn.',
     features:['Borrow against LedgerScore','Lend RLUSD/XRP for yield','No banks · No KYC','Native XRPL amendment','Pre-register early access'] },
+
+  { id:'hooks', emoji:'⚙️', name:'XRPL Hooks', featured:false, comingSoon:true, color:'#6366f1', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
+    amendment:'Hooks · Smart Contract Logic', tagline:'Deploy smart contract logic natively on the XRP Ledger',
+    desc:'XRPL Hooks bring smart-contract-like programmability to the XRP Ledger without a separate VM. KreditKarma will deploy the first consumer Hook products on day one of mainnet activation.',
+    aiDetail:'AI will deploy, configure, and manage XRPL Hooks on your wallet. Conditional payment logic, automatic routing, and programmable account behavior.',
+    features:['Native XRPL smart logic','No EVM — pure XRPL','Conditional payments','AI Hook deployment','Pre-register for day-one access'] },
+
+  { id:'singlevault', emoji:'🏦', name:'Single Asset Vault', featured:false, comingSoon:true, color:'#f59e0b', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
+    amendment:'Single Asset Vault · Coming Soon', tagline:'Deposit one asset, earn yield natively on XRPL',
+    desc:'Single Asset Vaults allow you to deposit one token and earn yield without exposure to a second asset. No impermanent loss. Pure single-sided liquidity provision.',
+    aiDetail:'AI will manage vault deposits, yield harvesting, and withdrawal on your behalf. Single asset, no impermanent loss, native XRPL protocol.',
+    features:['Single asset deposit','No impermanent loss','Native XRPL yield','AI vault management','Pre-register for early access'] },
+
+  { id:'defi_preapproval', emoji:'🏅', name:'DeFi Pre-Approval', featured:false, comingSoon:true, color:'#34d399', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
+    amendment:'LedgerScore · DeFi Credit Rating', tagline:'Use your LedgerScore to unlock DeFi credit lines',
+    desc:'Your LedgerScore becomes your DeFi credit rating. Pre-approval for XRPL-native credit lines, lower collateral requirements, and better borrow rates — all based on your on-chain history.',
+    aiDetail:'AI continuously updates your LedgerScore and submits it to partner DeFi protocols. Your on-chain reputation unlocks real financial benefits.',
+    features:['LedgerScore as DeFi collateral','Lower collateral requirements','Better borrow rates','Partner protocol access','Pre-register your wallet'] },
 ] as const;
 
 type Product = typeof PRODUCTS[number];
@@ -529,7 +683,7 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
         </div>
       )}
       <div style={{ background:'rgba(255,255,255,.03)',borderRadius:11,padding:'11px 15px',marginBottom:20 }}>
-        <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',lineHeight:1.7 }}><strong style={{ color:'rgba(255,255,255,.45)' }}>Disclosure: </strong>On-chain operational service. Not insurance, securities, or financial instruments. All transactions are irrevocable.</p>
+        <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',lineHeight:1.7 }}><strong style={{ color:'rgba(255,255,255,.45)' }}>Disclosure: </strong>{GLOBAL_DISCLAIMER}</p>
       </div>
       {isSoon
         ? <button onClick={()=>setStep('preregister')} style={{ ...Btn('color',product.color,{width:'100%',padding:'15px',fontSize:16}) }}>🔔 Pre-Register for Early Access →</button>
@@ -862,6 +1016,7 @@ export default function KreditKarmaHome() {
   const [showTerms, setShowTerms]     = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<Category>('All');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -896,7 +1051,7 @@ export default function KreditKarmaHome() {
 
   const handleLogout = () => { setUser(null); if (typeof window !== 'undefined') localStorage.removeItem('kk_user'); };
   const featured = PRODUCTS.filter(p => p.featured);
-  const others   = PRODUCTS.filter(p => !p.featured);
+  const filtered = PRODUCTS.filter(p => !p.featured && (activeCategory === 'All' || p.category === activeCategory));
 
   return (
     <>
@@ -942,7 +1097,7 @@ export default function KreditKarmaHome() {
         <nav className="neural-surface" style={{ position:'sticky',top:0,zIndex:100,backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',borderBottom:'1px solid rgba(16,185,129,.18)' }}>
           <div style={{ padding:'0 20px',minHeight:68,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:9 }}>
-              <div style={{ width:34,height:34,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:16,color:'#000',flexShrink:0 }}>K</div>
+              <img src="/logo.png" alt="KreditKarma" style={{ width:42,height:42,borderRadius:9,objectFit:'contain',flexShrink:0 }} />
               <div style={{ display:'flex',flexDirection:'column',gap:1 }}>
                 <span style={{ fontSize:18,fontWeight:900,letterSpacing:'-.5px',lineHeight:1 }}>kreditkarma</span>
                 <span style={{ fontSize:9,color:'rgba(255,255,255,.45)',letterSpacing:'.07em',textTransform:'uppercase',lineHeight:1 }}>
@@ -1046,6 +1201,15 @@ export default function KreditKarmaHome() {
             <h2 style={{ fontSize:'clamp(24px,4vw,42px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>AI-delivered on-chain protection</h2>
             <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:520,margin:'0 auto' }}>Pay with one swipe in Xaman → AI verifies on XRPL mainnet → service activates automatically.</p>
           </div>
+
+          {/* Category filter tabs */}
+          <div style={{ display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:28 }}>
+            {CATEGORIES.map(cat => (
+              <button key={cat} onClick={()=>setActiveCategory(cat)} style={{ padding:'8px 18px',borderRadius:99,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:12,border:`1px solid ${activeCategory===cat?'#10b981':'rgba(255,255,255,.12)'}`,background:activeCategory===cat?'rgba(16,185,129,.18)':'rgba(255,255,255,.05)',color:activeCategory===cat?'#10b981':'rgba(255,255,255,.5)',transition:'all .15s',letterSpacing:'.04em' }}>
+                {cat} {cat!=='All'&&<span style={{ fontSize:10,opacity:.6,marginLeft:4 }}>({PRODUCTS.filter(p=>!p.featured&&p.category===cat).length})</span>}
+              </button>
+            ))}
+          </div>
           {/* Featured 3 */}
           <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:18,marginBottom:18 }}>
             {featured.map(p=>(
@@ -1066,8 +1230,8 @@ export default function KreditKarmaHome() {
             ))}
           </div>
           {/* Others */}
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:14 }}>
-            {others.map(p=>(
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12 }}>
+            {filtered.map(p=>(
               <div key={p.id} className="pcard" onClick={()=>setAP(p)} style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(16px)',border:`1px solid ${p.color}20`,borderRadius:18,padding:20,position:'relative',overflow:'hidden' }}>
                 {p.comingSoon&&<div style={{ position:'absolute',top:12,right:12,background:p.color,color:'#000',fontSize:9,fontWeight:800,padding:'3px 9px',borderRadius:99,animation:'pulse 2.5s infinite' }}>SOON</div>}
                 <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12 }}>
@@ -1194,7 +1358,7 @@ export default function KreditKarmaHome() {
             <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18,marginBottom:20 }}>
               <div>
                 <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:6 }}>
-                  <div style={{ width:28,height:28,background:'linear-gradient(135deg,#10b981,#059669)',borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:13,color:'#000' }}>K</div>
+                  <img src="/logo.png" alt="KreditKarma" style={{ width:36,height:36,borderRadius:7,objectFit:'contain' }} />
                   <span style={{ fontWeight:800,fontSize:15 }}>kreditkarma</span>
                   <span style={{ fontSize:10,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginLeft:6,background:'rgba(16,185,129,.1)',padding:'2px 8px',borderRadius:99,border:'1px solid rgba(16,185,129,.25)' }}>{TREASURY_DOMAIN}</span>
                 </div>
