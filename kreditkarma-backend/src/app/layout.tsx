@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'KreditKarma — XRPL Credit & Financial Freedom',
-  description: 'On-chain LedgerScore • XRPL Amendment Services • Community Grants',
+  title: 'XRPLHub — XRPL Services, Community Grants & XRPLScore',
+  description: 'AI-powered XRPL amendment services · Community grants wallet-to-wallet · XRPLScore on-chain scoring. Powered by Xaman.',
   icons: { icon: '/favicon.ico' },
 };
 
