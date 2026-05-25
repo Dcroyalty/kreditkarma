@@ -1,4 +1,12 @@
 'use client';
+// ═══════════════════════════════════════════════════════════════════════════════
+// XRPLHub.io — XRPL Financial Services Platform
+// Copyright © 2026 XRPLHub.io — All Rights Reserved
+// XRPLScore™ is a proprietary trademark of XRPLHub.io
+// US Copyright Registration Case #: 1-15166646291
+// XRPLScore™ methodology protected under copyright and common law trademark
+// Unauthorized reproduction, reverse engineering, or redistribution prohibited
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Analytics } from '@vercel/analytics/next';
@@ -18,12 +26,18 @@ const qrImg = (d: string, sz = 200) =>
 
 // ─── TICKER ───────────────────────────────────────────────────────────────────
 const TICKER = [
-  'Homeless — Apply for Grants', 'Build Real Credit', 'Protect Your Assets',
-  'Transparent AI Community Grants', 'Buy Powerful XRPL Amendments',
-  'Turn XRP / RLUSD Into Credit', 'Blockchain XRPLScore',
-  'Every Donation Uses AI To Send Help',
-  'Donations → Treasury → Apply for Grants → AI → Help Is On The Way',
-  'Borrow / Lend XRPL Amendment Coming Soon',
+  'XRPLScore™ — First On-Chain Credit Score Worldwide',
+  'Apply for Emergency Grants — Wallet to Wallet',
+  'Protect Your Assets with XRPL Amendment Services',
+  'AI-Powered Community Grants · Zero Overhead · 100% On-Chain',
+  '35 XRPL Services · One Swipe in Xaman',
+  'XRPLScore™ · No SSN · No Bureau · Just Blockchain Truth',
+  'Donate XRP or RLUSD · AI Routes Funds Directly to People in Need',
+  'Clawback Shield · Escrow Vault · Multi-Sig Fortress · DEX Tools',
+  'Borrow / Lend XRPL Amendment Coming Soon · Pre-Register Now',
+  'XRPLHub.io · The XRPL Financial Services Hub',
+  'Every Transaction Verified on XRPL Mainnet · Immutable · Transparent',
+  'Build Credit + Protect Wallet + Fund Community · All in One Hub',
 ];
 
 // ─── 35 PRODUCTS ──────────────────────────────────────────────────────────────
@@ -256,7 +270,14 @@ const PRODUCTS = [
 ] as const;
 
 type Product = typeof PRODUCTS[number];
-interface ScoreData { ledgerScore: number; grade?: string; details?: { txCount?: number; accountAge?: number; balanceXRP?: number; trustLines?: number; hasOffers?: boolean; hasAMM?: boolean }; scannedAt?: string }
+interface ScoreData {
+  ledgerScore: number; xrplScore?: number; grade?: string;
+  details?: { txCount?: number; accountAgeDays?: number; balanceXRP?: number; trustLineCount?: number; hasOffers?: boolean; hasAMM?: boolean; nftCount?: number; hasMultiSig?: boolean; hasRegKey?: boolean; hasDomain?: boolean; hasEscrow?: boolean; dexTxCount?: number; ammTxCount?: number; };
+  breakdown?: { label: string; signal: string; score: number; weight: string; desc: string; }[];
+  recommendations?: { action: string; points: string; priority: 'high'|'medium'|'low'; }[];
+  percentile?: number; percentileLabel?: string; scannedAt?: string;
+}
+interface LiveStats { xrplScores: number; treasuryXRP: number; treasuryUSD: string; txCount: number; donorCount: number; grantCount: number; servicesCount: number; overhead: string; updatedAt: string; }
 interface User { email: string; name: string }
 
 function gradeScore(n: number) {
@@ -265,6 +286,20 @@ function gradeScore(n: number) {
   if (n >= 670) return { label:'Good',         color:'#fbbf24', glow:'rgba(251,191,36,.5)'  };
   if (n >= 580) return { label:'Fair',          color:'#f97316', glow:'rgba(249,115,22,.5)'  };
   return              { label:'Building',       color:'#ef4444', glow:'rgba(239,68,68,.5)'   };
+}
+
+// ─── LIVE STATS HOOK ─────────────────────────────────────────────────────────
+function useLiveStats() {
+  const [stats, setStats] = useState<LiveStats|null>(null);
+  const fetchStats = useCallback(async () => {
+    try {
+      const res  = await fetch(`${API_URL}/api/treasury/stats`, { cache:'no-store' });
+      const data = await res.json();
+      setStats(data);
+    } catch { /* silent */ }
+  }, []);
+  useEffect(() => { fetchStats(); const iv = setInterval(fetchStats, 30_000); return () => clearInterval(iv); }, [fetchStats]);
+  return stats;
 }
 
 // ─── STYLE HELPERS ────────────────────────────────────────────────────────────
@@ -357,9 +392,9 @@ function ConnectWalletModal({ show, onClose, onConnected }: { show:boolean; onCl
         } else if (data.status === 'rejected') {
           setStatus('idle'); setError('Connection declined in Xaman.');
         } else {
-          pollRef.current = setTimeout(poll, 3000);
+          pollRef.current = setTimeout(poll, 6000);
         }
-      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 5000); }
+      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 8000); }
     };
     poll();
     return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
@@ -460,8 +495,8 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
         if (data.status === 'verified') { setVerifiedTx(data.txHash || ''); setPayStatus('done'); setStep('success'); }
         else if (data.status === 'expired') { setPayStatus('idle'); setPayError('Payment expired. Try again.'); }
         else if (data.status === 'rejected') { setPayStatus('idle'); setPayError(data.reason || 'Payment declined.'); }
-        else { pollRef.current = setTimeout(poll, 3000); }
-      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 5000); }
+        else { pollRef.current = setTimeout(poll, 6000); }
+      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 8000); }
     };
     poll();
     return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
@@ -802,37 +837,83 @@ function GrantModal({ show, onClose, connectedWallet }: { show:boolean; onClose:
 // ─── SCORE MODAL ──────────────────────────────────────────────────────────────
 function ScoreModal({ show, onClose, scoreData, loading, error, onRetry, walletAddress }: { show:boolean;onClose:()=>void;scoreData:ScoreData|null;loading:boolean;error:string|null;onRetry:()=>void;walletAddress:string }) {
   const [animated, setAnimated] = useState(false);
+  const [tab, setTab] = useState<'score'|'breakdown'|'improve'>('score');
   const grade = scoreData ? gradeScore(scoreData.ledgerScore) : null;
   const R = 52; const circ = 2 * Math.PI * R;
   const pct = scoreData ? Math.min(1, Math.max(0, (scoreData.ledgerScore - 300) / 550)) : 0;
-  useEffect(()=>{ if(show&&scoreData){ const t=setTimeout(()=>setAnimated(true),100); return()=>clearTimeout(t); } else setAnimated(false); },[show,scoreData]);
+  useEffect(()=>{ if(show&&scoreData){ const t=setTimeout(()=>setAnimated(true),100); return()=>clearTimeout(t); } else { setAnimated(false); setTab('score'); } },[show,scoreData]);
 
   return (
     <Overlay show={show} onClose={onClose}>
       <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8,fontFamily:"'IBM Plex Mono',monospace" }}>XRPLScore™ — Live XRPL Scan</div>
-      {loading&&<div style={{ textAlign:'center',padding:'44px 0' }}><div style={{ fontSize:40,animation:'spin 1s linear infinite',display:'inline-block',marginBottom:14 }}>🤖</div><p style={{ color:'#10b981',fontWeight:600,fontSize:17 }}>Scanning XRPL Mainnet…</p><p style={{ color:'rgba(255,255,255,.35)',fontSize:13,marginTop:6 }}>Account age · TX history · Trust lines · AMM · NFTs</p><div style={{ width:220,height:3,background:'rgba(255,255,255,.07)',borderRadius:99,margin:'18px auto 0',overflow:'hidden' }}><div style={{ height:'100%',background:'#10b981',animation:'shimmer 1.5s ease-in-out infinite',borderRadius:99 }} /></div></div>}
+      {loading&&<div style={{ textAlign:'center',padding:'44px 0' }}><div style={{ fontSize:40,animation:'spin 1s linear infinite',display:'inline-block',marginBottom:14 }}>🤖</div><p style={{ color:'#10b981',fontWeight:600,fontSize:17 }}>Scanning XRPL Mainnet…</p><p style={{ color:'rgba(255,255,255,.35)',fontSize:13,marginTop:6 }}>Account age · TX history · Trust lines · AMM · NFTs · Security flags</p><div style={{ width:220,height:3,background:'rgba(255,255,255,.07)',borderRadius:99,margin:'18px auto 0',overflow:'hidden' }}><div style={{ height:'100%',background:'#10b981',animation:'shimmer 1.5s ease-in-out infinite',borderRadius:99 }} /></div></div>}
       {error&&!loading&&<div style={{ textAlign:'center',padding:'28px 0' }}><div style={{ fontSize:44,marginBottom:12 }}>⚠️</div><p style={{ color:'#f87171',fontWeight:600,fontSize:17,marginBottom:8 }}>Scan failed</p><p style={{ color:'rgba(255,255,255,.4)',fontSize:13,marginBottom:22 }}>{error}</p><div style={{ display:'flex',gap:10,justifyContent:'center' }}><button onClick={onRetry} style={Btn('green')}>Retry</button><button onClick={onClose} style={Btn('ghost')}>Close</button></div></div>}
       {scoreData&&!loading&&grade&&(
         <>
-          <div style={{ position:'relative',width:192,height:192,margin:'0 auto 18px',filter:`drop-shadow(0 0 28px ${grade.glow})` }}>
+          <div style={{ position:'relative',width:180,height:180,margin:'0 auto 12px',filter:`drop-shadow(0 0 28px ${grade.glow})` }}>
             <svg viewBox="0 0 120 120" style={{ width:'100%',height:'100%',transform:'rotate(-90deg)' }}>
               <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="10" />
               <circle cx="60" cy="60" r={R} fill="none" stroke={grade.color} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={animated?circ*(1-pct):circ} style={{ transition:'stroke-dashoffset 1.4s cubic-bezier(.34,1.2,.64,1)' }} />
             </svg>
             <div style={{ position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
-              <span style={{ fontSize:52,fontWeight:900,color:grade.color,lineHeight:1,letterSpacing:'-2px',transition:'all .8s',transform:animated?'scale(1)':'scale(.7)',opacity:animated?1:0 }}>{scoreData.ledgerScore}</span>
+              <span style={{ fontSize:48,fontWeight:900,color:grade.color,lineHeight:1,letterSpacing:'-2px',transition:'all .8s',transform:animated?'scale(1)':'scale(.7)',opacity:animated?1:0 }}>{scoreData.ledgerScore}</span>
               <span style={{ fontSize:10,color:'rgba(255,255,255,.3)',marginTop:4,letterSpacing:'.14em',textTransform:'uppercase' }}>XRPLScore</span>
             </div>
           </div>
-          <div style={{ textAlign:'center',marginBottom:16 }}><span style={{ display:'inline-block',padding:'4px 16px',borderRadius:99,background:`${grade.color}18`,border:`1px solid ${grade.color}40`,color:grade.color,fontWeight:700,fontSize:15 }}>{grade.label}</span></div>
-          {scoreData.details&&(
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))',gap:8,marginBottom:14 }}>
-              {([['Transactions',(scoreData.details.txCount||0).toLocaleString()],['Account Age',`${scoreData.details.accountAge||0}d`],['XRP Balance',`${(scoreData.details.balanceXRP||0).toFixed(1)}`],['Trust Lines',String(scoreData.details.trustLines||0)],['DEX Active',scoreData.details.hasOffers?'Yes':'No'],['AMM LP',scoreData.details.hasAMM?'Yes':'No']] as [string,string][]).map(([l,v])=>(
+          <div style={{ textAlign:'center',marginBottom:12 }}>
+            <span style={{ display:'inline-block',padding:'4px 16px',borderRadius:99,background:`${grade.color}18`,border:`1px solid ${grade.color}40`,color:grade.color,fontWeight:700,fontSize:15 }}>{grade.label}</span>
+            {scoreData.percentileLabel&&<p style={{ fontSize:11,color:'rgba(255,255,255,.38)',marginTop:6,fontFamily:"'IBM Plex Mono',monospace" }}>📊 {scoreData.percentileLabel}</p>}
+          </div>
+          <div style={{ display:'flex',gap:6,marginBottom:14 }}>
+            {(['score','breakdown','improve'] as const).map(t=>(
+              <button key={t} onClick={()=>setTab(t)} style={{ flex:1,padding:'8px',borderRadius:10,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:11,textTransform:'uppercase',letterSpacing:'.06em',border:`1px solid ${tab===t?'#10b981':'rgba(255,255,255,.1)'}`,background:tab===t?'rgba(16,185,129,.18)':'rgba(255,255,255,.04)',color:tab===t?'#10b981':'rgba(255,255,255,.4)' }}>
+                {t==='score'?'📊 Overview':t==='breakdown'?'🔬 Breakdown':'📈 Improve'}
+              </button>
+            ))}
+          </div>
+          {tab==='score'&&scoreData.details&&(
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(100px,1fr))',gap:8,marginBottom:14 }}>
+              {([['Transactions',(scoreData.details.txCount||0).toLocaleString()],['Account Age',`${scoreData.details.accountAgeDays||0}d`],['XRP Balance',`${(scoreData.details.balanceXRP||0).toFixed(1)}`],['Trust Lines',String(scoreData.details.trustLineCount||0)],['DEX Active',scoreData.details.hasOffers?'Yes':'No'],['AMM LP',scoreData.details.hasAMM?'Yes':'No'],['NFTs',String(scoreData.details.nftCount||0)],['Multi-Sig',scoreData.details.hasMultiSig?'✓':'✗']] as [string,string][]).map(([l,v])=>(
                 <div key={l} style={{ background:'rgba(255,255,255,.04)',borderRadius:10,padding:'10px 12px' }}>
                   <div style={{ fontSize:9,color:'rgba(255,255,255,.32)',textTransform:'uppercase',letterSpacing:'.07em',marginBottom:3 }}>{l}</div>
-                  <div style={{ fontSize:17,fontWeight:800 }}>{v}</div>
+                  <div style={{ fontSize:15,fontWeight:800 }}>{v}</div>
                 </div>
               ))}
+            </div>
+          )}
+          {tab==='breakdown'&&scoreData.breakdown&&(
+            <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:14 }}>
+              {scoreData.breakdown.map(b=>(
+                <div key={b.signal} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'10px 14px' }}>
+                  <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6 }}>
+                    <span style={{ fontSize:12,fontWeight:700,color:'#fff' }}>{b.label}</span>
+                    <div style={{ display:'flex',alignItems:'center',gap:8 }}>
+                      <span style={{ fontSize:10,color:'rgba(255,255,255,.3)',fontFamily:"'IBM Plex Mono',monospace" }}>{b.weight}</span>
+                      <span style={{ fontSize:13,fontWeight:900,color:b.score>=70?'#10b981':b.score>=40?'#fbbf24':'#ef4444' }}>{b.score}/100</span>
+                    </div>
+                  </div>
+                  <div style={{ height:4,background:'rgba(255,255,255,.06)',borderRadius:99,overflow:'hidden',marginBottom:4 }}>
+                    <div style={{ height:'100%',width:`${b.score}%`,background:b.score>=70?'#10b981':b.score>=40?'#fbbf24':'#ef4444',borderRadius:99,transition:'width 1s ease' }} />
+                  </div>
+                  <p style={{ fontSize:10,color:'rgba(255,255,255,.35)',margin:0 }}>{b.desc}</p>
+                </div>
+              ))}
+              <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'10px 14px' }}>
+                <p style={{ fontSize:10,color:'rgba(255,255,255,.35)',fontFamily:"'IBM Plex Mono',monospace",margin:0 }}>© 2026 XRPLHub.io · XRPLScore™ v1.0 · Proprietary 8-signal XRPL behavioral scoring methodology</p>
+              </div>
+            </div>
+          )}
+          {tab==='improve'&&scoreData.recommendations&&(
+            <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:14 }}>
+              <p style={{ fontSize:12,color:'rgba(255,255,255,.45)',marginBottom:4 }}>Actions to raise your XRPLScore — highest impact first:</p>
+              {scoreData.recommendations.map((r,i)=>(
+                <div key={i} style={{ background:'rgba(255,255,255,.04)',border:`1px solid ${r.priority==='high'?'rgba(16,185,129,.25)':r.priority==='medium'?'rgba(251,191,36,.2)':'rgba(255,255,255,.08)'}`,borderRadius:11,padding:'12px 14px',display:'flex',alignItems:'center',gap:12 }}>
+                  <span style={{ fontSize:11,fontWeight:800,padding:'3px 8px',borderRadius:99,background:r.priority==='high'?'rgba(16,185,129,.18)':r.priority==='medium'?'rgba(251,191,36,.15)':'rgba(255,255,255,.06)',color:r.priority==='high'?'#10b981':r.priority==='medium'?'#fbbf24':'rgba(255,255,255,.5)',flexShrink:0,textTransform:'uppercase',letterSpacing:'.06em' }}>{r.priority}</span>
+                  <div style={{ flex:1 }}><p style={{ fontSize:13,fontWeight:600,color:'#fff',margin:0 }}>{r.action}</p></div>
+                  <span style={{ fontSize:12,fontWeight:900,color:'#10b981',flexShrink:0,fontFamily:"'IBM Plex Mono',monospace" }}>{r.points}</span>
+                </div>
+              ))}
+              <p style={{ fontSize:11,color:'rgba(255,255,255,.25)',textAlign:'center',margin:0,marginTop:4 }}>XRPLHub services can complete many of these in one swipe ↑</p>
             </div>
           )}
           {scoreData.scannedAt&&<p style={{ fontSize:10,color:'rgba(255,255,255,.2)',textAlign:'center',marginBottom:6,fontFamily:"'IBM Plex Mono',monospace" }}>Scanned live {new Date(scoreData.scannedAt).toLocaleTimeString()}</p>}
@@ -891,15 +972,16 @@ function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
   return (
     <Overlay show={show} onClose={onClose} wide>
       <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8 }}>About XRPLHub</div>
-      <h2 style={{ fontSize:24,fontWeight:900,marginBottom:18 }}>The first fully autonomous XRPL financial services platform.</h2>
+      <h2 style={{ fontSize:24,fontWeight:900,marginBottom:18 }}>The XRPL financial services hub built for everyone legacy finance left behind.</h2>
       <div style={{ fontSize:14,color:'rgba(255,255,255,.65)',lineHeight:1.9,display:'flex',flexDirection:'column',gap:14 }}>
-        <p>Built because the people who need financial services most are the ones legacy systems designed to exclude. We changed that by building entirely on the <strong style={{ color:'#fff' }}>XRP Ledger</strong>.</p>
-        <p><strong style={{ color:'#10b981' }}>XRPLScore™</strong> — world&apos;s first on-chain credit standard. 300–850, scanned live from XRPL mainnet. No SSN required.</p>
-        <p><strong style={{ color:'#fff' }}>35 XRPL Amendment Services</strong> — AI-wrapped tools for every major XRPL transaction type. One-swipe checkout via Xaman. AI verifies on-chain. Service activates in seconds.</p>
-        <p><strong style={{ color:'#10b981' }}>Grants</strong> — wallet-to-wallet, permanently on-chain, verifiable by anyone. No NGOs. No overhead.</p>
+        <p>Built entirely on the <strong style={{ color:'#fff' }}>XRP Ledger</strong> — the fastest, cheapest, most sustainable blockchain on earth. Every service, every grant, every score is permanently verifiable on-chain. No middlemen. No dark money. No banks.</p>
+        <p><strong style={{ color:'#10b981' }}>XRPLScore™</strong> — the world&apos;s first proprietary on-chain credit standard. 300–850, scanned live from XRPL mainnet in seconds. No SSN. No bureau. No discrimination. Just blockchain truth.</p>
+        <p><strong style={{ color:'#fff' }}>35 XRPL Amendment Services</strong> — every major XRPL transaction type wrapped in AI. Pay with one swipe in Xaman. AI verifies on mainnet. Service activates in seconds. Clawback Shield, Multi-Sig Fortress, Escrow Vault, DEX tools, NFT services and more.</p>
+        <p><strong style={{ color:'#10b981' }}>Community Grants</strong> — wallet-to-wallet emergency aid, AI-reviewed within 24 hours, zero overhead. Every dollar verifiable on XRPScan by anyone in the world.</p>
         <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:14,padding:18 }}>
-          <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75,fontStyle:'italic' }}>&ldquo;We&apos;re replacing the parts of finance that were never worth keeping — with math you can verify yourself.&rdquo;</p>
+          <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75,fontStyle:'italic' }}>&ldquo;We built the financial infrastructure the legacy system was never going to build — transparent, on-chain, and open to everyone.&rdquo;</p>
         </div>
+        <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',fontFamily:"'IBM Plex Mono',monospace" }}>XRPLScore™ · © 2026 XRPLHub.io · US Copyright Reg. #1-15166646291 · All Rights Reserved</p>
       </div>
       <button onClick={onClose} style={{ ...Btn('green',undefined,{marginTop:24}) }}>Close</button>
     </Overlay>
@@ -1002,6 +1084,7 @@ export default function XRPLHubHome() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const liveStats = useLiveStats();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1166,9 +1249,16 @@ export default function XRPLHubHome() {
           </div>
 
           <div style={{ display:'flex',gap:'18px 32px',justifyContent:'center',flexWrap:'wrap' }}>
-            {[['0','XRPLScores'],['$0','Grants Funded'],['0%','Overhead'],['1 Swipe','Checkout'],['35','XRPL Services']].map(([n,l])=>(
+            {(liveStats ? [
+              [liveStats.xrplScores.toLocaleString(),'XRPLScores'],
+              [liveStats.treasuryUSD||'$0','Treasury'],
+              [liveStats.overhead||'0%','Overhead'],
+              ['1 Swipe','Checkout'],
+              [String(liveStats.servicesCount||35),'XRPL Services'],
+            ] : [['–','XRPLScores'],['–','Treasury'],['0%','Overhead'],['1 Swipe','Checkout'],['35','XRPL Services']]
+            ).map(([n,l])=>(
               <div key={l} style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'clamp(20px,4vw,26px)',fontWeight:900,color:'#10b981',lineHeight:1,textShadow:'0 0 30px rgba(16,185,129,.5)' }}>{n}</div>
+                <div style={{ fontSize:'clamp(20px,4vw,26px)',fontWeight:900,color:'#10b981',lineHeight:1,textShadow:'0 0 30px rgba(16,185,129,.5)',transition:'all .4s' }}>{n}</div>
                 <div style={{ fontSize:10,color:'rgba(255,255,255,.35)',marginTop:4,textTransform:'uppercase',letterSpacing:'.08em' }}>{l}</div>
               </div>
             ))}
