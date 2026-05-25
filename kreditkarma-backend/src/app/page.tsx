@@ -1250,7 +1250,7 @@ export default function XRPLHubHome() {
 
           <div style={{ display:'flex',gap:'18px 32px',justifyContent:'center',flexWrap:'wrap' }}>
             {(liveStats ? [
-              [liveStats.xrplScores.toLocaleString(),'XRPLScores'],
+              [(liveStats.xrplScores ?? 0).toLocaleString(),'XRPLScores'],
               [liveStats.treasuryUSD||'$0','Treasury'],
               [liveStats.overhead||'0%','Overhead'],
               ['1 Swipe','Checkout'],
