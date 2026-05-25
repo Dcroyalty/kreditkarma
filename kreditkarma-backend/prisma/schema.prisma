@@ -23,6 +23,20 @@ model LedgerScore {
   @@index([address])
 }
 
+// ─── NEW: every individual score check, for progress-over-time tracking ──────
+model ScoreHistory {
+  id          String   @id @default(cuid())
+  address     String
+  score       Int      // 300–850
+  tier        String   // Building / Fair / Good / Excellent / Exceptional
+  percentile  Int?     // peer percentile at time of check
+  breakdown   String?  // JSON snapshot of the 8 signals
+  checkedAt   DateTime @default(now())
+
+  @@index([address])
+  @@index([checkedAt])
+}
+
 model GrantRequest {
   id                String        @id @default(cuid())
   walletAddress     String

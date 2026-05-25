@@ -1,129 +1,128 @@
-// src/app/api/admin/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getTreasuryBalance } from "@/lib/treasury";
-import { sendRlusdFromTreasury, sendXrpFromTreasury } from "@/lib/treasury";
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-function requireAdmin(req: NextRequest): boolean {
-  const auth = req.headers.get("x-admin-secret");
-  return auth === process.env.ADMIN_SECRET;
+const prisma = new PrismaClient();
+const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
+const XRPL_API = 'https://xrplcluster.com';
+
+async function getTreasuryBalance(): Promise<number> {
+  try {
+    const res = await fetch(XRPL_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'account_info',
+        params: [{ account: TREASURY, ledger_index: 'validated' }],
+      }),
+    });
+    const json = await res.json();
+    const drops = json?.result?.account_data?.Balance;
+    return drops ? Number(drops) / 1_000_000 : 0;
+  } catch {
+    return 0;
+  }
 }
 
-// GET /api/admin — dashboard stats
-export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function getXRPPrice(): Promise<number> {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd');
+    const json = await res.json();
+    return json?.ripple?.usd || 0.5;
+  } catch {
+    return 0.5;
   }
-
-  const [
-    grants,
-    recentGrants,
-    donations,
-    treasury,
-    today,
-  ] = await Promise.all([
-    db.grantRequest.groupBy({
-      by: ["status"],
-      _count: { id: true },
-      _sum: { paidAmount: true },
-    }),
-    db.grantRequest.findMany({
-      take: 20,
-      orderBy: { createdAt: "desc" },
-      include: { ledgerScore: { select: { score: true, tier: true } } },
-    }),
-    db.donation.aggregate({
-      _sum: { amount: true },
-      _count: { id: true },
-    }),
-    getTreasuryBalance().catch(() => ({ xrp: 0, rlusd: 0 })),
-    db.dailyLimit.findUnique({
-      where: { date: new Date().toISOString().slice(0, 10) },
-    }),
-  ]);
-
-  const grantStats = Object.fromEntries(
-    grants.map((g) => [
-      g.status,
-      { count: g._count.id, totalPaid: g._sum.paidAmount ?? 0 },
-    ])
-  );
-
-  return NextResponse.json({
-    treasury,
-    grantStats,
-    recentGrants,
-    donations: {
-      total: donations._sum.amount ?? 0,
-      count: donations._count.id,
-    },
-    todayStats: today ?? { totalPaid: 0, grantCount: 0 },
-    dailyLimitMax: Number(process.env.GRANT_DAILY_LIMIT_USD ?? 1000),
-  });
 }
 
-// POST /api/admin — manual actions
-export async function POST(req: NextRequest) {
-  if (!requireAdmin(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+// GET /api/admin — full live admin dashboard data
+export async function GET() {
+  try {
+    const [
+      treasuryXRP,
+      xrpPrice,
+      grants,
+      grantStats,
+      scoreCount,
+      recentScores,
+      donations,
+      donationSum,
+    ] = await Promise.all([
+      getTreasuryBalance(),
+      getXRPPrice(),
+      // Recent grant applications
+      prisma.grantRequest.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }).catch(() => []),
+      // Grant counts by status
+      prisma.grantRequest.groupBy({
+        by: ['status'],
+        _count: { status: true },
+      }).catch(() => []),
+      // Total score checks
+      prisma.scoreHistory.count().catch(() => 0),
+      // Recent score checks
+      prisma.scoreHistory.findMany({
+        orderBy: { checkedAt: 'desc' },
+        take: 25,
+        select: { address: true, score: true, tier: true, checkedAt: true },
+      }).catch(() => []),
+      // Recent donations
+      prisma.donation.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+      }).catch(() => []),
+      // Total donated
+      prisma.donation.aggregate({
+        _sum: { amount: true },
+      }).catch(() => ({ _sum: { amount: 0 } })),
+    ]);
 
-  const body = await req.json();
-  const { action, grantId } = body;
-
-  if (action === "approve_and_pay") {
-    const grant = await db.grantRequest.findUnique({ where: { id: grantId } });
-    if (!grant) return NextResponse.json({ error: "Grant not found" }, { status: 404 });
-    if (grant.status === "PAID") return NextResponse.json({ error: "Already paid" }, { status: 400 });
-
-    const amount = grant.approvedAmount ?? grant.amountRequested;
-
-    try {
-      const memo = `KreditKarma Admin Grant: ${grant.category}`;
-      const txResult =
-        grant.currency === "RLUSD"
-          ? await sendRlusdFromTreasury(grant.walletAddress, amount, memo)
-          : await sendXrpFromTreasury(grant.walletAddress, amount, memo);
-
-      await db.grantRequest.update({
-        where: { id: grantId },
-        data: {
-          status: "PAID",
-          txHash: txResult.txHash,
-          paidAt: new Date(),
-          paidAmount: amount,
-          reviewedBy: "ADMIN",
-        },
-      });
-
-      await db.adminLog.create({
-        data: {
-          action: "MANUAL_PAY",
-          actor: "ADMIN",
-          target: grantId,
-          details: JSON.stringify({ txHash: txResult.txHash, amount }),
-        },
-      });
-
-      return NextResponse.json({ success: true, txHash: txResult.txHash });
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
+    // Build status breakdown
+    const statusCounts: Record<string, number> = {
+      PENDING: 0, REVIEWING: 0, APPROVED: 0, REJECTED: 0, PAID: 0, FAILED: 0,
+    };
+    for (const g of grantStats as { status: string; _count: { status: number } }[]) {
+      statusCounts[g.status] = g._count.status;
     }
-  }
 
-  if (action === "reject") {
-    const { reason } = body;
-    await db.grantRequest.update({
-      where: { id: grantId },
-      data: { status: "REJECTED", rejectionReason: reason ?? "Rejected by admin", reviewedBy: "ADMIN" },
+    const totalGrants     = (grants as unknown[]).length;
+    const treasuryUSD     = treasuryXRP * xrpPrice;
+    const totalDonatedXRP = donationSum?._sum?.amount || 0;
+
+    return NextResponse.json({
+      // Treasury
+      treasury: {
+        address: TREASURY,
+        balanceXRP: Math.round(treasuryXRP * 100) / 100,
+        balanceUSD: Math.round(treasuryUSD * 100) / 100,
+        xrpPrice,
+      },
+      // Grants
+      grants: {
+        total: totalGrants,
+        byStatus: statusCounts,
+        pending: statusCounts.PENDING + statusCounts.REVIEWING,
+        recent: grants,
+      },
+      // Scores
+      scores: {
+        totalChecks: scoreCount,
+        recent: recentScores,
+      },
+      // Donations
+      donations: {
+        count: (donations as unknown[]).length,
+        totalXRP: Math.round(totalDonatedXRP * 100) / 100,
+        recent: donations,
+      },
+      // Meta
+      updatedAt: new Date().toISOString(),
+    }, {
+      headers: { 'Cache-Control': 'no-store' }
     });
 
-    await db.adminLog.create({
-      data: { action: "REJECT", actor: "ADMIN", target: grantId, details: JSON.stringify({ reason }) },
-    });
-
-    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Admin data fetch failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }
