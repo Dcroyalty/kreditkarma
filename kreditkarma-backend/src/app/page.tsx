@@ -930,12 +930,26 @@ export default function XRPLHubHome() {
         @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(16,185,129,.25)}50%{box-shadow:0 0 55px rgba(16,185,129,.6)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
         .pcard{transition:transform .22s,box-shadow .22s,border-color .22s;cursor:pointer}
         .pcard:hover{transform:translateY(-5px);box-shadow:0 0 50px rgba(16,185,129,.14),0 24px 60px rgba(0,0,0,.55)!important}
         .navbtn{padding:8px 16px;border-radius:99px;font-weight:600;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.62);transition:all .15s}
         .navbtn:hover{background:rgba(255,255,255,.1);color:#fff}
         .catbtn{padding:8px 18px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+
+        /* NAV — responsive */
+        .xh-nav{position:sticky;top:0;z-index:100;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);background:rgba(3,3,16,.9);border-bottom:1px solid rgba(16,185,129,.15);padding:10px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+        .xh-nav-brand{display:flex;align-items:center;gap:10px;min-width:0}
+        .xh-nav-actions{display:flex;align-items:center;gap:8px}
+        @media(max-width:640px){
+          .xh-nav{padding:10px 14px;gap:8px}
+          .xh-nav-pill{display:none!important}
+          .xh-nav-sub{display:none!important}
+          .xh-hide-sm{display:none!important}
+          .xh-nav-actions{gap:6px}
+          .navbtn{padding:7px 13px;font-size:12px}
+        }
       `}</style>
 
       {/* BACKGROUND */}
@@ -946,59 +960,64 @@ export default function XRPLHubHome() {
       <div style={{ minHeight:'100vh', fontFamily:"'Syne',sans-serif", color:'#eeeef5' }}>
 
         {/* NAV */}
-        <nav style={{ position:'sticky', top:0, zIndex:100, backdropFilter:'blur(22px)', WebkitBackdropFilter:'blur(22px)', background:'rgba(3,3,16,.85)', borderBottom:'1px solid rgba(16,185,129,.15)', padding:'0 28px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <img src="/logo.png" alt="XRPLHub" style={{ width:34, height:34, borderRadius:8 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-            <div>
-              <span style={{ fontSize:18, fontWeight:900, letterSpacing:'-.5px' }}>XRPLHub</span>
-              <span style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>
-                {inXApp ? '· xApp Mode' : '· xrplhub.io'}
+        <nav className="xh-nav">
+          <div className="xh-nav-brand">
+            <img src="/hub-logo.png" alt="XRPLHub" style={{ width:34, height:34, borderRadius:8, flexShrink:0 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+            <div style={{ minWidth:0 }}>
+              <span style={{ fontSize:17, fontWeight:900, letterSpacing:'-.5px' }}>XRPLHub.io</span>
+              <span className="xh-nav-sub" style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>
+                {inXApp ? '· xApp Mode' : '· XRPL Mainnet'}
               </span>
             </div>
-            <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.2)', borderRadius:99, padding:'3px 9px', fontSize:9, fontWeight:700, color:'#10b981', letterSpacing:'.1em', fontFamily:"'IBM Plex Mono',monospace" }}>
+            <span className="xh-nav-pill" style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.2)', borderRadius:99, padding:'3px 9px', fontSize:9, fontWeight:700, color:'#10b981', letterSpacing:'.1em', fontFamily:"'IBM Plex Mono',monospace" }}>
               <span style={{ width:4, height:4, borderRadius:'50%', background:'#10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
               XRPL MAINNET
             </span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          <div className="xh-nav-actions">
             <button className="navbtn" onClick={() => setShowDonate(true)}>Donate</button>
-            <button className="navbtn" onClick={() => setShowGrant(true)}>Apply for Grant</button>
+            <button className="navbtn xh-hide-sm" onClick={() => setShowGrant(true)}>Apply for Grant</button>
             {walletConnected && (
-              <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:99, border:'1px solid rgba(16,185,129,.35)', background:'rgba(16,185,129,.07)', fontSize:11, fontWeight:600, color:'#34d399', fontFamily:"'IBM Plex Mono',monospace" }}>
+              <div className="xh-hide-sm" style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:99, border:'1px solid rgba(16,185,129,.35)', background:'rgba(16,185,129,.07)', fontSize:11, fontWeight:600, color:'#34d399', fontFamily:"'IBM Plex Mono',monospace" }}>
                 <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 6px #10b981', display:'inline-block' }} />
-                {walletAddr.slice(0,8)}…{walletAddr.slice(-4)}
+                {walletAddr.slice(0,6)}…{walletAddr.slice(-4)}
               </div>
             )}
-            <button onClick={() => fetchScore()} style={{ padding:'8px 18px', borderRadius:99, fontFamily:'inherit', fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background:'#10b981', color:'#000', transition:'all .15s' }}>
-              {inXApp && sdkReady ? 'XRPLScore' : 'Get XRPLScore'}
+            <button onClick={() => fetchScore()} style={{ padding:'8px 16px', borderRadius:99, fontFamily:'inherit', fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background:'#10b981', color:'#000', transition:'all .15s', whiteSpace:'nowrap' }}>
+              XRPLScore
             </button>
           </div>
         </nav>
 
-        {/* TICKER */}
-        <div style={{ background:'rgba(16,185,129,.06)', borderBottom:'1px solid rgba(16,185,129,.12)', padding:'9px 28px', overflow:'hidden', display:'flex', alignItems:'center', gap:16 }}>
-          <span style={{ fontSize:9, fontWeight:800, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", flexShrink:0 }}>LIVE</span>
-          <span style={{ fontSize:12, color:'rgba(255,255,255,.55)', animation:'fadeUp .5s ease both', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} key={tickerIdx}>
-            {TICKER[tickerIdx]}
-          </span>
-          <span style={{ fontSize:12, color:'rgba(255,255,255,.25)', flexShrink:0 }}>
-            {liveStats ? `${(liveStats.xrplScores ?? 0).toLocaleString()} scores · ${liveStats.treasuryUSD} treasury · ${liveStats.servicesCount || 24} services` : 'Loading live stats…'}
-          </span>
+        {/* TICKER — continuous scroll */}
+        <div style={{ background:'rgba(16,185,129,.06)', borderBottom:'1px solid rgba(16,185,129,.12)', padding:'8px 0', overflow:'hidden', display:'flex', alignItems:'center', position:'relative' }}>
+          {/* LIVE badge pinned left */}
+          <div style={{ flexShrink:0, padding:'0 14px 0 20px', fontSize:9, fontWeight:800, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", zIndex:2, background:'linear-gradient(90deg,rgba(3,3,16,1) 70%,transparent)', position:'relative' }}>LIVE ▶</div>
+          {/* Scrolling track */}
+          <div style={{ overflow:'hidden', flex:1 }}>
+            <div style={{ display:'flex', animation:'tickerScroll 55s linear infinite', willChange:'transform' }}>
+              {[...TICKER, ...(liveStats ? [`${(liveStats.xrplScores ?? 0).toLocaleString()} XRPLScores checked`, `${liveStats.treasuryUSD} in treasury`, `${liveStats.servicesCount || 24} services live on xrplhub.io`] : []), ...TICKER].map((msg, i) => (
+                <span key={i} style={{ fontSize:12, color:'rgba(255,255,255,.6)', padding:'0 36px', whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:10, flexShrink:0 }}>
+                  <span style={{ color:'#10b981', fontSize:8 }}>◆</span>
+                  {msg}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* HERO */}
         <section style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
-          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:28, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
+          <h1 style={{ fontSize:'clamp(48px,9vw,110px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:16 }}>
+            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+              XRPLHub.io
+            </span>
+          </h1>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:24, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
             <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
             FIRST-TO-MARKET · XRPL AMENDMENT SERVICES · XRPLSCORE™ · 2026
           </div>
-          <h1 style={{ fontSize:'clamp(42px,8vw,90px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:20 }}>
-            XRPLHub<br />
-            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-              on the XRPL.
-            </span>
-          </h1>
           <p style={{ fontSize:17, color:'rgba(255,255,255,.5)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7 }}>
             24 XRPL amendment services. XRPLScore™ on-chain credit scoring. Wallet-to-wallet community grants. AI builds the transaction. You sign in Xaman. On-chain in 4 seconds.
           </p>
@@ -1225,7 +1244,7 @@ export default function XRPLHubHome() {
           <div style={{ maxWidth:1280, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:18 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-                <img src="/logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                <img src="/hub-logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                 <span style={{ fontWeight:800, fontSize:15 }}>XRPLHub.io</span>
               </div>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · Morrbiz LLC · US Copyright Reg. #1-15166646291</p>
