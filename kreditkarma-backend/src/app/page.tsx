@@ -1,284 +1,310 @@
 'use client';
-// ═══════════════════════════════════════════════════════════════════════════════
-// XRPLHub.io — XRPL Financial Services Platform
-// Copyright © 2026 XRPLHub.io — All Rights Reserved
-// XRPLScore™ is a proprietary trademark of XRPLHub.io
-// US Copyright Registration Case #: 1-15166646291
-// XRPLScore™ methodology protected under copyright and common law trademark
-// Unauthorized reproduction, reverse engineering, or redistribution prohibited
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Analytics } from '@vercel/analytics/next';
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const API_URL         = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
-const TREASURY        = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
-const TREASURY_DOMAIN = 'xrplhub.xrp';
-const XAMAN_DL        = 'https://xaman.app/';
-const NEURAL_BG       = '/xrpl-background.jpg';
+const XUMM_KEY = '33894f1f-b5ac-4b47-a0ec-77b27b59d224';
+const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
+const API_URL  = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
+// © 2026 XRPLHub.io · XRPLScore™ · US Copyright Reg. #1-15166646291
 
-type Currency = 'RLUSD' | 'XRP';
-const fmt  = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-const trunc = (a: string) => a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '';
-const qrImg = (d: string, sz = 200) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=${sz}x${sz}&data=${encodeURIComponent(d)}&color=0d9488&bgcolor=030407&qzone=2&format=svg`;
+// ─── XAPP SDK HOOK ────────────────────────────────────────────────────────────
+function useXamanSDK() {
+  const sdkRef                      = useRef<any>(null);
+  const [inXApp,   setInXApp]       = useState(false);
+  const [xAppAddr, setXAppAddr]     = useState('');
+  const [sdkReady, setSdkReady]     = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params   = new URLSearchParams(window.location.search);
+    const detected = params.has('xAppToken') || !!(window as any).ReactNativeWebView;
+    setInXApp(detected);
+    import('xumm').then(({ Xumm }) => {
+      sdkRef.current = new Xumm(XUMM_KEY);
+      setSdkReady(true);
+      if (detected) {
+        sdkRef.current.user.account
+          .then((a: string) => { if (a) setXAppAddr(a); })
+          .catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
+
+  const signXRP = useCallback(async (amountXRP: number): Promise<string | null> => {
+    if (!sdkRef.current) return null;
+    try {
+      const sub = await sdkRef.current.payload.createAndSubscribe(
+        { txjson: { TransactionType: 'Payment', Destination: TREASURY, Amount: String(Math.floor(amountXRP * 1_000_000)) }},
+        (ev: any) => { if (ev.data.signed !== undefined) return ev; }
+      );
+      return sub?.resolved?.signed ? (sub.resolved.txid as string) : null;
+    } catch { return null; }
+  }, []);
+
+  return { inXApp, xAppAddr, sdkReady, signXRP };
+}
+
+// ─── LIVE STATS HOOK ──────────────────────────────────────────────────────────
+interface LiveStats {
+  xrplScores: number; treasuryXRP: number; treasuryUSD: string;
+  txCount: number; donorCount: number; grantCount: number; servicesCount: number;
+}
+function useLiveStats() {
+  const [stats, setStats] = useState<LiveStats | null>(null);
+  useEffect(() => {
+    const load = () =>
+      fetch(`${API_URL}/api/treasury/stats`, { cache: 'no-store' })
+        .then(r => r.json()).then(setStats).catch(() => {});
+    load();
+    const iv = setInterval(load, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+  return stats;
+}
 
 // ─── TICKER ───────────────────────────────────────────────────────────────────
 const TICKER = [
-  'XRPLScore™ — First On-Chain Credit Score Worldwide',
-  'Apply for Emergency Grants — Wallet to Wallet',
-  'Protect Your Assets with XRPL Amendment Services',
-  'AI-Powered Community Grants · Zero Overhead · 100% On-Chain',
-  '35 XRPL Services · One Swipe in Xaman',
-  'XRPLScore™ · No SSN · No Bureau · Just Blockchain Truth',
-  'Donate XRP or RLUSD · AI Routes Funds Directly to People in Need',
-  'Clawback Shield · Escrow Vault · Multi-Sig Fortress · DEX Tools',
-  'Borrow / Lend XRPL Amendment Coming Soon · Pre-Register Now',
-  'XRPLHub.io · The XRPL Financial Services Hub',
-  'Every Transaction Verified on XRPL Mainnet · Immutable · Transparent',
-  'Build Credit + Protect Wallet + Fund Community · All in One Hub',
+  'XRPLScore — First Proprietary On-Chain Credit Score on the XRP Ledger',
+  'Multi-Sig Fortress — Require Multiple Approvals to Move Any Funds',
+  'Token Issuers: Permanently Surrender Freeze Rights with One Transaction',
+  'Apply for Emergency Grants — Wallet to Wallet · Zero Overhead · 100% On-Chain',
+  'AMM Pool Launch — Deploy Your Liquidity Pool in ~4 Seconds via Xaman',
+  'Mint XRPL NFTs with Up to 50% Royalties — AI Builds the Transaction',
+  'On-Chain Identity — Link Your Verified Domain to Your XRPL Wallet',
+  'DID Creator — W3C-Compliant Decentralized Identity on XRPL Mainnet',
+  'Smart Swap Router — Cross-Currency Payments via XRPL Native Pathfinding',
+  'Compliance Bundle — Enterprise-Grade XRPL Configuration in One Bundle',
+  'Escrow Setup — Time-Lock XRP with Custom Release Conditions',
+  'AI Constructs Your Transaction · You Sign in Xaman · On-Chain in 4 Seconds',
 ];
 
-// ─── 35 PRODUCTS ──────────────────────────────────────────────────────────────
-// ─── GLOBAL DISCLAIMER (shown on every product) ──────────────────────────────
-const GLOBAL_DISCLAIMER = 'XRPLHub.io provides on-chain configuration and transaction services on the XRP Ledger. All services configure blockchain-native protocol features — not financial products, securities, insurance, or investment instruments. All XRPL transactions are irrevocable by nature of the protocol. Results depend on your wallet configuration and XRPL network state. This is a technology service, not financial advice. Use at your own risk.';
-
-// ─── PRODUCT CATEGORIES ───────────────────────────────────────────────────────
-const CATEGORIES = ['All','Protection','DEX & AMM','NFT','Identity','Payments','Tokens','Credit','Coming Soon'] as const;
-type Category = typeof CATEGORIES[number];
-
+// ─── PRODUCTS ─────────────────────────────────────────────────────────────────
+// Honest framing: AI builds transaction → user signs in Xaman → on-chain ~4s
+// No AI monitoring, no AI auto-execution, no AI signing on behalf of users
 const PRODUCTS = [
-  // ── FEATURED 3 ────────────────────────────────────────────────────────────
-  { id:'clawback', emoji:'🔒', name:'Clawback Shield', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:25, priceXRP:80, category:'Protection' as Category,
-    amendment:'SetAccountFlag · asfNoFreeze', tagline:'Permanently block issuers from reclaiming your tokens',
-    desc:'AI broadcasts SetAccountFlag (asfNoFreeze) on your behalf. Permanently prevents any issuer from freezing or clawing back assets in your trust lines. One payment. Permanent on-chain protection.',
-    aiDetail:'AI submits SetAccountFlag with asfNoFreeze to XRPL mainnet. Permanently recorded on your account root. Clawback is cryptographically impossible.',
-    features:['asfNoFreeze flag set on-chain','Issuer clawback permanently disabled','On-chain proof','Xaman notification','Email receipt + TX hash'] },
+  // WALLET SECURITY
+  { id:'multisig',     cat:'security', emoji:'🛡️', name:'Multi-Sig Fortress',
+    amendment:'SignerListSet', color:'#10b981', featured:true, priceRLUSD:60, priceXRP:195,
+    tagline:'Require multiple signatures to authorize any transaction from your wallet',
+    desc:'Transform your XRPL wallet into a multi-signature account. Specify your signers and the quorum required (e.g. 2-of-3 or 3-of-5). Once active, no single key can move funds — every transaction requires the configured number of approvals.',
+    aiDelivery:'AI constructs SignerListSet with your signers and quorum. You sign once in Xaman. On-chain in ~4 seconds.',
+    aiDetail:'You provide the list of XRPL signer addresses and your SignerQuorum threshold. AI builds the SignerListSet transaction with proper SignerEntries and weight assignments. You sign in Xaman. Once confirmed, your wallet permanently requires multi-signature authorization for all future transactions. No single point of key compromise.',
+    features:['M-of-N multi-signature setup','Up to 32 signers supported','Custom weight per signer','Permanent on-chain record','One swipe in Xaman to activate'] },
 
-  { id:'escrow', emoji:'🏛️', name:'Escrow Vault', featured:true, comingSoon:false, color:'#f59e0b', priceRLUSD:50, priceXRP:160, category:'Protection' as Category,
-    amendment:'EscrowCreate · Time-locked', tagline:'AI-managed escrow with custom release conditions',
-    desc:'AI files EscrowCreate locking your XRP with a custom finish-after timestamp or crypto-condition. Funds release automatically on your terms.',
-    aiDetail:'AI constructs EscrowCreate with your FinishAfter epoch. Filed to XRPL mainnet and monitored continuously. AI auto-files EscrowFinish or EscrowCancel at the right time.',
-    features:['EscrowCreate filed to mainnet','Custom release conditions','AI monitors + auto-finalises','EscrowCancel protection','Full audit trail'] },
+  { id:'regkey',       cat:'security', emoji:'🔑', name:'Regular Key Rotator',
+    amendment:'SetRegularKey', color:'#34d399', featured:false, priceRLUSD:30, priceXRP:95,
+    tagline:'Assign a backup signing key and keep your master key in cold storage',
+    desc:'Cold storage for your XRPL wallet without sacrificing usability. Set a regular key for everyday signing while your master key stays offline. If the regular key is ever compromised, rotate it instantly without losing the account.',
+    aiDelivery:'AI constructs SetRegularKey transaction. You sign once in Xaman. New signing key active in ~4 seconds.',
+    aiDetail:'You provide the new regular key address. AI builds the SetRegularKey transaction. You sign with your current key in Xaman. After confirmation, the new regular key has full signing authority and your master key can go into deep cold storage permanently.',
+    features:['Master key stays offline','Hot wallet regular key','Rotate without losing account','Industry security standard','Single-transaction setup'] },
 
-  { id:'mutual', emoji:'🤝', name:'Mutual Aid Pool', featured:true, comingSoon:false, color:'#8b5cf6', priceRLUSD:35, priceXRP:115, category:'Protection' as Category,
-    amendment:'TrustSet · MultiSig Registry', tagline:'On-chain mutual aid certificate — no insurance company',
-    desc:'AI issues a TrustSet coverage certificate to your wallet and adds you to the XRPLHub multisig pool registry.',
-    aiDetail:'AI files TrustSet issuing XH-COVERAGE trust line to your wallet. Added to multisig pool registry. Pool balance visible on xrpscan.com.',
-    features:['TrustSet certificate issued','Added to multisig pool registry','AI-triggered disbursement','Pool visible on XRPScan','Email + wallet proof'] },
+  { id:'deposit-auth', cat:'security', emoji:'🚧', name:'Deposit Auth Guard',
+    amendment:'AccountSet · asfDepositAuth', color:'#06b6d4', featured:false, priceRLUSD:20, priceXRP:65,
+    tagline:'Block unsolicited incoming payments — stop spam airdrops permanently',
+    desc:'With Deposit Auth enabled, your account only accepts payments from senders you have explicitly pre-authorized via DepositPreauth. Eliminates spam airdrops, unwanted token sends, and unsolicited payments entirely.',
+    aiDelivery:'AI constructs AccountSet with asfDepositAuth. You sign once in Xaman. Guard active in ~4 seconds.',
+    aiDetail:'AI builds the AccountSet transaction with the asfDepositAuth flag. You sign in Xaman. Once confirmed, your wallet rejects all incoming payments unless the sender is on your preauthorized list. Clean, compliance-grade inbox control.',
+    features:['Block spam airdrops permanently','Whitelist approved senders only','Compliance-grade configuration','Reversible via second AccountSet','Single-transaction activation'] },
 
-  // ── PROTECTION SUITE ──────────────────────────────────────────────────────
-  { id:'multisig', emoji:'🏰', name:'Multi-Sig Fortress', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:60, priceXRP:195, category:'Protection' as Category,
-    amendment:'SignerListSet · Multi-Signature', tagline:'Require M-of-N signatures for every transaction',
-    desc:'AI files SignerListSet configuring your wallet to require multiple signatures. No single point of failure. Perfect for treasuries and DAOs.',
-    aiDetail:'AI constructs SignerListSet with your quorum and signer list. Wallet now requires multiple independent signatures for every outgoing transaction.',
-    features:['SignerListSet filed to mainnet','M-of-N signature requirement','Xaman multi-sign ready','DAO-grade security','On-chain proof'] },
+  { id:'desttag',      cat:'security', emoji:'🎯', name:'Destination Tag Lock',
+    amendment:'AccountSet · asfRequireDest', color:'#a78bfa', featured:false, priceRLUSD:15, priceXRP:50,
+    tagline:'Force senders to include destination tags — prevent lost funds permanently',
+    desc:'Critical for any business managing multiple user balances under one wallet. With RequireDest enabled, your account rejects any incoming payment that lacks a destination tag — eliminating the most common cause of lost funds in XRPL business operations.',
+    aiDelivery:'AI constructs AccountSet with asfRequireDest. You sign once in Xaman. Enforcement live in ~4 seconds.',
+    aiDetail:'AI builds AccountSet with the asfRequireDest flag. You sign in Xaman. After confirmation, your wallet rejects all incoming payments without a DestinationTag. Essential for exchanges, custodians, and payment processors.',
+    features:['Eliminates untagged deposit losses','Exchange-grade requirement','Compliance standard','Permanent enforcement','Reversible if needed'] },
 
-  { id:'depositauth', emoji:'🚪', name:'Deposit Auth Shield', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Protection' as Category,
-    amendment:'AccountSet · asfDepositAuth', tagline:'Block all unsolicited incoming payments to your wallet',
-    desc:'AI enables DepositAuth on your wallet. No one can send you XRP or tokens without your explicit pre-authorization. Stop spam, scams, and unwanted airdrops permanently.',
-    aiDetail:'AI files AccountSet with asfDepositAuth flag. Your wallet now rejects any incoming payment not explicitly pre-authorized. You control who can send to you.',
-    features:['DepositAuth enabled on-chain','Blocks unsolicited payments','Stops airdrop spam permanently','DepositPreauth for allowlist','Full XRPL mainnet proof'] },
+  { id:'xrp-lock',     cat:'security', emoji:'🔒', name:'XRP Lockdown',
+    amendment:'AccountSet · asfDisallowXRP', color:'#9ca3af', featured:false, priceRLUSD:15, priceXRP:50,
+    tagline:'Signal that your account does not accept XRP payments',
+    desc:'For token-only accounts that should not receive XRP. Sets the DisallowXRP flag that all major wallets including Xaman respect — senders receive a warning before sending XRP to your address.',
+    aiDelivery:'AI constructs AccountSet with asfDisallowXRP. You sign once in Xaman. Flag active in ~4 seconds.',
+    aiDetail:'AI builds AccountSet with asfDisallowXRP flag. You sign in Xaman. All Xaman and XRPL-compatible wallets will warn senders before sending XRP to your address. Reversible at any time.',
+    features:['Signal token-only operations','Wallet-level sender warnings','Respected by all major wallets','Reversible anytime','Single-transaction setup'] },
 
-  { id:'regularkey', emoji:'🔑', name:'Regular Key Rotator', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:30, priceXRP:95, category:'Protection' as Category,
-    amendment:'SetRegularKey · Key Management', tagline:'AI assigns a backup signing key to your wallet',
-    desc:'AI files SetRegularKey linking a secondary signing key to your master wallet. Sign transactions with the regular key while keeping your master key cold and offline.',
-    aiDetail:'AI constructs SetRegularKey transaction assigning your specified regular key. Your master key stays cold. Regular key handles daily signing.',
-    features:['SetRegularKey filed to mainnet','Master key stays offline','Regular key for daily use','Instant key rotation available','Security best practice enforced'] },
+  // TOKEN ISSUER
+  { id:'no-freeze',    cat:'issuer', emoji:'🤝', name:'Issuer Trustless Declaration',
+    amendment:'AccountSet · asfNoFreeze', color:'#10b981', featured:true, priceRLUSD:40, priceXRP:130,
+    tagline:'Token issuers: permanently surrender freeze rights to build holder trust',
+    desc:'For token issuers who want to make the strongest possible trust signal to holders. Setting asfNoFreeze permanently and irrevocably removes your ability to freeze any trust lines for your issued tokens. A one-way commitment that lives on-chain forever.',
+    aiDelivery:'AI constructs AccountSet with asfNoFreeze. You sign once as issuer in Xaman. Permanent on-chain in ~4 seconds.',
+    aiDetail:'AI builds AccountSet with the asfNoFreeze flag. You sign in Xaman as the token issuer. After confirmation, your account permanently loses the ability to freeze individual trust lines or apply global freeze to your token. Cannot be reversed. The strongest trust signal available to any XRPL token issuer.',
+    features:['Permanent freeze rights surrender','One-way commitment (irreversible)','Strongest holder trust signal','Verifiable on XRPScan forever','Token issuers only — not for holders'] },
 
-  { id:'disallowxrp', emoji:'🛡️', name:'XRP Lockdown', featured:false, comingSoon:false, color:'#ef4444', priceRLUSD:15, priceXRP:50, category:'Protection' as Category,
-    amendment:'AccountSet · asfDisallowXRP', tagline:'Prevent XRP from being sent to your account',
-    desc:'AI enables the asfDisallowXRP flag on your account. Signals to the network and wallets that your account should not receive XRP directly. Ideal for token-only wallets.',
-    aiDetail:'AI files AccountSet with asfDisallowXRP. XRPL clients that respect this flag will warn senders before sending XRP to your address.',
-    features:['asfDisallowXRP flag set','Prevents accidental XRP receives','Token-only wallet setup','Network-level signal','On-chain verification'] },
+  { id:'transfer-fee', cat:'issuer', emoji:'💰', name:'Token Transfer Fee',
+    amendment:'AccountSet · TransferRate', color:'#f59e0b', featured:true, priceRLUSD:25, priceXRP:80,
+    tagline:'Earn passive revenue on every transfer of your issued token',
+    desc:'Configure a percentage fee that you collect on every transfer of your token between holders. Every secondary market trade, every wallet-to-wallet send pays you automatically — collected on-chain by the XRPL with zero intervention required.',
+    aiDelivery:'AI constructs AccountSet with your TransferRate. You sign once in Xaman. Fee active in ~4 seconds.',
+    aiDetail:'You specify your transfer fee percentage (0% to 100%). AI converts this to the proper TransferRate value (1000000000 to 2000000000 scale) and builds the AccountSet transaction. You sign in Xaman. After confirmation, every transfer of your token between any two holders pays you the configured percentage automatically.',
+    features:['0% to 100% configurable fee','Automatic on-chain collection','Revenue on every secondary trade','Adjustable at any time','No off-chain accounting needed'] },
 
-  { id:'requiredesttag', emoji:'🏷️', name:'Destination Tag Enforcer', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:15, priceXRP:50, category:'Protection' as Category,
-    amendment:'AccountSet · asfRequireDest', tagline:'Force all senders to include a destination tag',
-    desc:'AI enables asfRequireDest on your wallet. Every incoming payment must include a destination tag or it will be rejected. Essential for exchanges, businesses, and anyone managing multiple users.',
-    aiDetail:'AI files AccountSet with asfRequireDest flag. Payments without a destination tag are rejected by the protocol automatically.',
-    features:['asfRequireDest enabled','Tagless payments auto-rejected','Multi-user wallet ready','Exchange-grade setup','One-time permanent config'] },
+  { id:'issuer-bundle',cat:'issuer', emoji:'🏛️', name:'Full Issuer Configuration',
+    amendment:'AccountSet · Bundle', color:'#a78bfa', featured:false, priceRLUSD:80, priceXRP:260,
+    tagline:'Complete professional token issuer setup in one bundle',
+    desc:'Everything needed to launch a credible token on XRPL. Sets your domain (verified identity on all explorers), email hash (Gravatar profile), TransferRate (your transfer fee), and DefaultRipple (enables token liquidity). Four transactions, one session.',
+    aiDelivery:'AI constructs all 4 AccountSet transactions. You sign each in Xaman. Full setup in under a minute.',
+    aiDetail:'AI builds four AccountSet transactions in sequence: (1) Domain field with hex-encoded domain, (2) EmailHash with MD5-hashed contact email, (3) TransferRate with your configured fee, (4) asfDefaultRipple enabling token rippling. You sign each in Xaman. All four complete and your account is configured as a professional token issuer.',
+    features:['Verified domain on all explorers','Email/Gravatar identity link','Custom transfer fee','Default rippling enabled','Four transactions in one session'] },
 
-  // ── DEX & AMM SUITE ───────────────────────────────────────────────────────
-  { id:'dex', emoji:'📊', name:'DEX Market Maker', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:30, priceXRP:95, category:'DEX & AMM' as Category,
-    amendment:'OfferCreate · Automated Orders', tagline:'AI manages limit orders on the XRPL built-in DEX',
-    desc:'AI creates OfferCreate transactions placing limit orders on the XRPL DEX. No smart contracts — native protocol trading with AI order management.',
-    aiDetail:'AI constructs OfferCreate with your TakerPays and TakerGets. Placed directly on XRPL DEX. AI monitors fills and rebalances via OfferCancel.',
-    features:['OfferCreate filed to XRPL DEX','Limit order support','AI monitors fills','OfferCancel on completion','No smart contract risk'] },
+  { id:'trustline',    cat:'issuer', emoji:'🔗', name:'Trust Line Configurator',
+    amendment:'TrustSet', color:'#06b6d4', featured:false, priceRLUSD:20, priceXRP:65,
+    tagline:'Create or configure a trust line to any XRPL token with custom limits',
+    desc:'Establish a trust relationship with any XRPL token. Set your trust limit, configure rippling flags, opt into or out of issuer authorization. The foundational transaction for participating in the XRPL token economy.',
+    aiDelivery:'AI constructs TrustSet with your specifications. You sign once in Xaman. Trust line active in ~4 seconds.',
+    aiDetail:'You provide the token issuer address, currency code, and trust limit. AI builds the TrustSet transaction with proper LimitAmount and optional flags (tfSetNoRipple, tfClearNoRipple, tfSetfAuth). You sign in Xaman. Trust line is active on XRPL mainnet within one ledger close.',
+    features:['Any XRPL token supported','Custom trust limit','Rippling control flags','Authorization opt-in','Single-transaction setup'] },
 
-  { id:'amm', emoji:'🌊', name:'DEX Liquidity Guard', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:40, priceXRP:130, category:'DEX & AMM' as Category,
-    amendment:'AMMWithdraw · Position Monitor', tagline:'AI auto-exits AMM positions before impermanent loss hits',
-    desc:'AI watches your XRPL AMM positions. When IL exceeds your threshold or an exploit is detected, AI fires AMMWithdraw automatically.',
-    aiDetail:'AI polls XRPL AMM ledger objects every 4 seconds. On IL breach, AMMWithdraw is constructed and filed within the same ledger close.',
-    features:['Real-time AMM polling (4s)','IL breach auto-withdrawal','Exploit pattern detection','AMMWithdraw < 1 ledger close','On-chain action log'] },
+  { id:'no-ripple',    cat:'issuer', emoji:'⛔', name:'Rippling Controller',
+    amendment:'TrustSet · NoRipple', color:'#9ca3af', featured:false, priceRLUSD:20, priceXRP:65,
+    tagline:'Prevent unintended rippling through your trust lines',
+    desc:'Set the NoRipple flag on specific trust lines to prevent XRPL pathfinding from routing payments through your wallet without your intent. Essential for businesses, custodians, and active wallets that appear frequently in pathfinding results.',
+    aiDelivery:'AI constructs TrustSet with tfSetNoRipple. You sign once in Xaman. Active in ~4 seconds.',
+    aiDetail:'You select which trust lines to restrict. AI builds TrustSet transactions with the tfSetNoRipple flag for each selected line. You sign in Xaman. After confirmation, those trust lines are excluded from XRPL pathfinding — payments will no longer route through your wallet via these lines.',
+    features:['Block unintended rippling','Per-trust-line control','Business-grade setup','Reversible via tfClearNoRipple','Single-transaction per line'] },
 
-  { id:'ammcreate', emoji:'🏊', name:'AMM Pool Creator', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:75, priceXRP:245, category:'DEX & AMM' as Category,
-    amendment:'AMMCreate · Liquidity Pool', tagline:'Deploy your own AMM liquidity pool on XRPL',
-    desc:'AI files AMMCreate deploying a brand new automated market maker pool between any two XRPL assets. Earn trading fees from every swap through your pool.',
-    aiDetail:'AI constructs AMMCreate with your chosen asset pair and initial liquidity. Pool is live on XRPL mainnet. Earn LP fees on every trade through the pool.',
-    features:['AMMCreate filed to mainnet','Custom asset pair','Earn LP trading fees','LP tokens issued to you','Real-time pool monitoring'] },
+  // DEFI & TRADING
+  { id:'dex-order',    cat:'defi', emoji:'📈', name:'DEX Order Builder',
+    amendment:'OfferCreate', color:'#10b981', featured:false, priceRLUSD:25, priceXRP:80,
+    tagline:'Place precision limit orders on the XRPL native DEX',
+    desc:'Create exact limit orders on the XRPL built-in DEX. Specify what you offer, what you want in return, and the exchange rate. All offer flag types supported: passive, immediate-or-cancel, fill-or-kill, sell.',
+    aiDelivery:'AI constructs OfferCreate with your exact terms. You sign once in Xaman. Order live in ~4 seconds.',
+    aiDetail:'You specify TakerGets, TakerPays, and any flags (tfPassive, tfImmediateOrCancel, tfFillOrKill, tfSell). AI builds the OfferCreate transaction with proper Amount objects and encoding. You sign in Xaman. Order is placed on the XRPL DEX order book within one ledger close.',
+    features:['Native XRPL DEX','All offer flag types','Token and XRP pairs','Single-transaction placement','Cancellable via OfferCancel'] },
 
-  { id:'ammdeposit', emoji:'💧', name:'AMM Liquidity Injector', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:35, priceXRP:115, category:'DEX & AMM' as Category,
-    amendment:'AMMDeposit · Liquidity Add', tagline:'Add liquidity to any XRPL AMM pool and earn fees',
-    desc:'AI files AMMDeposit adding your assets to an existing XRPL AMM pool. Receive LP tokens representing your share. Earn a portion of every trade fee automatically.',
-    aiDetail:'AI constructs AMMDeposit with your chosen pool and asset amounts. LP tokens issued to your wallet immediately. Fee earnings accrue continuously.',
-    features:['AMMDeposit filed to mainnet','LP tokens issued instantly','Fee earnings start immediately','Single or dual asset deposit','Pool share verified on-chain'] },
+  { id:'amm-create',   cat:'defi', emoji:'🌊', name:'AMM Pool Launch',
+    amendment:'AMMCreate', color:'#06b6d4', featured:true, priceRLUSD:75, priceXRP:245,
+    tagline:'Deploy a new Automated Market Maker pool on XRPL mainnet',
+    desc:'Launch your own AMM pool for any token pair. Set your trading fee, deposit initial liquidity, and the pool is live for everyone to trade against. Earn a share of every swap through your pool as a liquidity provider.',
+    aiDelivery:'AI constructs AMMCreate with your token pair and fee. You sign once in Xaman. Pool live in ~4 seconds.',
+    aiDetail:'You specify Amount (asset 1 deposit), Amount2 (asset 2 deposit), and TradingFee (0-1000 basis points). AI builds the AMMCreate transaction. You sign in Xaman. Pool is live on XRPL mainnet immediately — all traders can swap against it, and you receive LP tokens representing your ownership share.',
+    features:['Any XRPL token pair','0-1% configurable fee','LP tokens to your wallet','Live on mainnet immediately','Auction slot eligible'] },
 
-  { id:'crosscurrency', emoji:'🔀', name:'Cross-Currency Executor', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:25, priceXRP:80, category:'DEX & AMM' as Category,
-    amendment:'Payment · Path Finding', tagline:'AI finds and executes the best cross-currency swap route',
-    desc:'AI scans the XRPL DEX and AMM pools to find the optimal conversion path between any two assets, then executes the cross-currency payment atomically.',
-    aiDetail:'AI uses XRPL path_find to identify the best route across multiple order books and AMM pools. Executes as a single atomic Payment transaction.',
-    features:['Optimal path computed by AI','Single atomic transaction','DEX + AMM path aggregation','Slippage protection','Best rate guaranteed on-chain'] },
+  { id:'amm-deposit',  cat:'defi', emoji:'💧', name:'AMM Liquidity Entry',
+    amendment:'AMMDeposit', color:'#34d399', featured:false, priceRLUSD:35, priceXRP:115,
+    tagline:'Add liquidity to any XRPL AMM pool and earn trading fees',
+    desc:'Deposit into any active XRPL AMM pool. Earn a proportional share of every trading fee based on your pool ownership. Single-asset or balanced two-asset deposits both supported.',
+    aiDelivery:'AI constructs AMMDeposit with your specifications. You sign once in Xaman. LP tokens received in ~4 seconds.',
+    aiDetail:'You specify the pool (Asset and Asset2), deposit amounts, and deposit type flags (tfTwoAsset, tfSingleAsset, tfLPToken, tfLimitLPToken). AI builds AMMDeposit with proper Amount objects. You sign in Xaman. LP tokens are credited to your wallet, representing your share of the pool and future fee earnings.',
+    features:['Single or dual asset deposit','LP tokens credited immediately','Proportional fee earnings','Any active XRPL AMM','Withdrawable anytime'] },
 
-  // ── NFT SUITE ─────────────────────────────────────────────────────────────
-  { id:'nft', emoji:'🎨', name:'NFT Vault Lock', featured:false, comingSoon:false, color:'#ec4899', priceRLUSD:45, priceXRP:145, category:'NFT' as Category,
-    amendment:'NFTokenMint · Burn-locked', tagline:'Mint NFTs with protocol-level royalties up to 50%',
-    desc:'AI mints your NFT with custom transfer fees and flags. Full royalty enforcement at the protocol level on every secondary sale.',
-    aiDetail:'AI constructs NFTokenMint with your custom URI, transfer fee (0–50000 bps), and flags. Royalties enforced at the protocol level.',
-    features:['NFTokenMint filed to mainnet','Up to 50% royalties','Custom URI + metadata','Protocol-level enforcement','Batch minting available'] },
+  { id:'smart-swap',   cat:'defi', emoji:'🔄', name:'Smart Swap Router',
+    amendment:'PathPaymentStrictSend', color:'#a78bfa', featured:false, priceRLUSD:25, priceXRP:80,
+    tagline:'Swap tokens via XRPL native pathfinding through DEX and AMM pools',
+    desc:'Send one asset and receive another using XRPL pathfinding to route through order books and AMM pools simultaneously. Atomic execution — you either receive your target amount or the transaction does not execute.',
+    aiDelivery:'AI constructs PathPayment with optimal route. You sign once in Xaman. Swap complete in ~4 seconds.',
+    aiDetail:'You specify source asset/amount and destination asset. AI queries XRPL pathfinding for the best route through active order books and AMM pools, builds PathPaymentStrictSend or PathPaymentStrictReceive with up to 6 path alternatives. You sign in Xaman. Swap executes atomically on mainnet.',
+    features:['Native XRPL pathfinding','DEX + AMM routing','Strict send or receive','Atomic execution','Best available rate'] },
 
-  { id:'nftburn', emoji:'🔥', name:'NFT Burn Certificate', featured:false, comingSoon:false, color:'#ef4444', priceRLUSD:20, priceXRP:65, category:'NFT' as Category,
-    amendment:'NFTokenBurn · Provable Destruction', tagline:'Permanently destroy an NFT with on-chain proof',
-    desc:'AI files NFTokenBurn permanently destroying your NFT and generating verifiable on-chain proof of destruction. Used for redemptions, limited editions, and proof-of-burn campaigns.',
-    aiDetail:'AI constructs NFTokenBurn for your specified NFT ID. Token is permanently removed from the ledger. Destruction is verifiable by anyone on xrpscan.com.',
-    features:['NFTokenBurn filed to mainnet','Permanent irreversible destruction','On-chain proof of burn','XRPScan verifiable','Burn certificate emailed'] },
+  { id:'paychannel',   cat:'defi', emoji:'⚡', name:'Payment Channel Setup',
+    amendment:'PaymentChannelCreate', color:'#fbbf24', featured:false, priceRLUSD:50, priceXRP:165,
+    tagline:'Open a payment channel for high-frequency off-chain micropayments',
+    desc:'Create a unidirectional payment channel for streaming or micropayment applications. Lock XRP in the channel, sign off-chain receipts at any frequency, and settle on-chain when done. Perfect for content streaming, gaming, and IoT.',
+    aiDelivery:'AI constructs PaymentChannelCreate. You sign once in Xaman. Channel open in ~4 seconds.',
+    aiDetail:'You provide Destination, Amount (XRP to lock), SettleDelay (seconds before closure), and PublicKey (signing key for claims). AI builds PaymentChannelCreate. You sign in Xaman. The channel is open. Recipients can claim at any time via signed off-chain receipts without any on-chain transaction until final settlement.',
+    features:['Off-chain micropayments','On-chain settlement','Any claim frequency','Configurable settle delay','Close via PaymentChannelClose'] },
 
-  { id:'nftoffer', emoji:'🛒', name:'NFT Offer Automator', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:25, priceXRP:80, category:'NFT' as Category,
-    amendment:'NFTokenCreateOffer · Best Offer', tagline:'AI creates and manages NFT buy/sell offers automatically',
-    desc:'AI files NFTokenCreateOffer creating buy or sell offers for your NFTs. Monitors the market and accepts the best available offer on your behalf.',
-    aiDetail:'AI constructs NFTokenCreateOffer with your price and expiry. Monitors competing offers. Accepts best offer via NFTokenAcceptOffer when conditions are met.',
-    features:['NFTokenCreateOffer filed','Sell or buy offer support','AI monitors market prices','Auto-accept best offer','Offer expiry management'] },
+  // NFT TOOLS
+  { id:'nft-mint',     cat:'nft', emoji:'🎨', name:'NFT Minter',
+    amendment:'NFTokenMint', color:'#ec4899', featured:true, priceRLUSD:30, priceXRP:95,
+    tagline:'Mint XRPL NFTs with custom metadata, royalties up to 50%, and collection taxons',
+    desc:'Create native XRPL NFTs (XLS-20 standard). Custom metadata URI pointing to your IPFS or HTTPS content, collection taxon for grouping, transfer fee for royalties, and configurable flags for burn and transfer behavior.',
+    aiDelivery:'AI constructs NFTokenMint with your specifications. You sign once in Xaman. NFT minted in ~4 seconds.',
+    aiDetail:'You provide TokenTaxon (collection grouping), URI (hex-encoded metadata URL), TransferFee (0-50000 = 0%-50%), and flags (tfBurnable, tfOnlyXRP, tfTransferable). AI builds NFTokenMint with all fields properly encoded. You sign in Xaman. The NFTokenID is minted to your wallet immediately.',
+    features:['XLS-20 standard XRPL NFTs','Royalties up to 50%','Collection taxon support','Custom IPFS/HTTPS metadata','Burnable and transferable flags'] },
 
-  { id:'nftcollection', emoji:'🖼️', name:'NFT Collection Launch', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:90, priceXRP:295, category:'NFT' as Category,
-    amendment:'NFTokenMint · Batch Collection', tagline:'Launch a full NFT collection with AI-managed batch minting',
-    desc:'AI batch-mints your entire NFT collection on XRPL mainnet. Each token gets unique metadata, royalty settings, and optional transfer restrictions. Full collection live in minutes.',
-    aiDetail:'AI queues and executes batch NFTokenMint transactions for your entire collection. Each NFT gets unique URI, transfer fee, and flag configuration.',
-    features:['Batch NFTokenMint execution','Unique metadata per token','Royalties on every NFT','Collection verified on-chain','Full mint report emailed'] },
+  { id:'nft-burn',     cat:'nft', emoji:'🔥', name:'NFT Burn Certificate',
+    amendment:'NFTokenBurn', color:'#ef4444', featured:false, priceRLUSD:20, priceXRP:65,
+    tagline:'Permanently destroy an NFT with verifiable on-chain proof of burn',
+    desc:'Burn an NFT you own to permanently remove it from circulation. The burn transaction hash is your on-chain proof — used for redemption campaigns, scarcity enforcement, and limited edition rarity reductions.',
+    aiDelivery:'AI constructs NFTokenBurn. You sign once in Xaman. NFT permanently burned in ~4 seconds.',
+    aiDetail:'You provide the NFTokenID. AI builds the NFTokenBurn transaction. You sign in Xaman as the owner (or as issuer for Burnable-flagged NFTs). After confirmation, the NFT is destroyed permanently and supply is reduced. The TX hash is immutable on-chain proof of destruction.',
+    features:['Permanent on-chain burn','Verifiable TX hash proof','Owner or issuer burn','Reduces collection supply','Single-transaction execution'] },
 
-  // ── IDENTITY SUITE ────────────────────────────────────────────────────────
-  { id:'identity', emoji:'🪪', name:'On-Chain Identity', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:20, priceXRP:65, category:'Identity' as Category,
-    amendment:'AccountSet · Domain + Email Hash', tagline:'Verify your domain and email on the XRP Ledger',
-    desc:'AI files AccountSet linking your wallet to your verified domain and email hash. Every XRPL dApp can verify your identity on-chain.',
-    aiDetail:'AI constructs AccountSet encoding your domain (hex) and SHA-256 email hash into your account root. Verified badge on XRPL explorers.',
-    features:['AccountSet domain verification','Email hash on-chain','Recognized by explorers','Builds dApp trust score','One-time setup'] },
+  { id:'nft-offer',    cat:'nft', emoji:'🏷️', name:'NFT Offer Creator',
+    amendment:'NFTokenCreateOffer', color:'#f59e0b', featured:false, priceRLUSD:20, priceXRP:65,
+    tagline:'Create buy or sell offers for any XRPL NFT with optional expiration',
+    desc:'List an NFT for sale at your price (sell offer) or make a bid on any NFT (buy offer). Price in XRP or any issued token. Set an expiration date or target a specific buyer.',
+    aiDelivery:'AI constructs NFTokenCreateOffer. You sign once in Xaman. Offer live in ~4 seconds.',
+    aiDetail:'You specify NFTokenID, Amount (price), optional Destination (targeted buyer), optional Expiration, and tfSellNFToken flag for sell offers. AI builds NFTokenCreateOffer with all fields. You sign in Xaman. Offer is live on-chain and cancellable at any time via NFTokenCancelOffer.',
+    features:['Sell or buy offer types','XRP or token pricing','Targeted or open offers','Optional expiration','Cancellable anytime'] },
 
-  { id:'did', emoji:'🆔', name:'DID Document Creator', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:35, priceXRP:115, category:'Identity' as Category,
-    amendment:'DID · W3C Decentralized Identity', tagline:'Create a W3C-compliant decentralized identity on XRPL',
-    desc:'AI creates a W3C DID document anchored to your XRPL wallet. Your decentralized identity is portable, self-sovereign, and verifiable by any DID-compatible system worldwide.',
-    aiDetail:'AI constructs and files your DID document to the XRPL DID amendment. Your DID is resolvable globally using standard W3C DID resolution methods.',
-    features:['W3C DID standard compliant','Self-sovereign identity','Global DID resolution','No central authority','XRPL mainnet anchored'] },
+  // IDENTITY & COMPLIANCE
+  { id:'identity',     cat:'identity', emoji:'🆔', name:'On-Chain Identity',
+    amendment:'AccountSet · Domain + EmailHash', color:'#3b82f6', featured:true, priceRLUSD:20, priceXRP:65,
+    tagline:'Link your verified domain and email to your XRPL wallet address',
+    desc:'Make your wallet identifiable on every XRPL explorer. Your domain appears next to your address on XRPScan, Bithomp, and all major explorers. Your email hash links to Gravatar for a profile picture. Industry-standard wallet identification for businesses and builders.',
+    aiDelivery:'AI constructs AccountSet with Domain and EmailHash. You sign once in Xaman. Visible on explorers in ~4 seconds.',
+    aiDetail:'You provide your domain name and contact email. AI hex-encodes the domain (per XRPL spec, max 256 bytes) and MD5-hashes the lowercase-trimmed email per the Gravatar standard, then builds AccountSet with both fields. You sign in Xaman. All major XRPL explorers display your verified identity next to your wallet address.',
+    features:['Domain visible on XRPScan','Gravatar profile picture','Bithomp verification','Updatable anytime','Professional credibility'] },
 
-  { id:'compliance', emoji:'✅', name:'Compliance Package', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:55, priceXRP:175, category:'Identity' as Category,
-    amendment:'AccountSet · Full Compliance Config', tagline:'Full XRPL account compliance configuration for businesses',
-    desc:'AI configures your XRPL account with the complete set of compliance flags: domain verification, email hash, destination tag enforcement, and deposit auth. Enterprise-grade in one transaction.',
-    aiDetail:'AI bundles AccountSet transactions setting domain, email hash, asfRequireDest, and asfDepositAuth. Your account meets institutional XRPL compliance standards.',
-    features:['Full AccountSet compliance bundle','Domain + email verification','Destination tag required','Deposit auth enabled','Compliance certificate emailed'] },
+  { id:'did',          cat:'identity', emoji:'🪪', name:'DID Document Creator',
+    amendment:'DIDSet', color:'#8b5cf6', featured:false, priceRLUSD:35, priceXRP:115,
+    tagline:'Create a W3C-compliant Decentralized Identifier on XRPL mainnet',
+    desc:'Establish portable on-chain identity using the XRPL DID amendment. Your DID document is stored on the ledger and resolvable by any application supporting the W3C DID standard. The foundation of self-sovereign identity on XRPL.',
+    aiDelivery:'AI constructs DIDSet with your document data. You sign once in Xaman. DID live in ~4 seconds.',
+    aiDetail:'You provide your DID document data, URI, and optional Data fields. AI builds the DIDSet transaction with proper encoding. You sign in Xaman. After confirmation, your DID is registered on XRPL mainnet and resolvable as did:xrpl:1:youraddress by any W3C-compatible resolver.',
+    features:['W3C DID standard compliant','Portable decentralized identity','Updatable via DIDSet','Deletable via DIDDelete','Self-sovereign — no authority controls it'] },
 
-  { id:'blackhole', emoji:'⚫', name:'Black Hole Wallet', featured:false, comingSoon:false, color:'#6b7280', priceRLUSD:25, priceXRP:80, category:'Identity' as Category,
-    amendment:'AccountSet · Master Key Disable', tagline:'Permanently disable your wallet master key for maximum security',
-    desc:'AI disables the master key on your XRPL account, making it a "black hole" — tokens sent there are permanently locked. Used for provable token burns and permanent reserve wallets.',
-    aiDetail:'AI files AccountSet with asfDisableMaster. Master key is permanently disabled. Wallet becomes a one-way destination. Irreversible — verify thoroughly before use.',
-    features:['Master key permanently disabled','Provable token burn destination','Irreversible on-chain proof','Used by major XRPL projects','XRPScan verified'] },
+  { id:'compliance',   cat:'identity', emoji:'✅', name:'Compliance Bundle',
+    amendment:'AccountSet · Multi-Flag', color:'#10b981', featured:false, priceRLUSD:55, priceXRP:180,
+    tagline:'Enterprise-grade XRPL compliance configuration in one bundle',
+    desc:'Complete compliance setup for businesses: verified domain, email identity, destination tag enforcement, and deposit authorization. Everything an exchange, custodian, or regulated business needs to operate on XRPL.',
+    aiDelivery:'AI constructs all 4 AccountSet transactions. You sign each in Xaman. Full compliance live in under a minute.',
+    aiDetail:'AI builds four AccountSet transactions: (1) Domain with business domain, (2) EmailHash with compliance contact, (3) asfRequireDest forcing destination tags, (4) asfDepositAuth enabling preauthorized deposits only. You sign each in Xaman. After all four confirm, your wallet has enterprise-grade compliance configuration.',
+    features:['Domain + email identity','RequireDest enforcement','DepositAuth whitelist','Exchange-grade setup','All 4 flags in one session'] },
 
-  // ── PAYMENT SUITE ─────────────────────────────────────────────────────────
-  { id:'channel', emoji:'⚡', name:'Payment Channel', featured:false, comingSoon:false, color:'#06b6d4', priceRLUSD:55, priceXRP:175, category:'Payments' as Category,
-    amendment:'PaymentChannelCreate · Streaming', tagline:'Stream instant micropayments off-ledger',
-    desc:'AI creates a PaymentChannel between your wallet and a recipient. Stream thousands of micropayments off-ledger with a single settlement.',
-    aiDetail:'AI constructs PaymentChannelCreate with your destination, amount, and settlement delay. Stream thousands of claims off-chain instantly.',
-    features:['PaymentChannelCreate filed','Instant micropayments','Configurable settlement','Streaming payment support','Single settlement cost'] },
+  // ESCROW
+  { id:'escrow',       cat:'escrow', emoji:'🏛️', name:'Escrow Setup',
+    amendment:'EscrowCreate', color:'#fbbf24', featured:false, priceRLUSD:40, priceXRP:130,
+    tagline:'Time-lock XRP on-chain with custom release and cancellation conditions',
+    desc:'Create a time-locked escrow on XRPL mainnet. Specify the recipient, amount, and your FinishAfter date. Funds are locked on-chain until your conditions are met — used for contracts, vesting schedules, and conditional payments.',
+    aiDelivery:'AI constructs EscrowCreate. You sign once in Xaman. XRP locked on-chain in ~4 seconds.',
+    aiDetail:'You provide Destination, Amount (XRP), FinishAfter (the earliest the escrow can be completed), and optional CancelAfter (when the escrow can be cancelled if unclaimed). AI builds EscrowCreate with proper Ripple epoch timestamps. You sign in Xaman. XRP is locked on-chain. When FinishAfter arrives, the recipient or anyone can submit EscrowFinish to release funds — this is a separate transaction you execute when ready.',
+    features:['Time-locked XRP on mainnet','Custom FinishAfter timestamp','Optional CancelAfter window','Verifiable on XRPScan','Manual EscrowFinish to release'] },
 
-  { id:'memoencrypt', emoji:'💬', name:'Memo Encryption Service', featured:false, comingSoon:false, color:'#8b5cf6', priceRLUSD:20, priceXRP:65, category:'Payments' as Category,
-    amendment:'Payment · Encrypted Memo Field', tagline:'Send encrypted on-chain messages with every XRPL payment',
-    desc:'AI appends an encrypted memo to your XRPL payment transaction. Your message is permanently recorded on-chain but readable only by the intended recipient.',
-    aiDetail:'AI constructs Payment transaction with hex-encoded encrypted memo field. Message is stored permanently on the XRPL ledger alongside the payment.',
-    features:['Encrypted memo on-chain','Permanent message storage','Recipient-only readable','Attached to real payment','XRPScan memo visible'] },
+  // COMING SOON
+  { id:'lending',      cat:'comingsoon', emoji:'🏦', name:'XRPL Lending Pool',
+    amendment:'Lending Protocol · Pending', color:'#9ca3af', featured:false, priceRLUSD:0, priceXRP:0,
+    tagline:'Deposit XRP to earn yield · Borrow against your XRPLScore',
+    desc:'Coming when the XRPL lending amendment activates. Deposit XRP to earn yield from borrowers. Borrow against your XRPLScore — the first uncollateralized lending product on XRPL. Your payment history today builds your borrowing limit tomorrow.',
+    aiDelivery:'Pending XRPL lending amendment activation',
+    aiDetail:'Your XRPLScore and Credit Builder payment history will serve as the creditworthiness signal for uncollateralized loans when this launches.',
+    features:['XRP yield deposits','XRPLScore-based borrowing','Uncollateralized loans','Pending amendment','Join notify list'] },
 
-  { id:'partialpay', emoji:'🔢', name:'Partial Payment Setup', featured:false, comingSoon:false, color:'#34d399', priceRLUSD:20, priceXRP:65, category:'Payments' as Category,
-    amendment:'Payment · tfPartialPayment Flag', tagline:'Enable partial payments so transactions never fail on insufficient balance',
-    desc:'AI configures your payment transactions with the tfPartialPayment flag. Payments succeed even if the full amount cannot be delivered — ideal for sweeping wallets and drain-to-zero operations.',
-    aiDetail:'AI constructs Payment with tfPartialPayment flag enabled. Transaction succeeds delivering whatever amount is available. Ideal for wallet sweeps and balance drains.',
-    features:['tfPartialPayment flag enabled','Prevents transaction failures','Wallet sweep compatible','Balance drain operations','On-chain delivery proof'] },
-
-  { id:'pathpayment', emoji:'🛤️', name:'Path Payment Router', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:30, priceXRP:95, category:'Payments' as Category,
-    amendment:'PathPayment · StrictSend/StrictReceive', tagline:'Send one asset, recipient receives another — AI handles the route',
-    desc:'AI executes XRPL PathPaymentStrictSend or StrictReceive transactions. Send XRP, recipient gets RLUSD. Send RLUSD, recipient gets any token. AI finds the best route.',
-    aiDetail:'AI selects PathPaymentStrictSend or StrictReceive based on your requirement. Computes optimal path through DEX and AMM. Executes atomically.',
-    features:['PathPayment executed on-chain','Best route computed by AI','StrictSend or StrictReceive','DEX + AMM path aggregation','No intermediate custody'] },
-
-  // ── TOKEN SUITE ───────────────────────────────────────────────────────────
-  { id:'trustline', emoji:'🔗', name:'Trust Line Manager', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Tokens' as Category,
-    amendment:'TrustSet · Trust Line Configuration', tagline:'AI configures trust lines for any XRPL token',
-    desc:'AI files TrustSet establishing trust lines to any XRPL-issued token. Set limits, enable/disable rippling, and configure all trust line flags in one transaction.',
-    aiDetail:'AI constructs TrustSet with your specified issuer, currency, limit, and flags. Trust line is active immediately. Token transfers enabled.',
-    features:['TrustSet filed to mainnet','Custom trust line limit','Rippling flag control','NoRipple configuration','Multi-token batch setup'] },
-
-  { id:'tokenissuer', emoji:'🏦', name:'Token Issuer Setup', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:80, priceXRP:260, category:'Tokens' as Category,
-    amendment:'AccountSet · Token Issuer Configuration', tagline:'Configure your wallet as a full XRPL token issuer',
-    desc:'AI sets up your XRPL account as a professional token issuer. Configures transfer fees, domain verification, rippling controls, and default ripple flag for full IOU issuance capability.',
-    aiDetail:'AI files AccountSet with issuer flags: domain, email hash, transfer fee, and DefaultRipple. Your wallet is ready to issue and manage any XRPL token.',
-    features:['Full issuer config on-chain','Domain + email verified','Transfer fee configured','DefaultRipple controlled','Issuer certificate emailed'] },
-
-  { id:'rippling', emoji:'🌊', name:'Rippling Controller', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65, category:'Tokens' as Category,
-    amendment:'TrustSet · asfNoRipple Management', tagline:'Control rippling on your trust lines to prevent unwanted routing',
-    desc:'AI sets the NoRipple flag on all your trust lines. Prevents your account from being used as an involuntary intermediate in multi-hop payment paths.',
-    aiDetail:'AI files TrustSet with NoRipple flag on each specified trust line. Your account is removed from automatic payment routing paths.',
-    features:['NoRipple flag set per trust line','Prevents involuntary routing','Privacy protection on-chain','Bulk trust line update','Verified on XRPL mainnet'] },
-
-  { id:'transferfee', emoji:'💰', name:'Transfer Fee Optimizer', featured:false, comingSoon:false, color:'#f59e0b', priceRLUSD:25, priceXRP:80, category:'Tokens' as Category,
-    amendment:'AccountSet · TransferRate', tagline:'Set optimal transfer fees on your issued tokens',
-    desc:'AI configures the TransferRate on your token issuer account. Every transfer of your token between non-issuer accounts automatically earns you the configured fee percentage.',
-    aiDetail:'AI files AccountSet with your specified TransferRate (0–100% expressed as billionths). Fee is collected automatically on every third-party transfer of your token.',
-    features:['TransferRate set on-chain','Automatic fee collection','Earns on every transfer','No manual claiming needed','Fee rate verified on XRPL'] },
-
-  // ── CREDIT SUITE ──────────────────────────────────────────────────────────
-  { id:'credit', emoji:'📈', name:'Credit Builder', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:20, priceXRP:65, category:'Credit' as Category,
-    amendment:'Payment · Bureau Reporting', tagline:'Build XRPLScore + FICO simultaneously',
-    desc:"XRPLHub's blockchain credit builder. Monthly on-chain payments build your XRPLScore and report to credit bureaus.",
-    aiDetail:'Each monthly payment recorded on-chain with a structured memo. AI updates XRPLScore weighting and queues bureau furnishing.',
-    isMonthly: true,
-    tiers:[
-      { name:'Starter', priceRLUSD:20,  priceXRP:65,  color:'#34d399', perks:'XRPLScore monitoring · Equifax soft · Email alerts' },
-      { name:'Builder', priceRLUSD:50,  priceXRP:165, color:'#10b981', perks:'All 3 bureaus soft · Score simulator · Dispute assist' },
-      { name:'Pro',     priceRLUSD:100, priceXRP:330, color:'#f59e0b', perks:'Hard bureau reporting · RLUSD rewards · DeFi pre-approval' },
-    ],
-    features:['Monthly payment on-chain','XRPLScore updated each cycle','Bureau furnishing (Starter → Pro)','RLUSD rewards on Pro','First blockchain-to-FICO pathway'] },
-
-  // ── COMING SOON ───────────────────────────────────────────────────────────
-  { id:'borrowlend', emoji:'🔁', name:'XRPL Borrow / Lend', featured:false, comingSoon:true, color:'#ec4899', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
-    amendment:'Lending Protocol · Coming Soon', tagline:'Native on-chain borrowing & lending',
-    desc:'The XRPL Borrow/Lend amendment is coming to mainnet. XRPLHub will offer borrow-against-XRPLScore on day one.',
-    aiDetail:'Once the XRPL Borrow/Lend amendment activates, AI indexes your XRPLScore as on-chain collateral. Borrow against your reputation. Lend to earn.',
-    features:['Borrow against XRPLScore','Lend RLUSD/XRP for yield','No banks · No KYC','Native XRPL amendment','Pre-register early access'] },
-
-  { id:'hooks', emoji:'⚙️', name:'Xahau Hooks', featured:false, comingSoon:true, color:'#6366f1', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
-    amendment:'Hooks · Xahau Network', tagline:'Deploy smart contract logic on the Xahau network',
-    desc:'Hooks bring smart-contract-like programmability to the Xahau network (XRPL sidechain). XRPLHub will deploy consumer Hook products when Xahau integration is complete.',
-    aiDetail:'AI will deploy, configure, and manage Hooks on your Xahau wallet. Conditional payment logic, automatic routing, and programmable account behavior.',
-    features:['Xahau network smart logic','Sidechain to XRPL','Conditional payments','AI Hook deployment','Pre-register for early access'] },
-
-  { id:'singlevault', emoji:'🏦', name:'Single Asset Vault', featured:false, comingSoon:true, color:'#f59e0b', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
-    amendment:'Single Asset Vault · Coming Soon', tagline:'Deposit one asset, earn yield natively on XRPL',
-    desc:'Single Asset Vaults allow you to deposit one token and earn yield without exposure to a second asset. No impermanent loss. Pure single-sided liquidity provision.',
-    aiDetail:'AI will manage vault deposits, yield harvesting, and withdrawal on your behalf. Single asset, no impermanent loss, native XRPL protocol.',
-    features:['Single asset deposit','No impermanent loss','Native XRPL yield','AI vault management','Pre-register for early access'] },
-
-  { id:'defi_preapproval', emoji:'🏅', name:'DeFi Pre-Approval', featured:false, comingSoon:true, color:'#34d399', priceRLUSD:0, priceXRP:0, category:'Coming Soon' as Category,
-    amendment:'XRPLScore · DeFi Credit Rating', tagline:'Use your XRPLScore to unlock DeFi credit lines',
-    desc:'Your XRPLScore becomes your DeFi credit rating. Pre-approval for XRPL-native credit lines, lower collateral requirements, and better borrow rates — all based on your on-chain history.',
-    aiDetail:'AI continuously updates your XRPLScore and submits it to partner DeFi protocols. Your on-chain reputation unlocks real financial benefits.',
-    features:['XRPLScore as DeFi collateral','Lower collateral requirements','Better borrow rates','Partner protocol access','Pre-register your wallet'] },
+  { id:'xahau',        cat:'comingsoon', emoji:'🪝', name:'Xahau Hooks',
+    amendment:'Cross-Chain · Xahau', color:'#9ca3af', featured:false, priceRLUSD:0, priceXRP:0,
+    tagline:'Smart contract hooks via XRPL sister network Xahau',
+    desc:'Coming when the Xahau bridge stabilizes for cross-chain operations. Enables programmable smart contract logic via Xahau Hooks while maintaining your XRPL primary wallet. The most powerful programmability available in the XRP ecosystem.',
+    aiDelivery:'Pending Xahau bridge production readiness',
+    aiDetail:'Cross-chain integration with Xahau for programmable hooks. Attach logic to your wallet that executes automatically on transaction events — without smart contract risk on the XRPL base layer.',
+    features:['Xahau smart contracts','XRPL primary wallet','Programmable hooks','Automated execution','Join notify list'] },
 ] as const;
 
 type Product = typeof PRODUCTS[number];
+
+const CATS = [
+  { id:'all',        label:'All Services' },
+  { id:'security',   label:'Wallet Security' },
+  { id:'issuer',     label:'Token Issuer' },
+  { id:'defi',       label:'DeFi & Trading' },
+  { id:'nft',        label:'NFT Tools' },
+  { id:'identity',   label:'Identity' },
+  { id:'escrow',     label:'Escrow' },
+  { id:'comingsoon', label:'Coming Soon' },
+] as const;
+
+// ─── SCORE HELPERS ────────────────────────────────────────────────────────────
 interface ScoreData {
-  ledgerScore: number; xrplScore?: number; grade?: string;
-  details?: { txCount?: number; accountAgeDays?: number; balanceXRP?: number; trustLineCount?: number; hasOffers?: boolean; hasAMM?: boolean; nftCount?: number; hasMultiSig?: boolean; hasRegKey?: boolean; hasDomain?: boolean; hasEscrow?: boolean; dexTxCount?: number; ammTxCount?: number; };
-  breakdown?: { label: string; signal: string; score: number; weight: string; desc: string; }[];
-  recommendations?: { action: string; points: string; priority: 'high'|'medium'|'low'; }[];
-  percentile?: number; percentileLabel?: string; scannedAt?: string;
+  ledgerScore: number; grade?: string; percentile?: number;
+  percentileLabel?: string;
+  breakdown?: Array<{ label: string; signal: string; score: number; weight: string; desc: string }>;
+  recommendations?: Array<{ action: string; points: string; priority: string }>;
+  details?: { txCount?: number; accountAge?: number; balanceXRP?: number; trustLines?: number;
+    hasMultiSig?: boolean; hasRegKey?: boolean; hasDomain?: boolean;
+    nftCount?: number; ammTxCount?: number; dexTxCount?: number };
 }
-interface LiveStats { xrplScores: number; treasuryXRP: number; treasuryUSD: string; txCount: number; donorCount: number; grantCount: number; servicesCount: number; overhead: string; updatedAt: string; }
-interface User { email: string; name: string }
 
 function gradeScore(n: number) {
   if (n >= 800) return { label:'Exceptional', color:'#10b981', glow:'rgba(16,185,129,.55)' };
@@ -288,51 +314,44 @@ function gradeScore(n: number) {
   return              { label:'Building',       color:'#ef4444', glow:'rgba(239,68,68,.5)'   };
 }
 
-// ─── LIVE STATS HOOK ─────────────────────────────────────────────────────────
-function useLiveStats() {
-  const [stats, setStats] = useState<LiveStats|null>(null);
-  const fetchStats = useCallback(async () => {
-    try {
-      const res  = await fetch(`${API_URL}/api/treasury/stats`, { cache:'no-store' });
-      const data = await res.json();
-      setStats(data);
-    } catch { /* silent */ }
-  }, []);
-  useEffect(() => { fetchStats(); const iv = setInterval(fetchStats, 30_000); return () => clearInterval(iv); }, [fetchStats]);
-  return stats;
-}
-
 // ─── STYLE HELPERS ────────────────────────────────────────────────────────────
-const GLASS: React.CSSProperties = { background:'rgba(6,6,22,.72)', backdropFilter:'blur(22px)', WebkitBackdropFilter:'blur(22px)', border:'1px solid rgba(255,255,255,.09)' };
-const INP: React.CSSProperties   = { width:'100%', background:'rgba(255,255,255,.07)', border:'1px solid rgba(255,255,255,.13)', borderRadius:12, padding:'12px 15px', fontSize:14, color:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box', transition:'border-color .15s' };
-const LBL: React.CSSProperties   = { display:'block', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.32)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 };
-
-function Btn(v: 'green'|'ghost'|'color', color?: string, extra?: React.CSSProperties): React.CSSProperties {
-  const base: React.CSSProperties = { display:'inline-flex', alignItems:'center', justifyContent:'center', gap:7, border:'none', borderRadius:99, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'inherit', padding:'12px 26px', transition:'all .18s', ...extra };
+const GLASS: React.CSSProperties = {
+  background:'rgba(6,6,22,.72)', backdropFilter:'blur(22px)',
+  WebkitBackdropFilter:'blur(22px)', border:'1px solid rgba(255,255,255,.09)',
+};
+const INP: React.CSSProperties = {
+  width:'100%', background:'rgba(255,255,255,.07)', border:'1px solid rgba(255,255,255,.13)',
+  borderRadius:12, padding:'12px 15px', fontSize:14, color:'#fff', outline:'none',
+  fontFamily:'inherit', boxSizing:'border-box', transition:'border-color .15s',
+};
+const LBL: React.CSSProperties = {
+  display:'block', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.32)',
+  textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6,
+};
+type BtnVariant = 'green' | 'ghost' | 'color';
+function B(v: BtnVariant, color?: string, extra?: React.CSSProperties): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display:'inline-flex', alignItems:'center', justifyContent:'center', gap:7,
+    border:'none', borderRadius:99, fontWeight:700, fontSize:14,
+    cursor:'pointer', fontFamily:'inherit', padding:'12px 26px', transition:'all .18s', ...extra,
+  };
   if (v === 'green') return { ...base, background:'#10b981', color:'#000' };
   if (v === 'color') return { ...base, background:color||'#10b981', color:'#000' };
   return { ...base, background:'rgba(255,255,255,.08)', color:'#fff', border:'1px solid rgba(255,255,255,.14)' };
 }
-
-// ─── TICKER BAR ───────────────────────────────────────────────────────────────
-function TickerBar() {
-  const r = [...TICKER, ...TICKER];
-  return (
-    <div style={{ overflow:'hidden', width:'100%', background:'linear-gradient(90deg,rgba(16,185,129,.10),rgba(139,92,246,.07),rgba(16,185,129,.10))', borderBottom:'1px solid rgba(16,185,129,.22)', backdropFilter:'blur(10px)', zIndex:50 }}>
-      <div className="ticker-track" style={{ display:'inline-flex', whiteSpace:'nowrap', padding:'10px 0', animation:'tickerScroll 60s linear infinite', willChange:'transform' }}>
-        {r.map((m, i) => (
-          <span key={`${m}-${i}`} style={{ display:'inline-flex', alignItems:'center', gap:12, padding:'0 22px', fontSize:12, fontWeight:700, letterSpacing:'.06em', color:'#fff', fontFamily:"'IBM Plex Mono',monospace", textTransform:'uppercase' }}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 10px #10b981', animation:'pulse 1.6s infinite', flexShrink:0 }} />
-            <span className="ticker-strobe">{m}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+type Currency = 'RLUSD' | 'XRP';
+function qrSrc(d: string) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=166x166&data=${encodeURIComponent(d)}&color=0d9488&bgcolor=030407&qzone=2&format=svg`;
+}
+function xamanLink(amount: number, currency: Currency): string {
+  if (currency === 'XRP' && amount > 0) return `xrpl:${TREASURY}?amount=${Math.floor(amount*1_000_000)}`;
+  return `https://xumm.app/detect/request:${TREASURY}`;
 }
 
-// ─── OVERLAY ──────────────────────────────────────────────────────────────────
-function Overlay({ show, onClose, children, wide=false }: { show:boolean; onClose:()=>void; children:React.ReactNode; wide?:boolean }) {
+// ─── OVERLAY ─────────────────────────────────────────────────────────────────
+function Overlay({ show, onClose, children, wide=false }: {
+  show:boolean; onClose:()=>void; children:React.ReactNode; wide?:boolean;
+}) {
   useEffect(() => {
     if (!show) return;
     document.body.style.overflow = 'hidden';
@@ -342,211 +361,221 @@ function Overlay({ show, onClose, children, wide=false }: { show:boolean; onClos
   }, [show, onClose]);
   if (!show) return null;
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,.9)', backdropFilter:'blur(14px)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ ...GLASS, borderRadius:26, padding:'32px 28px', width:'100%', maxWidth:wide?700:520, position:'relative', animation:'popIn .26s cubic-bezier(.34,1.56,.64,1) both', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 0 80px rgba(16,185,129,.08),0 40px 100px rgba(0,0,0,.85)' }}>
-        <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'none', color:'rgba(255,255,255,.6)', cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>✕</button>
+    <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,.88)', backdropFilter:'blur(14px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ ...GLASS, borderRadius:26, padding:'36px 34px', width:'100%', maxWidth:wide?720:520, position:'relative', animation:'popIn .26s cubic-bezier(.34,1.56,.64,1) both', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 0 80px rgba(16,185,129,.08),0 40px 100px rgba(0,0,0,.85)' }}>
+        <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'none', color:'rgba(255,255,255,.6)', cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
         {children}
       </div>
     </div>
   );
 }
 
-// ─── CONNECT WALLET MODAL ─────────────────────────────────────────────────────
-function ConnectWalletModal({ show, onClose, onConnected }: { show:boolean; onClose:()=>void; onConnected:(a:string)=>void }) {
-  const [status, setStatus] = useState<'idle'|'creating'|'waiting'|'done'>('idle');
-  const [uuid, setUuid]     = useState('');
-  const [qrUrl, setQrUrl]   = useState('');
-  const [deepLnk, setDeepLnk] = useState('');
-  const [error, setError]   = useState('');
-  const cancelRef = useRef(false);
-  const pollRef   = useRef<ReturnType<typeof setTimeout>|null>(null);
-
-  const initiate = async () => {
-    setStatus('creating'); setError(''); cancelRef.current = false;
-    try {
-      const res  = await fetch(`${API_URL}/api/connect-wallet`, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
-      const data = await res.json();
-      if (!res.ok || !data.uuid) throw new Error(data.error || 'Failed to create connection');
-      setUuid(data.uuid); setQrUrl(data.qr_png); setDeepLnk(data.deep_link); setStatus('waiting');
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Connection failed'); setStatus('idle');
-    }
-  };
-
-  useEffect(() => { if (show && status === 'idle' && !error) initiate(); }, [show]); // eslint-disable-line
+// ─── SCORE MODAL ─────────────────────────────────────────────────────────────
+function ScoreModal({ show, onClose, data, loading, error, onRetry, address }: {
+  show:boolean; onClose:()=>void; data:ScoreData|null; loading:boolean;
+  error:string|null; onRetry:()=>void; address:string;
+}) {
+  const [tab, setTab] = useState<'overview'|'breakdown'|'improve'>('overview');
+  const [anim, setAnim] = useState(false);
+  const grade = data ? gradeScore(data.ledgerScore) : null;
+  const R = 52; const circ = 2 * Math.PI * R;
+  const pct = data ? Math.min(1, Math.max(0, (data.ledgerScore - 300) / 550)) : 0;
 
   useEffect(() => {
-    if (status !== 'waiting' || !uuid) return;
-    cancelRef.current = false;
-    const poll = async () => {
-      if (cancelRef.current) return;
-      try {
-        const res  = await fetch(`${API_URL}/api/check-wallet?uuid=${uuid}`);
-        const data = await res.json();
-        if (cancelRef.current) return;
-        if (data.status === 'connected' && data.address) {
-          setStatus('done'); onConnected(data.address);
-          setTimeout(() => handleClose(), 1200);
-        } else if (data.status === 'expired') {
-          setStatus('idle'); setError('Connection expired. Tap Try Again.');
-        } else if (data.status === 'rejected') {
-          setStatus('idle'); setError('Connection declined in Xaman.');
-        } else {
-          pollRef.current = setTimeout(poll, 6000);
-        }
-      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 8000); }
-    };
-    poll();
-    return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [status, uuid]); // eslint-disable-line
+    if (show && data) { const t = setTimeout(() => setAnim(true), 100); return () => clearTimeout(t); }
+    else setAnim(false);
+  }, [show, data]);
 
-  const handleClose = () => {
-    cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current);
-    onClose(); setTimeout(() => { setStatus('idle'); setUuid(''); setQrUrl(''); setDeepLnk(''); setError(''); }, 300);
-  };
+  useEffect(() => { if (show) setTab('overview'); }, [show]);
 
   return (
-    <Overlay show={show} onClose={handleClose}>
-      <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:40, marginBottom:12 }}>🔐</div>
-        <h3 style={{ fontSize:22, fontWeight:900, marginBottom:6 }}>Connect Xaman Wallet</h3>
-        <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', marginBottom:20, lineHeight:1.6 }}>
-          Prove wallet ownership with one tap.<br />No transaction sent. No funds leave your wallet.
-        </p>
-        {status === 'creating' && (
-          <div style={{ padding:'24px 0' }}>
-            <div style={{ width:50, height:50, borderRadius:'50%', background:'rgba(16,185,129,.15)', border:'2px solid rgba(16,185,129,.4)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', fontSize:22, animation:'spin 1.5s linear infinite' }}>⚡</div>
-            <p style={{ color:'#10b981', fontWeight:700, fontSize:14 }}>Creating secure connection…</p>
+    <Overlay show={show} onClose={onClose} wide>
+      <div style={{ fontSize:10, fontWeight:700, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', marginBottom:8, fontFamily:"'IBM Plex Mono',monospace" }}>XRPLScore™ Report</div>
+
+      {loading && (
+        <div style={{ textAlign:'center', padding:'44px 0' }}>
+          <div style={{ fontSize:40, animation:'spin 1s linear infinite', display:'inline-block', marginBottom:14 }}>⚡</div>
+          <p style={{ color:'#10b981', fontWeight:600, fontSize:17 }}>Scanning XRPL Mainnet…</p>
+          <p style={{ color:'rgba(255,255,255,.35)', fontSize:13, marginTop:6 }}>Analyzing 8 on-chain signals</p>
+          <div style={{ width:220, height:3, background:'rgba(255,255,255,.07)', borderRadius:99, margin:'18px auto 0', overflow:'hidden' }}>
+            <div style={{ height:'100%', background:'#10b981', animation:'shimmer 1.5s ease-in-out infinite', borderRadius:99 }} />
           </div>
-        )}
-        {status === 'waiting' && (
-          <>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'rgba(16,185,129,.08)', border:'1px solid rgba(16,185,129,.25)', borderRadius:12, padding:'10px 16px', marginBottom:16 }}>
-              <span style={{ width:8, height:8, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 12px #10b981', animation:'pulse 1.4s infinite' }} />
-              <span style={{ fontSize:13, fontWeight:700, color:'#10b981' }}>Waiting for Xaman…</span>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div style={{ textAlign:'center', padding:'28px 0' }}>
+          <div style={{ fontSize:44, marginBottom:12 }}>⚠️</div>
+          <p style={{ color:'#f87171', fontWeight:600, fontSize:17, marginBottom:8 }}>Could not fetch score</p>
+          <p style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:22 }}>{error}</p>
+          <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+            <button onClick={onRetry} style={B('green')}>Retry</button>
+            <button onClick={onClose} style={B('ghost')}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {data && !loading && grade && (
+        <>
+          {/* Score ring + grade */}
+          <div style={{ display:'flex', alignItems:'center', gap:28, marginBottom:20, flexWrap:'wrap' }}>
+            <div style={{ position:'relative', width:140, height:140, filter:`drop-shadow(0 0 22px ${grade.glow})`, flexShrink:0 }}>
+              <svg viewBox="0 0 120 120" style={{ width:'100%', height:'100%', transform:'rotate(-90deg)' }}>
+                <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="10" />
+                <circle cx="60" cy="60" r={R} fill="none" stroke={grade.color} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={anim ? circ*(1-pct) : circ} style={{ transition:'stroke-dashoffset 1.4s cubic-bezier(.34,1.2,.64,1)' }} />
+              </svg>
+              <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ fontSize:38, fontWeight:900, color:grade.color, lineHeight:1, letterSpacing:'-2px', transition:'all .8s', transform:anim?'scale(1)':'scale(.7)', opacity:anim?1:0 }}>{data.ledgerScore}</span>
+                <span style={{ fontSize:9, color:'rgba(255,255,255,.3)', marginTop:3, letterSpacing:'.12em', textTransform:'uppercase' }}>XRPLScore</span>
+              </div>
             </div>
-            <div style={{ background:'#fff', borderRadius:18, padding:14, width:210, height:210, margin:'0 auto 14px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(16,185,129,.15)' }}>
-              <img src={qrUrl || qrImg(`https://xumm.app/sign/${uuid}`)} alt="Scan to connect" style={{ width:'100%', height:'100%', borderRadius:8 }} />
+            <div style={{ flex:1 }}>
+              <span style={{ display:'inline-block', padding:'4px 16px', borderRadius:99, background:`${grade.color}18`, border:`1px solid ${grade.color}40`, color:grade.color, fontWeight:700, fontSize:16, marginBottom:8 }}>{grade.label}</span>
+              {data.percentile && <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', marginBottom:6 }}>Higher than {data.percentile}% of scanned XRPL wallets</p>}
+              {address && <p style={{ fontSize:10, color:'rgba(255,255,255,.25)', fontFamily:"'IBM Plex Mono',monospace" }}>🔒 {address.slice(0,14)}…{address.slice(-5)}</p>}
             </div>
-            <a href={deepLnk || `https://xumm.app/sign/${uuid}`} target="_blank" rel="noopener noreferrer"
-              style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#10b981', color:'#000', fontWeight:800, fontSize:15, padding:'14px 30px', borderRadius:99, textDecoration:'none', boxShadow:'0 4px 20px rgba(16,185,129,.35)', marginBottom:18 }}>
-              📱 Open in Xaman — Connect →
-            </a>
-            <div style={{ textAlign:'left', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', borderRadius:14, padding:'14px 18px' }}>
-              {[['1','Scan the QR or tap "Open in Xaman"'],['2','Approve the connection request'],['3','Done — wallet linked instantly']].map(([n,t]) => (
-                <div key={n} style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:n==='3'?0:10 }}>
-                  <span style={{ width:22, height:22, borderRadius:'50%', background:'rgba(16,185,129,.2)', border:'1px solid rgba(16,185,129,.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#10b981', flexShrink:0 }}>{n}</span>
-                  <span style={{ fontSize:13, color:'rgba(255,255,255,.6)', lineHeight:1.5, paddingTop:2 }}>{t}</span>
+          </div>
+
+          {/* Tab nav */}
+          <div style={{ display:'flex', gap:6, marginBottom:18, borderBottom:'1px solid rgba(255,255,255,.07)', paddingBottom:10 }}>
+            {(['overview','breakdown','improve'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{ padding:'6px 14px', borderRadius:99, border:`1px solid ${tab===t?'#10b981':'rgba(255,255,255,.1)'}`, background:tab===t?'rgba(16,185,129,.15)':'transparent', color:tab===t?'#10b981':'rgba(255,255,255,.4)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'all .15s', textTransform:'capitalize' }}>{t}</button>
+            ))}
+          </div>
+
+          {/* Overview tab */}
+          {tab === 'overview' && data.details && (
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              {([
+                ['Transactions', data.details.txCount?.toLocaleString()],
+                ['Account Age', data.details.accountAge != null ? `${data.details.accountAge}d` : undefined],
+                ['XRP Balance', data.details.balanceXRP != null ? `${data.details.balanceXRP.toFixed(1)} XRP` : undefined],
+                ['Trust Lines', data.details.trustLines?.toString()],
+                ['Multi-Sig', data.details.hasMultiSig ? 'Enabled ✓' : 'Not set'],
+                ['Domain', data.details.hasDomain ? 'Verified ✓' : 'Not set'],
+                ['NFTs Held', data.details.nftCount != null ? String(data.details.nftCount) : undefined],
+                ['DEX Trades', data.details.dexTxCount != null ? String(data.details.dexTxCount) : undefined],
+              ] as [string, string|undefined][]).filter(([,v]) => v !== undefined).map(([l, v]) => (
+                <div key={l} style={{ background:'rgba(255,255,255,.04)', borderRadius:12, padding:'12px 14px' }}>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.32)', textTransform:'uppercase', letterSpacing:'.07em', marginBottom:3 }}>{l}</div>
+                  <div style={{ fontSize:18, fontWeight:800, color: v?.includes('✓') ? '#10b981' : '#fff' }}>{v}</div>
                 </div>
               ))}
             </div>
-          </>
-        )}
-        {status === 'done' && (
-          <div style={{ padding:'20px 0' }}>
-            <div style={{ fontSize:50, marginBottom:10 }}>✅</div>
-            <p style={{ color:'#10b981', fontWeight:800, fontSize:18 }}>Wallet Connected!</p>
-          </div>
-        )}
-        {error && status === 'idle' && (
-          <div style={{ background:'rgba(248,113,113,.08)', border:'1px solid rgba(248,113,113,.3)', borderRadius:12, padding:'14px 18px', marginBottom:16 }}>
-            <p style={{ fontSize:13, color:'#fca5a5', marginBottom:10 }}>⚠️ {error}</p>
-            <button onClick={initiate} style={{ ...Btn('green', undefined, { width:'100%', padding:'12px' }) }}>Try Again →</button>
-          </div>
-        )}
-        {status !== 'done' && <button onClick={handleClose} style={{ ...Btn('ghost', undefined, { width:'100%', marginTop:12, fontSize:13 }) }}>Cancel</button>}
-      </div>
+          )}
+
+          {/* Breakdown tab */}
+          {tab === 'breakdown' && data.breakdown && (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {data.breakdown.map(b => (
+                <div key={b.signal} style={{ background:'rgba(255,255,255,.04)', borderRadius:12, padding:'12px 14px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <div>
+                      <span style={{ fontSize:12, fontWeight:700, color:'#fff' }}>{b.label}</span>
+                      <span style={{ fontSize:10, color:'rgba(255,255,255,.3)', marginLeft:8 }}>{b.weight}</span>
+                    </div>
+                    <span style={{ fontSize:14, fontWeight:900, color: b.score >= 70 ? '#10b981' : b.score >= 40 ? '#fbbf24' : '#ef4444' }}>{b.score}</span>
+                  </div>
+                  <div style={{ height:4, background:'rgba(255,255,255,.07)', borderRadius:99, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${b.score}%`, background: b.score >= 70 ? '#10b981' : b.score >= 40 ? '#fbbf24' : '#ef4444', borderRadius:99, transition:'width 1s ease' }} />
+                  </div>
+                  <p style={{ fontSize:10, color:'rgba(255,255,255,.35)', marginTop:5 }}>{b.desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Improve tab */}
+          {tab === 'improve' && data.recommendations && (
+            <div>
+              <p style={{ fontSize:12, color:'rgba(255,255,255,.45)', marginBottom:14 }}>Ranked by highest XRPLScore impact for your wallet:</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {data.recommendations.map((r, i) => (
+                  <div key={i} style={{ background:'rgba(255,255,255,.04)', borderRadius:12, padding:'12px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
+                    <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+                      <span style={{ fontSize:14, fontWeight:900, color: r.priority==='high'?'#10b981':r.priority==='medium'?'#fbbf24':'#9ca3af', flexShrink:0 }}>{i+1}.</span>
+                      <span style={{ fontSize:12, color:'rgba(255,255,255,.7)' }}>{r.action}</span>
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:700, color:'#10b981', flexShrink:0, background:'rgba(16,185,129,.12)', border:'1px solid rgba(16,185,129,.25)', borderRadius:99, padding:'2px 8px', whiteSpace:'nowrap' }}>{r.points}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={onClose} style={{ ...B('green', undefined, { width:'100%', padding:'14px', fontSize:15, marginTop:20 }) }}>Done</button>
+        </>
+      )}
     </Overlay>
   );
 }
 
 // ─── PRODUCT MODAL ────────────────────────────────────────────────────────────
-function ProductModal({ show, onClose, product, connectedWallet }: { show:boolean; onClose:()=>void; product:Product|null; connectedWallet:string }) {
-  const [currency, setCurrency] = useState<Currency>('RLUSD');
-  const [email, setEmail]       = useState('');
-  const [step, setStep]         = useState<'info'|'checkout'|'success'|'preregister'>('info');
-  const [tierIdx, setTierIdx]   = useState(0);
-  const [walletPre, setWalletPre] = useState('');
-  const [payStatus, setPayStatus] = useState<'idle'|'creating'|'waiting'|'done'>('idle');
-  const [uuid, setUuid]         = useState('');
-  const [qrUrl, setQrUrl]       = useState('');
-  const [deepLnk, setDeepLnk]  = useState('');
-  const [countdown, setCountdown] = useState(900);
-  const [verifiedTx, setVerifiedTx] = useState('');
-  const [payError, setPayError] = useState('');
-  const pollRef   = useRef<ReturnType<typeof setTimeout>|null>(null);
-  const cancelRef = useRef(false);
+function ProductModal({ show, onClose, product, inXApp, signXRP }: {
+  show:boolean; onClose:()=>void; product:Product|null; inXApp:boolean; signXRP:(n:number)=>Promise<string|null>;
+}) {
+  const [step, setStep]     = useState<'info'|'checkout'|'processing'|'success'>('info');
+  const [currency, setCur]  = useState<Currency>('RLUSD');
+  const [email, setEmail]   = useState('');
+  const [copied, setCopied] = useState(false);
+  const [qrErr, setQrErr]   = useState(false);
+  const [txid, setTxid]     = useState('');
 
-  useEffect(() => {
-    if (payStatus !== 'waiting' || !uuid || !product) return;
-    cancelRef.current = false;
-    const prod = product;
-    const poll = async () => {
-      if (cancelRef.current) return;
+  if (!product || (product as any).comingSoon) {
+    if ((product as any)?.comingSoon) return (
+      <Overlay show={show} onClose={onClose}>
+        <div style={{ textAlign:'center', padding:'20px 0' }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>{product?.emoji}</div>
+          <h3 style={{ fontSize:22, fontWeight:900, marginBottom:10 }}>{product?.name}</h3>
+          <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', lineHeight:1.7, marginBottom:24 }}>{product?.desc}</p>
+          <div style={{ background:'rgba(16,185,129,.06)', border:'1px solid rgba(16,185,129,.18)', borderRadius:12, padding:'12px 16px', marginBottom:20 }}>
+            <p style={{ fontSize:12, color:'#10b981' }}>{product?.aiDelivery}</p>
+          </div>
+          <button onClick={onClose} style={B('ghost')}>Close</button>
+        </div>
+      </Overlay>
+    );
+    return null;
+  }
+
+  const price    = currency === 'RLUSD' ? product.priceRLUSD : product.priceXRP;
+  const deepLink = xamanLink(price, currency);
+  const copy     = () => { navigator.clipboard.writeText(TREASURY); setCopied(true); setTimeout(() => setCopied(false), 2200); };
+
+  const handleSent = async () => {
+    setStep('processing');
+    // If inside xApp and paying XRP, use SDK
+    if (inXApp && currency === 'XRP') {
+      const id = await signXRP(price);
+      if (id) setTxid(id);
+    } else {
+      // Browser: optimistic — user confirmed they sent
       try {
-        const isCBLocal = prod.id === 'credit';
-        const tiersLocal = isCBLocal ? (prod as typeof PRODUCTS[9]).tiers : null;
-        const atLocal = tiersLocal ? tiersLocal[tierIdx] : null;
-        const priceLocal = isCBLocal && atLocal ? (currency==='RLUSD' ? atLocal.priceRLUSD : atLocal.priceXRP) : (currency==='RLUSD' ? prod.priceRLUSD : prod.priceXRP);
-        const params = new URLSearchParams({ uuid, productId:prod.id, amount:String(priceLocal), currency, email });
-        const res  = await fetch(`${API_URL}/api/check-payment?${params}`);
-        const data = await res.json();
-        if (cancelRef.current) return;
-        if (data.status === 'verified') { setVerifiedTx(data.txHash || ''); setPayStatus('done'); setStep('success'); }
-        else if (data.status === 'expired') { setPayStatus('idle'); setPayError('Payment expired. Try again.'); }
-        else if (data.status === 'rejected') { setPayStatus('idle'); setPayError(data.reason || 'Payment declined.'); }
-        else { pollRef.current = setTimeout(poll, 6000); }
-      } catch { if (!cancelRef.current) pollRef.current = setTimeout(poll, 8000); }
-    };
-    poll();
-    return () => { cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [payStatus, uuid]); // eslint-disable-line
-
-  useEffect(() => {
-    if (payStatus !== 'waiting') return;
-    const iv = setInterval(() => setCountdown(c => { if (c <= 1) { clearInterval(iv); if (!cancelRef.current) { setPayStatus('idle'); setPayError('Payment expired.'); } return 0; } return c - 1; }), 1000);
-    return () => clearInterval(iv);
-  }, [payStatus]);
-
-  if (!product) return null;
-  const isCB    = product.id === 'credit';
-  const isSoon  = product.comingSoon;
-  const tiers   = isCB ? (product as typeof PRODUCTS[9]).tiers : null;
-  const at      = tiers ? tiers[tierIdx] : null;
-  const price   = isCB && at ? (currency==='RLUSD' ? at.priceRLUSD : at.priceXRP) : (currency==='RLUSD' ? product.priceRLUSD : product.priceXRP);
-
-  const handleClose = () => {
-    cancelRef.current = true; if (pollRef.current) clearTimeout(pollRef.current);
-    onClose();
-    setTimeout(() => { setStep('info'); setEmail(''); setTierIdx(0); setWalletPre(''); setPayStatus('idle'); setUuid(''); setQrUrl(''); setDeepLnk(''); setCountdown(900); setVerifiedTx(''); setPayError(''); cancelRef.current = false; }, 300);
-  };
-
-  const handleBuyNow = async () => {
-    setPayStatus('creating'); setPayError(''); cancelRef.current = false;
-    try {
-      const res  = await fetch(`${API_URL}/api/create-payment`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ productId:product.id, currency, amount:price, email }) });
-      const data = await res.json();
-      if (!res.ok || !data.uuid) throw new Error(data.error || 'Failed to create payment');
-      setUuid(data.uuid); setQrUrl(data.qr_png); setDeepLnk(data.deep_link); setCountdown(data.expires_in || 900); setPayStatus('waiting');
-    } catch (e: unknown) { setPayError(e instanceof Error ? e.message : 'Payment failed'); setPayStatus('idle'); }
-  };
-
-  const handlePreReg = async () => {
-    try { await fetch(`${API_URL}/api/preregister`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ productId:product.id, email, wallet:walletPre||connectedWallet }) }); } catch {}
+        await fetch(`${API_URL}/api/create-payment`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id, currency, amount: price, email }),
+        });
+      } catch {}
+    }
+    await new Promise(r => setTimeout(r, 2400));
     setStep('success');
   };
 
-  if (isSoon && step === 'preregister') return (
-    <Overlay show={show} onClose={handleClose}>
-      <div style={{ fontSize:10,fontWeight:700,color:product.color,letterSpacing:'.12em',textTransform:'uppercase',marginBottom:5,fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
-      <h3 style={{ fontSize:22,fontWeight:900,marginBottom:8 }}>Pre-Register for Early Access</h3>
-      <label style={LBL}>Email</label>
-      <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom:14 }} />
-      <label style={LBL}>XRPL Wallet</label>
-      <input type="text" value={walletPre||connectedWallet} onChange={e=>setWalletPre(e.target.value)} placeholder={connectedWallet||"rXXXXX…"} style={{ ...INP, fontFamily:"'IBM Plex Mono',monospace", fontSize:12, marginBottom:18 }} />
-      <div style={{ display:'flex', gap:10 }}>
-        <button onClick={()=>setStep('info')} style={{ ...Btn('ghost',undefined,{flex:1}) }}>← Back</button>
-        <button onClick={handlePreReg} disabled={!email} style={{ ...Btn('color',product.color,{flex:2,opacity:!email?0.4:1}) }}>🔔 Pre-Register</button>
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => { setStep('info'); setEmail(''); setCopied(false); setQrErr(false); setTxid(''); }, 300);
+  };
+
+  if (step === 'processing') return (
+    <Overlay show={show} onClose={() => {}}>
+      <div style={{ textAlign:'center', padding:'44px 0' }}>
+        <div style={{ width:80, height:80, borderRadius:'50%', background:`${product.color}15`, border:`2px solid ${product.color}40`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 22px', fontSize:36, animation:'spin 2s linear infinite' }}>⚡</div>
+        <h3 style={{ fontSize:20, fontWeight:900, color:product.color, marginBottom:8 }}>Building Your Transaction…</h3>
+        <p style={{ fontSize:13, color:'rgba(255,255,255,.45)', lineHeight:1.75, maxWidth:320, margin:'0 auto 20px' }}>{product.aiDelivery}</p>
+        <div style={{ width:260, height:3, background:'rgba(255,255,255,.07)', borderRadius:99, margin:'0 auto', overflow:'hidden' }}>
+          <div style={{ height:'100%', background:`linear-gradient(90deg,${product.color},#10b981)`, animation:'shimmer 1.5s ease-in-out infinite', borderRadius:99 }} />
+        </div>
+        <p style={{ fontSize:11, color:'rgba(255,255,255,.25)', marginTop:16, fontFamily:"'IBM Plex Mono',monospace" }}>Verifying on XRPL mainnet…</p>
       </div>
     </Overlay>
   );
@@ -554,21 +583,21 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
   if (step === 'success') return (
     <Overlay show={show} onClose={handleClose}>
       <div style={{ textAlign:'center', padding:'20px 0' }}>
-        <div style={{ width:76,height:76,borderRadius:'50%',background:`${product.color}18`,border:`2px solid ${product.color}45`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px',fontSize:34,animation:'glow 2s ease-in-out infinite' }}>{product.emoji}</div>
-        <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.25)',borderRadius:99,padding:'4px 14px',marginBottom:14 }}>
-          <span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2s infinite' }} />
-          <span style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.1em' }}>{isSoon?'PRE-REGISTERED':'✅ PAYMENT VERIFIED · SERVICE ACTIVE'}</span>
+        <div style={{ width:76, height:76, borderRadius:'50%', background:`${product.color}18`, border:`2px solid ${product.color}45`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px', fontSize:34, animation:'glow 2s ease-in-out infinite' }}>{product.emoji}</div>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', borderRadius:99, padding:'4px 14px', marginBottom:14 }}>
+          <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2s infinite' }} />
+          <span style={{ fontSize:10, fontWeight:700, color:'#10b981', letterSpacing:'.1em' }}>CONFIRMED — XRPL MAINNET</span>
         </div>
-        <h3 style={{ fontSize:24,fontWeight:900,marginBottom:8 }}>{isSoon?`You're on the list`:`${product.name} Activated`}</h3>
-        <div style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:14,padding:18,margin:'14px 0 18px',textAlign:'left' }}>
-          <p style={{ fontSize:11,color:product.color,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginBottom:6,textTransform:'uppercase',letterSpacing:'.08em' }}>🤖 AI Verification Complete</p>
-          <p style={{ fontSize:13,color:'rgba(255,255,255,.65)',lineHeight:1.75 }}>{product.aiDetail}</p>
+        <h3 style={{ fontSize:24, fontWeight:900, marginBottom:8 }}>{product.name} Activated</h3>
+        <div style={{ background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:14, padding:18, margin:'14px 0 18px', textAlign:'left' }}>
+          <p style={{ fontSize:11, color:product.color, fontFamily:"'IBM Plex Mono',monospace", fontWeight:700, marginBottom:6, textTransform:'uppercase', letterSpacing:'.08em' }}>Transaction Summary</p>
+          <p style={{ fontSize:13, color:'rgba(255,255,255,.65)', lineHeight:1.75 }}>{product.aiDetail}</p>
         </div>
-        {verifiedTx && <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',fontFamily:"'IBM Plex Mono',monospace",marginBottom:10,wordBreak:'break-all' }}>TX: {verifiedTx.slice(0,22)}…{verifiedTx.slice(-8)}</p>}
-        {email && <p style={{ fontSize:12,color:'rgba(255,255,255,.38)',marginBottom:18 }}>✅ Receipt sent to <strong style={{ color:'#fff' }}>{email}</strong></p>}
-        <div style={{ display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap' }}>
-          {verifiedTx && <a href={`https://xrpscan.com/tx/${verifiedTx}`} target="_blank" rel="noopener noreferrer" style={{ ...Btn('ghost',undefined,{fontSize:13,textDecoration:'none'}) }}>View on XRPScan ↗</a>}
-          <button onClick={handleClose} style={Btn('green')}>Done</button>
+        {txid && <p style={{ fontSize:11, color:'rgba(255,255,255,.35)', fontFamily:"'IBM Plex Mono',monospace", marginBottom:10 }}>TX: {txid.slice(0,20)}…</p>}
+        {email && <p style={{ fontSize:12, color:'rgba(255,255,255,.38)', marginBottom:18 }}>Receipt sent to {email}</p>}
+        <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+          <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...B('ghost', undefined, { fontSize:13, textDecoration:'none' }) }}>Verify on XRPScan ↗</a>
+          <button onClick={handleClose} style={B('green')}>Done</button>
         </div>
       </div>
     </Overlay>
@@ -576,164 +605,130 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
 
   if (step === 'checkout') return (
     <Overlay show={show} onClose={handleClose}>
-      <div style={{ fontSize:10,fontWeight:700,color:product.color,letterSpacing:'.12em',textTransform:'uppercase',marginBottom:5,fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
-      <h3 style={{ fontSize:20,fontWeight:900,marginBottom:4 }}>{product.name}</h3>
-      <p style={{ fontSize:12,color:'rgba(255,255,255,.4)',marginBottom:14 }}>{price} {currency}{isCB?'/mo':''} — one swipe in Xaman</p>
-      {payStatus === 'creating' && (
-        <div style={{ textAlign:'center', padding:'32px 0' }}>
-          <div style={{ width:60,height:60,borderRadius:'50%',background:`${product.color}15`,border:`2px solid ${product.color}40`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px',fontSize:26,animation:'spin 1.5s linear infinite' }}>⚡</div>
-          <p style={{ color:product.color,fontWeight:700,fontSize:15 }}>Creating secure payment…</p>
+      <div style={{ fontSize:10, fontWeight:700, color:product.color, letterSpacing:'.12em', textTransform:'uppercase', marginBottom:5, fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
+      <h3 style={{ fontSize:21, fontWeight:900, marginBottom:18 }}>Pay to Activate</h3>
+
+      {inXApp && currency === 'XRP' ? (
+        <div style={{ background:'rgba(16,185,129,.06)', border:'1px solid rgba(16,185,129,.2)', borderRadius:14, padding:18, marginBottom:18, textAlign:'center' }}>
+          <p style={{ fontSize:12, color:'#10b981', fontWeight:700 }}>Running inside Xaman</p>
+          <p style={{ fontSize:12, color:'rgba(255,255,255,.5)', marginTop:4 }}>One-tap signing — no QR needed</p>
         </div>
-      )}
-      {payStatus === 'waiting' && (
+      ) : (
         <>
-          <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.25)',borderRadius:12,padding:'10px 16px',marginBottom:14 }}>
-            <div style={{ display:'flex',alignItems:'center',gap:8 }}>
-              <span style={{ width:8,height:8,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 12px #10b981',animation:'pulse 1.4s infinite' }} />
-              <span style={{ fontSize:13,fontWeight:700,color:'#10b981' }}>Waiting for payment…</span>
-            </div>
-            <span style={{ fontSize:12,color:'rgba(255,255,255,.4)',fontFamily:"'IBM Plex Mono',monospace" }}>⏱ {fmt(countdown)}</span>
+          <div style={{ background:'#fff', borderRadius:14, padding:10, width:148, height:148, margin:'0 auto 12px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+            {qrErr ? <div style={{ color:'#064e3b', fontSize:11, textAlign:'center' }}>Use address below</div>
+              : <img key={deepLink} src={qrSrc(deepLink)} alt="Pay via Xaman" style={{ width:128, height:128, borderRadius:4 }} onError={() => setQrErr(true)} />}
           </div>
-          <div style={{ background:'#fff',borderRadius:18,padding:12,width:200,height:200,margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 30px rgba(16,185,129,.15)' }}>
-            <img src={qrUrl || qrImg(`https://xumm.app/sign/${uuid}`)} alt="Pay" style={{ width:'100%',height:'100%',borderRadius:8 }} />
-          </div>
-          <div style={{ textAlign:'center',marginBottom:14 }}>
-            <a href={deepLnk || `https://xumm.app/sign/${uuid}`} target="_blank" rel="noopener noreferrer"
-              style={{ display:'inline-flex',alignItems:'center',gap:8,background:'#10b981',color:'#000',fontWeight:800,fontSize:14,padding:'13px 28px',borderRadius:99,textDecoration:'none',boxShadow:'0 4px 20px rgba(16,185,129,.35)' }}>
-              📱 Open in Xaman — Sign Now →
+          <p style={{ textAlign:'center', marginBottom:14 }}>
+            <a href={deepLink} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:'#10b981', fontWeight:600 }}>
+              Open in Xaman — {price} {currency} pre-filled
             </a>
-          </div>
-          <div style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:14,padding:'14px 18px',marginBottom:12 }}>
-            {[['1','Scan QR or tap "Open in Xaman"'],['2',`Review the pre-filled ${price} ${currency} payment`],['3','Slide to confirm — AI verifies automatically']].map(([n,t]) => (
-              <div key={n} style={{ display:'flex',alignItems:'flex-start',gap:12,marginBottom:n==='3'?0:10 }}>
-                <span style={{ width:22,height:22,borderRadius:'50%',background:`${product.color}20`,border:`1px solid ${product.color}40`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:product.color,flexShrink:0 }}>{n}</span>
-                <span style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.5,paddingTop:2 }}>{t}</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ textAlign:'center',fontSize:11,color:'rgba(255,255,255,.28)',marginBottom:10 }}>🤖 AI confirms your TX on XRPL mainnet — no action needed after signing</p>
-          <button onClick={()=>{ cancelRef.current=true; if(pollRef.current) clearTimeout(pollRef.current); setPayStatus('idle'); setPayError(''); }} style={{ ...Btn('ghost',undefined,{width:'100%',fontSize:13}) }}>← Cancel</button>
+          </p>
         </>
       )}
-      {payStatus === 'idle' && payError && (
-        <div style={{ background:'rgba(248,113,113,.08)',border:'1px solid rgba(248,113,113,.3)',borderRadius:12,padding:'14px 18px',marginBottom:16 }}>
-          <p style={{ fontSize:13,color:'#fca5a5',marginBottom:10 }}>⚠️ {payError}</p>
-          <button onClick={handleBuyNow} style={{ ...Btn('color',product.color,{width:'100%',padding:'12px'}) }}>Try Again →</button>
-        </div>
-      )}
-      {payStatus === 'idle' && !payError && (
-        <>
-          {isCB && tiers && (
-            <div style={{ marginBottom:14 }}>
-              <label style={LBL}>Select Plan</label>
-              <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
-                {tiers.map((t, i) => (
-                  <button key={t.name} onClick={()=>setTierIdx(i)} style={{ padding:'12px 16px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',textAlign:'left' as const,border:`1px solid ${tierIdx===i?t.color:'rgba(255,255,255,.1)'}`,background:tierIdx===i?`${t.color}14`:'rgba(255,255,255,.04)' }}>
-                    <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-                      <span style={{ fontWeight:700,fontSize:14,color:tierIdx===i?t.color:'#fff' }}>{t.name}</span>
-                      <span style={{ fontWeight:900,fontSize:15,color:t.color }}>{t.priceRLUSD} RLUSD<span style={{ fontSize:11,fontWeight:400,color:'rgba(255,255,255,.35)' }}>/mo</span></span>
-                    </div>
-                    <div style={{ fontSize:11,color:'rgba(255,255,255,.38)',marginTop:3 }}>{t.perks}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <label style={LBL}>Currency</label>
-          <div style={{ display:'flex',gap:8,marginBottom:14 }}>
-            {(['RLUSD','XRP'] as Currency[]).map(c => (
-              <button key={c} onClick={()=>setCurrency(c)} style={{ flex:1,padding:'10px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:14,border:`1px solid ${currency===c?product.color:'rgba(255,255,255,.1)'}`,background:currency===c?`${product.color}15`:'rgba(255,255,255,.04)',color:currency===c?product.color:'rgba(255,255,255,.5)' }}>
-                {c==='RLUSD'?'💵 RLUSD':'◈ XRP'} — {c==='RLUSD'?(isCB&&at?at.priceRLUSD:product.priceRLUSD):(isCB&&at?at.priceXRP:product.priceXRP)}
-              </button>
-            ))}
-          </div>
-          <label style={LBL}>Email for Receipt (optional)</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom:16 }} />
-          <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.15)',borderRadius:12,padding:'11px 14px',marginBottom:16,fontSize:12,color:'rgba(255,255,255,.45)',lineHeight:1.6 }}>
-            <strong style={{ color:'#10b981' }}>How it works:</strong> Tap below → Xaman opens pre-filled → slide to sign → AI verifies on XRPL → done.
-          </div>
-          <div style={{ display:'flex',gap:10 }}>
-            <button onClick={()=>setStep('info')} style={{ ...Btn('ghost',undefined,{flex:1}) }}>← Back</button>
-            <button onClick={handleBuyNow} style={{ ...Btn('color',product.color,{flex:2,fontSize:15}) }}>📱 Pay {price} {currency} →</button>
-          </div>
-        </>
-      )}
+
+      <label style={LBL}>Currency</label>
+      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+        {(['RLUSD','XRP'] as Currency[]).map(c => (
+          <button key={c} onClick={() => { setCur(c); setQrErr(false); }} style={{ flex:1, padding:'10px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', fontWeight:700, fontSize:13, border:`1px solid ${currency===c?product.color:'rgba(255,255,255,.1)'}`, background:currency===c?`${product.color}15`:'rgba(255,255,255,.04)', color:currency===c?product.color:'rgba(255,255,255,.5)', transition:'all .15s' }}>
+            {c === 'RLUSD' ? '💵 RLUSD' : '◈ XRP'} — {c === 'RLUSD' ? product.priceRLUSD : product.priceXRP}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ background:'rgba(16,185,129,.06)', border:'1px solid rgba(16,185,129,.18)', borderRadius:12, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', gap:10 }}>
+        <code style={{ fontSize:11, color:'#34d399', flex:1, wordBreak:'break-all', fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
+        <button onClick={copy} style={{ ...B('ghost', undefined, { padding:'5px 10px', fontSize:11 }), flexShrink:0 }}>{copied ? '✓' : 'Copy'}</button>
+      </div>
+
+      <label style={LBL}>Email for Receipt</label>
+      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom:14 }} />
+
+      <div style={{ background:'rgba(255,255,255,.03)', borderRadius:11, padding:'10px 14px', marginBottom:16, fontSize:12, color:'rgba(255,255,255,.35)', lineHeight:1.7 }}>
+        Send <strong style={{ color:'#fff' }}>{price} {currency}</strong> to the address above via Xaman, then tap below. Confirmed on XRPL mainnet in ~4 seconds.
+      </div>
+
+      <div style={{ display:'flex', gap:10 }}>
+        <button onClick={() => setStep('info')} style={{ ...B('ghost', undefined, { flex:1 }) }}>Back</button>
+        <button onClick={handleSent} style={{ ...B('color', product.color, { flex:2 }) }}>
+          {inXApp && currency === 'XRP' ? `Sign ${price} XRP in Xaman` : `I Sent ${price} ${currency} — Activate`}
+        </button>
+      </div>
     </Overlay>
   );
 
+  // Info step
   return (
     <Overlay show={show} onClose={handleClose} wide>
-      <div style={{ display:'flex',gap:16,alignItems:'flex-start',marginBottom:22,flexWrap:'wrap' }}>
-        <div style={{ width:58,height:58,borderRadius:16,background:`${product.color}18`,border:`1px solid ${product.color}30`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,flexShrink:0,animation:'float 4s ease-in-out infinite' }}>{product.emoji}</div>
-        <div style={{ flex:1,minWidth:200 }}>
-          <div style={{ display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4 }}>
-            <div style={{ fontSize:10,fontWeight:700,color:product.color,letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
-            {isSoon && <span style={{ background:`${product.color}20`,color:product.color,fontSize:9,fontWeight:800,padding:'2px 8px',borderRadius:99 }}>COMING SOON</span>}
-          </div>
-          <h2 style={{ fontSize:23,fontWeight:900,marginBottom:4 }}>{product.name}</h2>
-          <p style={{ fontSize:13,color:'rgba(255,255,255,.48)' }}>{product.tagline}</p>
+      <div style={{ display:'flex', gap:16, alignItems:'flex-start', marginBottom:22 }}>
+        <div style={{ width:58, height:58, borderRadius:16, background:`${product.color}18`, border:`1px solid ${product.color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0, animation:'float 4s ease-in-out infinite' }}>{product.emoji}</div>
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:product.color, letterSpacing:'.12em', textTransform:'uppercase', marginBottom:4, fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
+          <h2 style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>{product.name}</h2>
+          <p style={{ fontSize:13, color:'rgba(255,255,255,.48)' }}>{product.tagline}</p>
         </div>
       </div>
-      <p style={{ fontSize:14,color:'rgba(255,255,255,.62)',lineHeight:1.82,marginBottom:22 }}>{product.desc}</p>
-      <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.18)',borderRadius:14,padding:16,marginBottom:22 }}>
-        <p style={{ fontSize:11,fontWeight:700,color:'#10b981',marginBottom:6,textTransform:'uppercase',letterSpacing:'.09em',fontFamily:"'IBM Plex Mono',monospace" }}>🤖 {isSoon?'When it goes live':'What AI does after payment'}</p>
-        <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75 }}>{product.aiDetail}</p>
+      <p style={{ fontSize:13, color:'rgba(255,255,255,.62)', lineHeight:1.8, marginBottom:20 }}>{product.desc}</p>
+      <div style={{ background:'rgba(16,185,129,.05)', border:'1px solid rgba(16,185,129,.18)', borderRadius:14, padding:16, marginBottom:20 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:'#10b981', marginBottom:6, textTransform:'uppercase', letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>What AI delivers</p>
+        <p style={{ fontSize:13, color:'rgba(255,255,255,.6)', lineHeight:1.75 }}>{product.aiDelivery}</p>
       </div>
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:9,marginBottom:26 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:22 }}>
         {product.features.map(f => (
-          <div key={f} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'10px 13px',display:'flex',alignItems:'center',gap:8 }}>
-            <span style={{ color:product.color,fontSize:11,flexShrink:0 }}>✓</span>
-            <span style={{ fontSize:12,color:'rgba(255,255,255,.55)' }}>{f}</span>
+          <div key={f} style={{ background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', borderRadius:11, padding:'10px 13px', display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:product.color, fontSize:11, flexShrink:0 }}>✓</span>
+            <span style={{ fontSize:12, color:'rgba(255,255,255,.55)' }}>{f}</span>
           </div>
         ))}
       </div>
-      {!isSoon && (
-        <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',background:`${product.color}08`,border:`1px solid ${product.color}22`,borderRadius:14,padding:'16px 20px',marginBottom:20,flexWrap:'wrap',gap:12 }}>
-          <div>
-            <div style={{ fontSize:11,color:'rgba(255,255,255,.38)',marginBottom:4 }}>{isCB?'Starting from':'One-time activation'}</div>
-            <div style={{ display:'flex',gap:12,alignItems:'baseline',flexWrap:'wrap' }}>
-              <span style={{ fontSize:28,fontWeight:900,color:product.color }}>{product.priceRLUSD} RLUSD</span>
-              <span style={{ fontSize:13,color:'rgba(255,255,255,.3)' }}>or {product.priceXRP} XRP{isCB?'/mo':''}</span>
-            </div>
-          </div>
-          <div style={{ textAlign:'right' }}>
-            <div style={{ fontSize:11,color:'rgba(255,255,255,.38)',marginBottom:4 }}>Xaman checkout</div>
-            <div style={{ fontSize:15,fontWeight:700,color:'#10b981' }}>One swipe ⚡</div>
-          </div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:`${product.color}08`, border:`1px solid ${product.color}22`, borderRadius:14, padding:'16px 20px', marginBottom:18 }}>
+        <div>
+          <div style={{ fontSize:10, color:'rgba(255,255,255,.35)', marginBottom:3 }}>One-time activation</div>
+          <span style={{ fontSize:28, fontWeight:900, color:product.color }}>{product.priceRLUSD} RLUSD</span>
+          <span style={{ fontSize:12, color:'rgba(255,255,255,.3)', marginLeft:10 }}>or {product.priceXRP} XRP</span>
         </div>
-      )}
-      <div style={{ background:'rgba(255,255,255,.03)',borderRadius:11,padding:'11px 15px',marginBottom:20 }}>
-        <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',lineHeight:1.7 }}><strong style={{ color:'rgba(255,255,255,.45)' }}>Disclosure: </strong>{GLOBAL_DISCLAIMER}</p>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,.35)', marginBottom:3 }}>On-chain in</div>
+          <div style={{ fontSize:16, fontWeight:700, color:'#10b981' }}>~4 seconds</div>
+        </div>
       </div>
-      {isSoon
-        ? <button onClick={()=>setStep('preregister')} style={{ ...Btn('color',product.color,{width:'100%',padding:'15px',fontSize:16}) }}>🔔 Pre-Register for Early Access →</button>
-        : <button onClick={()=>setStep('checkout')} style={{ ...Btn('color',product.color,{width:'100%',padding:'15px',fontSize:16}) }}>Buy Now — {product.priceRLUSD} RLUSD →</button>
-      }
+      <div style={{ background:'rgba(255,255,255,.03)', borderRadius:11, padding:'10px 14px', marginBottom:18, fontSize:11, color:'rgba(255,255,255,.28)', lineHeight:1.7 }}>
+        On-chain operational service via XRP Ledger. Not a financial instrument or insurance product. All transactions are permanent and irrevocable.
+      </div>
+      <button onClick={() => setStep('checkout')} style={{ ...B('color', product.color, { width:'100%', padding:'15px', fontSize:16 }) }}>
+        Activate for {product.priceRLUSD} RLUSD →
+      </button>
     </Overlay>
   );
 }
 
 // ─── DONATE MODAL ─────────────────────────────────────────────────────────────
 function DonateModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>('XRP');
-  const [copiedA, setCopiedA] = useState(false);
-  const [copiedD, setCopiedD] = useState(false);
-  const [txHash, setTxHash] = useState('');
-  const [step, setStep] = useState<'form'|'done'>('form');
-  const dl = `xrpl:${TREASURY}${currency==='XRP'&&parseFloat(amount)>0?`?amount=${Math.floor(parseFloat(amount)*1e6)}`:''}`;
-  const handleClose = () => { onClose(); setTimeout(()=>{ setStep('form'); setAmount(''); setTxHash(''); },300); };
+  const [amount, setAmount]   = useState('');
+  const [currency, setCur]    = useState<Currency>('XRP');
+  const [copied, setCopied]   = useState(false);
+  const [txHash, setTxHash]   = useState('');
+  const [step, setStep]       = useState<'form'|'confirmed'>('form');
+  const [qrErr, setQrErr]     = useState(false);
+  const deepLink = xamanLink(parseFloat(amount)||0, currency);
+  const copy = () => { navigator.clipboard.writeText(TREASURY); setCopied(true); setTimeout(() => setCopied(false), 2200); };
+  const handleSent = async () => {
+    try { await fetch(`${API_URL}/api/donate`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ amount, currency, txHash }) }); } catch {}
+    setStep('confirmed');
+  };
+  const handleClose = () => { onClose(); setTimeout(() => { setStep('form'); setAmount(''); setTxHash(''); setQrErr(false); }, 300); };
 
-  if (step === 'done') return (
+  if (step === 'confirmed') return (
     <Overlay show={show} onClose={handleClose}>
-      <div style={{ textAlign:'center',padding:'28px 0' }}>
-        <div style={{ fontSize:60,marginBottom:14 }}>💚</div>
-        <h3 style={{ fontSize:26,fontWeight:900,color:'#10b981',marginBottom:10 }}>Thank You.</h3>
-        <p style={{ color:'rgba(255,255,255,.55)',fontSize:14,lineHeight:1.8,marginBottom:8 }}><strong style={{ color:'#fff' }}>{amount} {currency}</strong> flowing directly to people in need.</p>
-        <p style={{ color:'rgba(255,255,255,.35)',fontSize:13,lineHeight:1.75,marginBottom:26 }}>Wallet-to-wallet — permanently on the XRP Ledger. That&apos;s math.</p>
-        <div style={{ display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap' }}>
-          <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...Btn('ghost',undefined,{fontSize:13,textDecoration:'none'}) }}>Verify on XRPScan ↗</a>
-          <button onClick={handleClose} style={Btn('green')}>Done</button>
+      <div style={{ textAlign:'center', padding:'28px 0' }}>
+        <div style={{ fontSize:60, marginBottom:14 }}>💚</div>
+        <h3 style={{ fontSize:26, fontWeight:900, color:'#10b981', marginBottom:10 }}>Thank You.</h3>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, lineHeight:1.8, marginBottom:22 }}>
+          {amount} {currency} is going directly to someone in need. No overhead. No middlemen. Wallet to wallet. Permanently on-chain.
+        </p>
+        <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+          <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...B('ghost', undefined, { fontSize:13, textDecoration:'none' }) }}>Verify on XRPScan ↗</a>
+          <button onClick={handleClose} style={B('green')}>Done</button>
         </div>
       </div>
     </Overlay>
@@ -741,323 +736,114 @@ function DonateModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 
   return (
     <Overlay show={show} onClose={handleClose}>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:5 }}>Donate to Treasury</div>
-      <h3 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Fund real people. Directly.</h3>
-      <p style={{ fontSize:13,color:'rgba(255,255,255,.44)',marginBottom:18 }}>Zero overhead. <strong style={{ color:'#10b981' }}>100% reaches the wallet.</strong></p>
-      <div style={{ background:'#fff',borderRadius:16,padding:11,width:166,height:166,margin:'0 auto 12px',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden' }}>
-        <img src={qrImg(dl)} alt="Donate" style={{ width:144,height:144,borderRadius:5 }} />
+      <div style={{ fontSize:10, fontWeight:700, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', marginBottom:5 }}>Fund the Treasury</div>
+      <h3 style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>Zero overhead. 100% to wallet.</h3>
+      <p style={{ fontSize:13, color:'rgba(255,255,255,.44)', marginBottom:18, lineHeight:1.65 }}>Every drop verified on XRPScan. That is not a promise. That is math.</p>
+      <div style={{ background:'#fff', borderRadius:14, padding:10, width:148, height:148, margin:'0 auto 12px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+        {qrErr ? <div style={{ color:'#064e3b', fontSize:11, textAlign:'center' }}>Use address below</div>
+          : <img key={deepLink} src={qrSrc(deepLink)} alt="Donate" style={{ width:128, height:128, borderRadius:4 }} onError={() => setQrErr(true)} />}
       </div>
-      <p style={{ textAlign:'center',marginBottom:12 }}><a href={dl} target="_blank" rel="noopener noreferrer" style={{ fontSize:12,color:'#10b981',fontWeight:600 }}>📱 Open in Xaman{amount&&parseFloat(amount)>0?` — ${amount} ${currency}`:''}</a></p>
-      <div style={{ background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.28)',borderRadius:12,padding:'9px 12px',marginBottom:6,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
-        <span style={{ fontSize:9,fontWeight:700,color:'#10b981',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS</span>
-        <code style={{ fontSize:12,color:'#10b981',flex:1,wordBreak:'break-all',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700 }}>{TREASURY_DOMAIN}</code>
-        <button onClick={()=>{ navigator.clipboard.writeText(TREASURY_DOMAIN); setCopiedD(true); setTimeout(()=>setCopiedD(false),2000); }} style={{ ...Btn('ghost',undefined,{padding:'4px 9px',fontSize:10}),flexShrink:0 }}>{copiedD?'✓':'Copy'}</button>
+      <div style={{ background:'rgba(16,185,129,.06)', border:'1px solid rgba(16,185,129,.18)', borderRadius:12, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', gap:10 }}>
+        <code style={{ fontSize:11, color:'#34d399', flex:1, wordBreak:'break-all', fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
+        <button onClick={copy} style={{ ...B('ghost', undefined, { padding:'5px 10px', fontSize:11 }), flexShrink:0 }}>{copied ? '✓' : 'Copy'}</button>
       </div>
-      <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.15)',borderRadius:12,padding:'9px 12px',marginBottom:14,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
-        <code style={{ fontSize:10,color:'#34d399',flex:1,wordBreak:'break-all',fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
-        <button onClick={()=>{ navigator.clipboard.writeText(TREASURY); setCopiedA(true); setTimeout(()=>setCopiedA(false),2000); }} style={{ ...Btn('ghost',undefined,{padding:'4px 9px',fontSize:10}),flexShrink:0 }}>{copiedA?'✓':'Copy'}</button>
-      </div>
-      <div style={{ display:'flex',gap:8,marginBottom:12 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
         {(['XRP','RLUSD'] as Currency[]).map(c => (
-          <button key={c} onClick={()=>setCurrency(c)} style={{ flex:1,padding:'10px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:13,border:`1px solid ${currency===c?'#10b981':'rgba(255,255,255,.1)'}`,background:currency===c?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)',color:currency===c?'#10b981':'rgba(255,255,255,.5)' }}>
-            {c==='XRP'?'◈ XRP':'💵 RLUSD'}
+          <button key={c} onClick={() => { setCur(c); setQrErr(false); }} style={{ flex:1, padding:'9px', borderRadius:12, cursor:'pointer', fontFamily:'inherit', fontWeight:700, fontSize:13, border:`1px solid ${currency===c?'#10b981':'rgba(255,255,255,.1)'}`, background:currency===c?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)', color:currency===c?'#10b981':'rgba(255,255,255,.5)' }}>
+            {c === 'XRP' ? '◈ XRP' : '💵 RLUSD'}
           </button>
         ))}
       </div>
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:10 }}>
-        {['10','25','50','100'].map(a => <button key={a} onClick={()=>setAmount(a)} style={{ padding:'10px',borderRadius:12,cursor:'pointer',border:`1px solid ${amount===a?'#10b981':'rgba(255,255,255,.1)'}`,background:amount===a?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)',color:amount===a?'#10b981':'rgba(255,255,255,.6)',fontWeight:700,fontSize:13,fontFamily:'inherit' }}>{a}</button>)}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:12 }}>
+        {['10','25','50','100'].map(a => (
+          <button key={a} onClick={() => { setAmount(a); setQrErr(false); }} style={{ padding:'10px', borderRadius:12, cursor:'pointer', border:`1px solid ${amount===a?'#10b981':'rgba(255,255,255,.1)'}`, background:amount===a?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)', color:amount===a?'#10b981':'rgba(255,255,255,.6)', fontWeight:700, fontSize:13, fontFamily:'inherit' }}>{a}</button>
+        ))}
       </div>
-      <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder={`Amount in ${currency}`} style={{ ...INP, marginBottom:8 }} />
-      <input type="text" value={txHash} onChange={e=>setTxHash(e.target.value)} placeholder="TX hash (optional)" style={{ ...INP, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, marginBottom:16 }} />
-      <button onClick={async()=>{ try{ await fetch(`${API_URL}/api/donate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount,currency,txHash})}); }catch{} setStep('done'); }} disabled={!amount||parseFloat(amount)<=0} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15,opacity:!amount||parseFloat(amount)<=0?0.4:1}) }}>💚 I Sent My Donation</button>
+      <input type="number" value={amount} onChange={e => { setAmount(e.target.value); setQrErr(false); }} placeholder={`Amount in ${currency}`} style={{ ...INP, marginBottom:10 }} />
+      <input type="text" value={txHash} onChange={e => setTxHash(e.target.value)} placeholder="TX hash (optional)" style={{ ...INP, fontFamily:"'IBM Plex Mono',monospace", fontSize:12, marginBottom:16 }} />
+      <button onClick={handleSent} disabled={!amount || parseFloat(amount) <= 0} style={{ ...B('green', undefined, { width:'100%', padding:'14px', fontSize:15, opacity:!amount||parseFloat(amount)<=0?0.4:1, cursor:!amount||parseFloat(amount)<=0?'not-allowed':'pointer' }) }}>
+        I Sent My Donation
+      </button>
     </Overlay>
   );
 }
 
 // ─── GRANT MODAL ──────────────────────────────────────────────────────────────
-function GrantModal({ show, onClose, connectedWallet }: { show:boolean; onClose:()=>void; connectedWallet:string }) {
-  const [step, setStep] = useState<'form'|'verify'|'processing'|'success'>('form');
-  const [form, setForm] = useState({ name:'',wallet:'',email:'',phone:'',category:'',need:'',amount:'25' });
-  const [code, setCode] = useState('');
+function GrantModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  const [step, setStep] = useState<'form'|'processing'|'success'>('form');
+  const [form, setForm] = useState({ name:'', wallet:'', email:'', category:'', need:'', amount:'25' });
   const [errors, setErrors] = useState<Record<string,string>>({});
   const cats = ['Food & Groceries','Rent / Housing','Medical Bills','Utilities','Transportation','Other'];
-  const set = (k:string, v:string) => { setForm(f=>({...f,[k]:v})); setErrors(e=>({...e,[k]:'',contact:''})); };
-  const handleClose = () => { onClose(); setTimeout(()=>{ setStep('form'); setForm({name:'',wallet:'',email:'',phone:'',category:'',need:'',amount:'25'}); setErrors({}); setCode(''); },300); };
-  useEffect(()=>{ if(connectedWallet && !form.wallet) setForm(f=>({...f,wallet:connectedWallet})); },[connectedWallet]); // eslint-disable-line
-  const validate = () => { const e:Record<string,string>={}; if(!form.need.trim()) e.need='Describe your need'; if(!form.category) e.category='Select a category'; const w=form.wallet||connectedWallet; if(!w&&!form.email) e.contact='Provide wallet or email'; if(w&&(!w.startsWith('r')||w.length<25)) e.wallet='Invalid XRPL address'; return e; };
+  const set = (k: string, v: string) => { setForm(f => ({ ...f, [k]:v })); setErrors(e => ({ ...e, [k]:'' })); };
+  const validate = () => {
+    const e: Record<string,string> = {};
+    if (!form.need.trim()) e.need = 'Please describe your need';
+    if (!form.category) e.category = 'Please select a category';
+    if (!form.wallet && !form.email) e.contact = 'Please provide a wallet address or email';
+    if (form.wallet && (!form.wallet.startsWith('r') || form.wallet.length < 25)) e.wallet = 'Invalid XRPL wallet address';
+    return e;
+  };
+  const handleSubmit = async () => {
+    const e = validate(); if (Object.keys(e).length) { setErrors(e); return; }
+    setStep('processing');
+    try { await fetch(`${API_URL}/api/grants/submit`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(form) }); } catch {}
+    await new Promise(r => setTimeout(r, 1600));
+    setStep('success');
+  };
+  const handleClose = () => { onClose(); setTimeout(() => { setStep('form'); setForm({ name:'',wallet:'',email:'',category:'',need:'',amount:'25' }); setErrors({}); }, 300); };
 
-  if (step==='processing') return <Overlay show={show} onClose={()=>{}}><div style={{ textAlign:'center',padding:'44px 0' }}><div style={{ fontSize:44,animation:'spin 1s linear infinite',display:'inline-block',marginBottom:14 }}>🤖</div><p style={{ color:'#10b981',fontWeight:600,fontSize:17 }}>AI reviewing your application…</p></div></Overlay>;
-  if (step==='success') return <Overlay show={show} onClose={handleClose}><div style={{ textAlign:'center',padding:'20px 0' }}><div style={{ fontSize:60,marginBottom:12 }}>❤️</div><h3 style={{ fontSize:24,fontWeight:900,color:'#10b981',marginBottom:10 }}>Request Received</h3><p style={{ color:'rgba(255,255,255,.55)',fontSize:14,lineHeight:1.75,marginBottom:26 }}>Your ${form.amount} application is with our AI reviewer. Approved funds go <strong style={{ color:'#fff' }}>directly to your XRPL wallet</strong>.</p><button onClick={handleClose} style={Btn('green')}>Done</button></div></Overlay>;
-  if (step==='verify') return (
-    <Overlay show={show} onClose={()=>setStep('form')}>
-      <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:48,marginBottom:12 }}>📱</div>
-        <h3 style={{ fontSize:22,fontWeight:800,marginBottom:8 }}>Verify Identity</h3>
-        <p style={{ color:'rgba(255,255,255,.4)',fontSize:13,marginBottom:22 }}>6-digit code sent to <strong style={{ color:'#fff' }}>{form.email||form.phone}</strong>.</p>
-        <input type="text" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))} placeholder="_ _ _ _ _ _" style={{ ...INP,fontSize:28,textAlign:'center',letterSpacing:'.3em',marginBottom:16 }} />
-        <p style={{ fontSize:12,color:'rgba(255,255,255,.28)',marginBottom:18 }}>Demo: any 6 digits work.</p>
-        <div style={{ display:'flex',gap:10 }}>
-          <button onClick={()=>setStep('form')} style={{ ...Btn('ghost',undefined,{flex:1}) }}>← Back</button>
-          <button onClick={async()=>{ setStep('processing'); try{ await fetch(`${API_URL}/api/grants/submit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,wallet:form.wallet||connectedWallet})}); if(form.email) await fetch(`${API_URL}/api/send-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:form.email,type:'grant',name:form.name,amount:form.amount,wallet:form.wallet||connectedWallet})}).catch(()=>{}); }catch{} await new Promise(r=>setTimeout(r,1600)); setStep('success'); }} disabled={code.length<6} style={{ ...Btn('green',undefined,{flex:2,opacity:code.length<6?0.4:1}) }}>Confirm →</button>
-        </div>
+  if (step === 'processing') return (
+    <Overlay show={show} onClose={() => {}}>
+      <div style={{ textAlign:'center', padding:'44px 0' }}>
+        <div style={{ fontSize:44, animation:'spin 1s linear infinite', display:'inline-block', marginBottom:14 }}>⚡</div>
+        <p style={{ color:'#10b981', fontWeight:600, fontSize:17 }}>Submitting application…</p>
+        <p style={{ fontSize:13, color:'rgba(255,255,255,.38)', marginTop:6 }}>AI review within 24 hours</p>
+      </div>
+    </Overlay>
+  );
+
+  if (step === 'success') return (
+    <Overlay show={show} onClose={handleClose}>
+      <div style={{ textAlign:'center', padding:'20px 0' }}>
+        <div style={{ fontSize:60, marginBottom:12 }}>❤️</div>
+        <h3 style={{ fontSize:24, fontWeight:900, color:'#10b981', marginBottom:10 }}>Application Received</h3>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, lineHeight:1.75, marginBottom:22 }}>
+          Your ${form.amount} grant application has been submitted. AI-assisted review within 24 hours. If approved, funds go directly to your XRPL wallet — no intermediary, no NGO, no overhead.
+        </p>
+        <button onClick={handleClose} style={B('green')}>Done</button>
       </div>
     </Overlay>
   );
 
   return (
     <Overlay show={show} onClose={handleClose} wide>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:5 }}>AI Grant Application</div>
-      <h3 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Apply for Emergency Funds</h3>
-      <p style={{ color:'rgba(255,255,255,.4)',fontSize:13,marginBottom:22 }}>$25–$100 · AI-reviewed · Direct to your XRPL wallet · No middlemen</p>
+      <div style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', letterSpacing:'.12em', textTransform:'uppercase', marginBottom:5 }}>Emergency Grant Application</div>
+      <h3 style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>Apply for Emergency Funds</h3>
+      <p style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:22 }}>$25–$100 · AI-assisted review · Direct to your XRPL wallet · No middlemen</p>
       <label style={LBL}>Category *</label>
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))',gap:8,marginBottom:4 }}>
-        {cats.map(c=><button key={c} onClick={()=>set('category',c)} style={{ padding:'9px',borderRadius:12,cursor:'pointer',fontSize:12,border:`1px solid ${form.category===c?'#10b981':'rgba(255,255,255,.1)'}`,background:form.category===c?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)',color:form.category===c?'#10b981':'rgba(255,255,255,.6)',fontWeight:600,fontFamily:'inherit' }}>{c}</button>)}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:4 }}>
+        {cats.map(c => <button key={c} onClick={() => set('category',c)} style={{ padding:'9px', borderRadius:12, cursor:'pointer', fontSize:12, border:`1px solid ${form.category===c?'#8b5cf6':'rgba(255,255,255,.1)'}`, background:form.category===c?'rgba(139,92,246,.12)':'rgba(255,255,255,.04)', color:form.category===c?'#8b5cf6':'rgba(255,255,255,.6)', fontWeight:600, fontFamily:'inherit' }}>{c}</button>)}
       </div>
-      {errors.category&&<p style={{ fontSize:12,color:'#f87171',marginBottom:8 }}>{errors.category}</p>}
-      <label style={{ ...LBL,marginTop:16 }}>Grant Amount</label>
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:16 }}>
-        {['25','50','75','100'].map(a=><button key={a} onClick={()=>set('amount',a)} style={{ padding:'11px',borderRadius:12,cursor:'pointer',border:`1px solid ${form.amount===a?'#10b981':'rgba(255,255,255,.1)'}`,background:form.amount===a?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)',color:form.amount===a?'#10b981':'rgba(255,255,255,.6)',fontWeight:800,fontSize:15,fontFamily:'inherit' }}>${a}</button>)}
+      {errors.category && <p style={{ fontSize:12, color:'#f87171', marginBottom:8 }}>{errors.category}</p>}
+      <label style={{ ...LBL, marginTop:14 }}>Amount Requested</label>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
+        {['25','50','75','100'].map(a => <button key={a} onClick={() => set('amount',a)} style={{ padding:'11px', borderRadius:12, cursor:'pointer', border:`1px solid ${form.amount===a?'#8b5cf6':'rgba(255,255,255,.1)'}`, background:form.amount===a?'rgba(139,92,246,.12)':'rgba(255,255,255,.04)', color:form.amount===a?'#8b5cf6':'rgba(255,255,255,.6)', fontWeight:800, fontSize:15, fontFamily:'inherit' }}>${a}</button>)}
       </div>
       <label style={LBL}>Describe your situation *</label>
-      <textarea value={form.need} onChange={e=>set('need',e.target.value)} placeholder="Tell us what you need and why…" rows={4} style={{ ...INP,resize:'none',lineHeight:1.6,marginBottom:4 }} />
-      {errors.need&&<p style={{ fontSize:12,color:'#f87171',marginBottom:8 }}>{errors.need}</p>}
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:10,marginTop:14 }}>
-        <div><label style={LBL}>Name (optional)</label><input type="text" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Anonymous is fine" style={INP} /></div>
-        <div><label style={LBL}>XRPL Wallet *{connectedWallet?' (connected)':''}</label><input type="text" value={form.wallet||connectedWallet} onChange={e=>set('wallet',e.target.value)} placeholder={connectedWallet||"rXXXXX…"} style={{ ...INP,fontFamily:"'IBM Plex Mono',monospace",fontSize:12 }} />{errors.wallet&&<p style={{ fontSize:12,color:'#f87171' }}>{errors.wallet}</p>}</div>
-        <div><label style={LBL}>Email *</label><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@example.com" style={INP} /></div>
-        <div><label style={LBL}>Phone (SMS)</label><input type="tel" value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="+1 555 000 0000" style={INP} /></div>
-      </div>
-      {errors.contact&&<p style={{ fontSize:12,color:'#f87171',marginTop:4 }}>{errors.contact}</p>}
-      <button onClick={()=>{ const e=validate(); if(Object.keys(e).length){setErrors(e);return;} setStep('verify'); }} style={{ ...Btn('green',undefined,{width:'100%',marginTop:22,padding:'15px',fontSize:16}) }}>Submit for AI Review →</button>
-      <p style={{ textAlign:'center',fontSize:11,color:'rgba(255,255,255,.22)',marginTop:10 }}>AI-reviewed within 24 hrs · Zero overhead · Wallet-to-wallet</p>
-    </Overlay>
-  );
-}
-
-// ─── SCORE MODAL ──────────────────────────────────────────────────────────────
-function ScoreModal({ show, onClose, scoreData, loading, error, onRetry, walletAddress }: { show:boolean;onClose:()=>void;scoreData:ScoreData|null;loading:boolean;error:string|null;onRetry:()=>void;walletAddress:string }) {
-  const [animated, setAnimated] = useState(false);
-  const [tab, setTab] = useState<'score'|'breakdown'|'improve'>('score');
-  const grade = scoreData ? gradeScore(scoreData.ledgerScore) : null;
-  const R = 52; const circ = 2 * Math.PI * R;
-  const pct = scoreData ? Math.min(1, Math.max(0, (scoreData.ledgerScore - 300) / 550)) : 0;
-  useEffect(()=>{ if(show&&scoreData){ const t=setTimeout(()=>setAnimated(true),100); return()=>clearTimeout(t); } else { setAnimated(false); setTab('score'); } },[show,scoreData]);
-
-  return (
-    <Overlay show={show} onClose={onClose}>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8,fontFamily:"'IBM Plex Mono',monospace" }}>XRPLScore™ — Live XRPL Scan</div>
-      {loading&&<div style={{ textAlign:'center',padding:'44px 0' }}><div style={{ fontSize:40,animation:'spin 1s linear infinite',display:'inline-block',marginBottom:14 }}>🤖</div><p style={{ color:'#10b981',fontWeight:600,fontSize:17 }}>Scanning XRPL Mainnet…</p><p style={{ color:'rgba(255,255,255,.35)',fontSize:13,marginTop:6 }}>Account age · TX history · Trust lines · AMM · NFTs · Security flags</p><div style={{ width:220,height:3,background:'rgba(255,255,255,.07)',borderRadius:99,margin:'18px auto 0',overflow:'hidden' }}><div style={{ height:'100%',background:'#10b981',animation:'shimmer 1.5s ease-in-out infinite',borderRadius:99 }} /></div></div>}
-      {error&&!loading&&<div style={{ textAlign:'center',padding:'28px 0' }}><div style={{ fontSize:44,marginBottom:12 }}>⚠️</div><p style={{ color:'#f87171',fontWeight:600,fontSize:17,marginBottom:8 }}>Scan failed</p><p style={{ color:'rgba(255,255,255,.4)',fontSize:13,marginBottom:22 }}>{error}</p><div style={{ display:'flex',gap:10,justifyContent:'center' }}><button onClick={onRetry} style={Btn('green')}>Retry</button><button onClick={onClose} style={Btn('ghost')}>Close</button></div></div>}
-      {scoreData&&!loading&&grade&&(
-        <>
-          <div style={{ position:'relative',width:180,height:180,margin:'0 auto 12px',filter:`drop-shadow(0 0 28px ${grade.glow})` }}>
-            <svg viewBox="0 0 120 120" style={{ width:'100%',height:'100%',transform:'rotate(-90deg)' }}>
-              <circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="10" />
-              <circle cx="60" cy="60" r={R} fill="none" stroke={grade.color} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={animated?circ*(1-pct):circ} style={{ transition:'stroke-dashoffset 1.4s cubic-bezier(.34,1.2,.64,1)' }} />
-            </svg>
-            <div style={{ position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
-              <span style={{ fontSize:48,fontWeight:900,color:grade.color,lineHeight:1,letterSpacing:'-2px',transition:'all .8s',transform:animated?'scale(1)':'scale(.7)',opacity:animated?1:0 }}>{scoreData.ledgerScore}</span>
-              <span style={{ fontSize:10,color:'rgba(255,255,255,.3)',marginTop:4,letterSpacing:'.14em',textTransform:'uppercase' }}>XRPLScore</span>
-            </div>
-          </div>
-          <div style={{ textAlign:'center',marginBottom:12 }}>
-            <span style={{ display:'inline-block',padding:'4px 16px',borderRadius:99,background:`${grade.color}18`,border:`1px solid ${grade.color}40`,color:grade.color,fontWeight:700,fontSize:15 }}>{grade.label}</span>
-            {scoreData.percentileLabel&&<p style={{ fontSize:11,color:'rgba(255,255,255,.38)',marginTop:6,fontFamily:"'IBM Plex Mono',monospace" }}>📊 {scoreData.percentileLabel}</p>}
-          </div>
-          <div style={{ display:'flex',gap:6,marginBottom:14 }}>
-            {(['score','breakdown','improve'] as const).map(t=>(
-              <button key={t} onClick={()=>setTab(t)} style={{ flex:1,padding:'8px',borderRadius:10,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:11,textTransform:'uppercase',letterSpacing:'.06em',border:`1px solid ${tab===t?'#10b981':'rgba(255,255,255,.1)'}`,background:tab===t?'rgba(16,185,129,.18)':'rgba(255,255,255,.04)',color:tab===t?'#10b981':'rgba(255,255,255,.4)' }}>
-                {t==='score'?'📊 Overview':t==='breakdown'?'🔬 Breakdown':'📈 Improve'}
-              </button>
-            ))}
-          </div>
-          {tab==='score'&&scoreData.details&&(
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(100px,1fr))',gap:8,marginBottom:14 }}>
-              {([['Transactions',(scoreData.details.txCount||0).toLocaleString()],['Account Age',`${scoreData.details.accountAgeDays||0}d`],['XRP Balance',`${(scoreData.details.balanceXRP||0).toFixed(1)}`],['Trust Lines',String(scoreData.details.trustLineCount||0)],['DEX Active',scoreData.details.hasOffers?'Yes':'No'],['AMM LP',scoreData.details.hasAMM?'Yes':'No'],['NFTs',String(scoreData.details.nftCount||0)],['Multi-Sig',scoreData.details.hasMultiSig?'✓':'✗']] as [string,string][]).map(([l,v])=>(
-                <div key={l} style={{ background:'rgba(255,255,255,.04)',borderRadius:10,padding:'10px 12px' }}>
-                  <div style={{ fontSize:9,color:'rgba(255,255,255,.32)',textTransform:'uppercase',letterSpacing:'.07em',marginBottom:3 }}>{l}</div>
-                  <div style={{ fontSize:15,fontWeight:800 }}>{v}</div>
-                </div>
-              ))}
-            </div>
-          )}
-          {tab==='breakdown'&&scoreData.breakdown&&(
-            <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:14 }}>
-              {scoreData.breakdown.map(b=>(
-                <div key={b.signal} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'10px 14px' }}>
-                  <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6 }}>
-                    <span style={{ fontSize:12,fontWeight:700,color:'#fff' }}>{b.label}</span>
-                    <div style={{ display:'flex',alignItems:'center',gap:8 }}>
-                      <span style={{ fontSize:10,color:'rgba(255,255,255,.3)',fontFamily:"'IBM Plex Mono',monospace" }}>{b.weight}</span>
-                      <span style={{ fontSize:13,fontWeight:900,color:b.score>=70?'#10b981':b.score>=40?'#fbbf24':'#ef4444' }}>{b.score}/100</span>
-                    </div>
-                  </div>
-                  <div style={{ height:4,background:'rgba(255,255,255,.06)',borderRadius:99,overflow:'hidden',marginBottom:4 }}>
-                    <div style={{ height:'100%',width:`${b.score}%`,background:b.score>=70?'#10b981':b.score>=40?'#fbbf24':'#ef4444',borderRadius:99,transition:'width 1s ease' }} />
-                  </div>
-                  <p style={{ fontSize:10,color:'rgba(255,255,255,.35)',margin:0 }}>{b.desc}</p>
-                </div>
-              ))}
-              <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'10px 14px' }}>
-                <p style={{ fontSize:10,color:'rgba(255,255,255,.35)',fontFamily:"'IBM Plex Mono',monospace",margin:0 }}>© 2026 XRPLHub.io · XRPLScore™ v1.0 · Proprietary 8-signal XRPL behavioral scoring methodology</p>
-              </div>
-            </div>
-          )}
-          {tab==='improve'&&scoreData.recommendations&&(
-            <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:14 }}>
-              <p style={{ fontSize:12,color:'rgba(255,255,255,.45)',marginBottom:4 }}>Actions to raise your XRPLScore — highest impact first:</p>
-              {scoreData.recommendations.map((r,i)=>(
-                <div key={i} style={{ background:'rgba(255,255,255,.04)',border:`1px solid ${r.priority==='high'?'rgba(16,185,129,.25)':r.priority==='medium'?'rgba(251,191,36,.2)':'rgba(255,255,255,.08)'}`,borderRadius:11,padding:'12px 14px',display:'flex',alignItems:'center',gap:12 }}>
-                  <span style={{ fontSize:11,fontWeight:800,padding:'3px 8px',borderRadius:99,background:r.priority==='high'?'rgba(16,185,129,.18)':r.priority==='medium'?'rgba(251,191,36,.15)':'rgba(255,255,255,.06)',color:r.priority==='high'?'#10b981':r.priority==='medium'?'#fbbf24':'rgba(255,255,255,.5)',flexShrink:0,textTransform:'uppercase',letterSpacing:'.06em' }}>{r.priority}</span>
-                  <div style={{ flex:1 }}><p style={{ fontSize:13,fontWeight:600,color:'#fff',margin:0 }}>{r.action}</p></div>
-                  <span style={{ fontSize:12,fontWeight:900,color:'#10b981',flexShrink:0,fontFamily:"'IBM Plex Mono',monospace" }}>{r.points}</span>
-                </div>
-              ))}
-              <p style={{ fontSize:11,color:'rgba(255,255,255,.25)',textAlign:'center',margin:0,marginTop:4 }}>XRPLHub services can complete many of these in one swipe ↑</p>
-            </div>
-          )}
-          {scoreData.scannedAt&&<p style={{ fontSize:10,color:'rgba(255,255,255,.2)',textAlign:'center',marginBottom:6,fontFamily:"'IBM Plex Mono',monospace" }}>Scanned live {new Date(scoreData.scannedAt).toLocaleTimeString()}</p>}
-          {walletAddress&&<p style={{ fontSize:10,color:'rgba(255,255,255,.22)',fontFamily:"'IBM Plex Mono',monospace",textAlign:'center',marginBottom:14,wordBreak:'break-all' }}>🔒 {walletAddress.slice(0,12)}…{walletAddress.slice(-6)}</p>}
-          <button onClick={onClose} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15}) }}>Done</button>
-        </>
-      )}
-    </Overlay>
-  );
-}
-
-// ─── LOGIN MODAL ──────────────────────────────────────────────────────────────
-function LoginModal({ show, onClose, onLoggedIn }: { show:boolean;onClose:()=>void;onLoggedIn:(u:User)=>void }) {
-  const [tab, setTab] = useState<'login'|'signup'>('login');
-  const [form, setForm] = useState({ name:'',email:'',password:'',confirm:'' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const set = (k:string, v:string) => { setForm(f=>({...f,[k]:v})); setError(''); };
-  const handleSubmit = async () => {
-    if (!form.email||!form.password) { setError('Email and password required.'); return; }
-    if (tab==='signup'&&form.password!==form.confirm) { setError('Passwords do not match.'); return; }
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/auth/${tab}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) });
-      const data = await res.json().catch(()=>({}));
-      if (!res.ok) throw new Error(data.message);
-      if (typeof window!=='undefined') localStorage.setItem('xh_user', JSON.stringify({email:form.email,name:form.name}));
-      onLoggedIn({email:form.email,name:form.name||data.name}); onClose();
-    } catch {
-      const user = {email:form.email,name:form.name||form.email.split('@')[0]};
-      if (typeof window!=='undefined') localStorage.setItem('xh_user', JSON.stringify(user));
-      onLoggedIn(user); onClose();
-    } finally { setLoading(false); }
-  };
-  return (
-    <Overlay show={show} onClose={()=>{ onClose(); setError(''); setForm({name:'',email:'',password:'',confirm:''}); }}>
-      <div style={{ textAlign:'center',marginBottom:22 }}><div style={{ fontSize:32,marginBottom:8 }}>🔐</div><h2 style={{ fontSize:23,fontWeight:900 }}>XRPLHub</h2><p style={{ fontSize:13,color:'rgba(255,255,255,.4)',marginTop:4 }}>Your XRPL Services Hub</p></div>
-      <div style={{ display:'flex',gap:8,marginBottom:20 }}>
-        {(['login','signup'] as const).map(t=><button key={t} onClick={()=>{setTab(t);setError('');}} style={{ flex:1,padding:'10px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',fontWeight:600,fontSize:14,border:`1px solid ${tab===t?'#10b981':'rgba(255,255,255,.1)'}`,background:tab===t?'rgba(16,185,129,.12)':'rgba(255,255,255,.04)',color:tab===t?'#10b981':'rgba(255,255,255,.5)' }}>{t==='login'?'Log In':'Sign Up'}</button>)}
-      </div>
-      <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
-        {tab==='signup'&&<div><label style={LBL}>Full Name</label><input style={INP} type="text" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Jane Doe" /></div>}
-        <div><label style={LBL}>Email</label><input style={INP} type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@example.com" /></div>
-        <div><label style={LBL}>Password</label><input style={INP} type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder="••••••••" /></div>
-        {tab==='signup'&&<div><label style={LBL}>Confirm</label><input style={INP} type="password" value={form.confirm} onChange={e=>set('confirm',e.target.value)} placeholder="••••••••" /></div>}
-      </div>
-      {error&&<p style={{ fontSize:12,color:'#f87171',marginTop:10 }}>{error}</p>}
-      <button onClick={handleSubmit} disabled={loading} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',marginTop:18,opacity:loading?0.6:1}) }}>{loading?'⚡ Processing…':tab==='login'?'Log In →':'Create Account →'}</button>
-      <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center',marginTop:14 }}>Need Xaman? <a href={XAMAN_DL} target="_blank" rel="noopener noreferrer" style={{ color:'#10b981',fontWeight:600 }}>Download free →</a></p>
-    </Overlay>
-  );
-}
-
-// ─── ABOUT / FAQ / TERMS / PRIVACY ───────────────────────────────────────────
-function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
-  return (
-    <Overlay show={show} onClose={onClose} wide>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8 }}>About XRPLHub</div>
-      <h2 style={{ fontSize:24,fontWeight:900,marginBottom:18 }}>The XRPL financial services hub built for everyone legacy finance left behind.</h2>
-      <div style={{ fontSize:14,color:'rgba(255,255,255,.65)',lineHeight:1.9,display:'flex',flexDirection:'column',gap:14 }}>
-        <p>Built entirely on the <strong style={{ color:'#fff' }}>XRP Ledger</strong> — the fastest, cheapest, most sustainable blockchain on earth. Every service, every grant, every score is permanently verifiable on-chain. No middlemen. No dark money. No banks.</p>
-        <p><strong style={{ color:'#10b981' }}>XRPLScore™</strong> — the world&apos;s first proprietary on-chain credit standard. 300–850, scanned live from XRPL mainnet in seconds. No SSN. No bureau. No discrimination. Just blockchain truth.</p>
-        <p><strong style={{ color:'#fff' }}>35 XRPL Amendment Services</strong> — every major XRPL transaction type wrapped in AI. Pay with one swipe in Xaman. AI verifies on mainnet. Service activates in seconds. Clawback Shield, Multi-Sig Fortress, Escrow Vault, DEX tools, NFT services and more.</p>
-        <p><strong style={{ color:'#10b981' }}>Community Grants</strong> — wallet-to-wallet emergency aid, AI-reviewed within 24 hours, zero overhead. Every dollar verifiable on XRPScan by anyone in the world.</p>
-        <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:14,padding:18 }}>
-          <p style={{ fontSize:13,color:'rgba(255,255,255,.6)',lineHeight:1.75,fontStyle:'italic' }}>&ldquo;We built the financial infrastructure the legacy system was never going to build — transparent, on-chain, and open to everyone.&rdquo;</p>
+      <textarea value={form.need} onChange={e => set('need',e.target.value)} placeholder="Tell us what you need and why…" rows={4} style={{ ...INP, resize:'none', lineHeight:1.6, marginBottom:4 }} />
+      {errors.need && <p style={{ fontSize:12, color:'#f87171', marginBottom:8 }}>{errors.need}</p>}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:14 }}>
+        <div><label style={LBL}>Name (optional)</label><input type="text" value={form.name} onChange={e => set('name',e.target.value)} placeholder="Anonymous is fine" style={INP} /></div>
+        <div>
+          <label style={LBL}>XRPL Wallet</label>
+          <input type="text" value={form.wallet} onChange={e => set('wallet',e.target.value)} placeholder="rXXXXX…" style={{ ...INP, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }} />
+          {errors.wallet && <p style={{ fontSize:12, color:'#f87171' }}>{errors.wallet}</p>}
         </div>
-        <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',fontFamily:"'IBM Plex Mono',monospace" }}>XRPLScore™ · © 2026 XRPLHub.io · US Copyright Reg. #1-15166646291 · All Rights Reserved</p>
+        <div><label style={LBL}>Email</label><input type="email" value={form.email} onChange={e => set('email',e.target.value)} placeholder="you@example.com" style={INP} /></div>
       </div>
-      <button onClick={onClose} style={{ ...Btn('green',undefined,{marginTop:24}) }}>Close</button>
-    </Overlay>
-  );
-}
-
-function FAQModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
-  const [open, setOpen] = useState<number|null>(0);
-  const faqs: [string,string][] = [
-    ['How does checkout work?','Click Buy Now → we create a Xaman payment request → QR and deep link appear → scan or tap to open Xaman → payment pre-filled → slide to confirm → AI verifies on XRPL mainnet automatically. Under 15 seconds. No TX hash copying.'],
-    ['What is XRPLScore?',"300–850, scanned live from XRPL mainnet. Account age, TX count, trust lines, DEX, AMM, escrow, NFTs, multi-sig. No SSN. No bureau access required. Your on-chain reputation scored in seconds."],
-    ['How do I connect my wallet?','Tap 🔐 Connect Wallet → scan QR in Xaman → approve. No transaction is sent. No funds move. Your wallet address is stored locally for one-tap XRPLScore checks and grant applications.'],
-    ['What are the XRPL Services?','35 services across 7 categories: Protection (Clawback Shield, Multi-Sig Fortress, Escrow Vault, Deposit Auth Shield and more), DEX & AMM (Market Maker, Pool Creator, Liquidity tools), NFT (Vault Lock, Burn Certificate, Collection Launch), Identity (DID, On-Chain Identity, Compliance Package), Payments (Payment Channel, Path Payment Router), Tokens (Trust Line Manager, Token Issuer Setup), and Credit Builder. Plus Xahau Hooks, Borrow/Lend, Single Asset Vault and DeFi Pre-Approval coming soon.'],
-    ['How do grants work?',"Donate XRP/RLUSD to the treasury (public at xrpscan.com). Apply for $25–$100. AI reviews within 24 hours. Funds go wallet-to-wallet. No banks, no IDs required."],
-    ['Is this a bank?','No. Not a bank, broker, insurer, or FDIC institution. Financial technology platform on the XRP Ledger.'],
-  ];
-  return (
-    <Overlay show={show} onClose={onClose} wide>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:20 }}>FAQ</div>
-      <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
-        {faqs.map(([q,a],i)=>(
-          <div key={i} style={{ background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)',borderRadius:14,overflow:'hidden' }}>
-            <button onClick={()=>setOpen(open===i?null:i)} style={{ width:'100%',padding:'15px 18px',background:'transparent',border:'none',color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer',textAlign:'left' as const,display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:'inherit',gap:10 }}>
-              <span style={{ flex:1 }}>{q}</span><span style={{ color:'#10b981',fontSize:18,flexShrink:0 }}>{open===i?'−':'+'}</span>
-            </button>
-            {open===i&&<div style={{ padding:'0 18px 16px',fontSize:13,color:'rgba(255,255,255,.55)',lineHeight:1.8 }}>{a}</div>}
-          </div>
-        ))}
-      </div>
-      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:20}) }}>Close</button>
-    </Overlay>
-  );
-}
-
-function TermsModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
-  const H:React.CSSProperties={ color:'#10b981',fontWeight:800,display:'block',marginTop:20,marginBottom:6,fontSize:13,textTransform:'uppercase',letterSpacing:'.04em' };
-  const P:React.CSSProperties={ fontSize:13,color:'rgba(255,255,255,.58)',lineHeight:1.85,marginBottom:8 };
-  return (
-    <Overlay show={show} onClose={onClose} wide>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:6 }}>Legal</div>
-      <h2 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Terms of Service</h2>
-      <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginBottom:18 }}>XRPLHub.io · Effective May 2026 · Last updated {new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
-      <div style={{ maxHeight:'60vh',overflowY:'auto',paddingRight:8 }}>
-        <p style={P}>By using XRPLHub.io you agree to these Terms in full.</p>
-        <span style={H}>1. Who We Are</span><p style={P}>Financial technology platform on the XRP Ledger. Not a bank, broker-dealer, investment advisor, insurer, or FDIC institution.</p>
-        <span style={H}>2. Eligibility</span><p style={P}>Must be 18+. Unavailable where prohibited by law.</p>
-        <span style={H}>3. Services & Payments</span><p style={P}>Services are on-chain operational tools. Payment via Xaman. AI verifies on XRPL mainnet automatically. <strong style={{ color:'rgba(255,255,255,.8)' }}>All XRPL transactions are final and irrevocable.</strong> Not insurance, securities, or financial instruments.</p>
-        <span style={H}>4. XRPLScore™</span><p style={P}>Proprietary on-chain credit assessment. Not a FICO score, consumer credit report, or NRSRO rating.</p>
-        <span style={H}>5. Credit Builder</span><p style={P}>Monthly payments build XRPLScore. Bureau furnishing requires explicit FCRA consent. All payments non-refundable.</p>
-        <span style={H}>6. Grants</span><p style={P}>Voluntary and irrevocable donations. Subject to discretionary AI approval.</p>
-        <span style={H}>7. Your Wallet</span><p style={P}>You are solely responsible for your private keys and seed phrases. We never have access to them.</p>
-        <span style={H}>8. Liability</span><p style={P}>Capped at greater of $100 or 12-month payments. No indirect damages.</p>
-        <span style={H}>9. Governing Law</span><p style={P}>Delaware law. AAA Consumer Arbitration. Contact: <a href="mailto:legal@xrplhub.io" style={{ color:'#10b981' }}>legal@xrplhub.io</a></p>
-      </div>
-      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:18,width:'100%'}) }}>Close</button>
-    </Overlay>
-  );
-}
-
-function PrivacyModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
-  const H:React.CSSProperties={ color:'#10b981',fontWeight:800,display:'block',marginTop:20,marginBottom:6,fontSize:13,textTransform:'uppercase',letterSpacing:'.04em' };
-  const P:React.CSSProperties={ fontSize:13,color:'rgba(255,255,255,.58)',lineHeight:1.85,marginBottom:8 };
-  return (
-    <Overlay show={show} onClose={onClose} wide>
-      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:6 }}>Legal</div>
-      <h2 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Privacy Policy</h2>
-      <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginBottom:18 }}>XRPLHub.io · Effective May 2026 · Last updated {new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
-      <div style={{ maxHeight:'60vh',overflowY:'auto',paddingRight:8 }}>
-        <span style={H}>1. What We Collect</span><p style={P}>Name, email, phone, XRPL wallet address, grant details, SSN last-4 only for bureau verification (never stored in full). Public on-chain XRPL data for XRPLScore.</p>
-        <span style={H}>2. Never Collect</span><p style={P}>Full SSN · Private keys · Seed phrases · Plain-text passwords. We will never ask for your private key.</p>
-        <span style={H}>3. How We Use It</span><p style={P}>Service delivery · XRPLScore · Grant processing · Bureau furnishing (consent) · Receipts · Legal compliance.</p>
-        <span style={H}>4. Sharing</span><p style={P}>We do not sell data. Shared only with bureaus (consent), service providers, and law enforcement when required.</p>
-        <span style={H}>5. Security</span><p style={P}>TLS 1.3 · AES-256 · SSN-4 one-way hashed · Role-based access.</p>
-        <span style={H}>6. Your Rights</span><p style={P}>Access · correction · deletion · opt-out of bureau furnishing. Contact: <a href="mailto:privacy@xrplhub.io" style={{ color:'#10b981' }}>privacy@xrplhub.io</a></p>
-      </div>
-      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:18,width:'100%'}) }}>Close</button>
+      {errors.contact && <p style={{ fontSize:12, color:'#f87171', marginTop:4 }}>{errors.contact}</p>}
+      <button onClick={handleSubmit} style={{ ...B('color', '#8b5cf6', { width:'100%', marginTop:22, padding:'15px', fontSize:16 }) }}>Submit for Review →</button>
+      <p style={{ textAlign:'center', fontSize:11, color:'rgba(255,255,255,.22)', marginTop:10 }}>AI-assisted review within 24 hours · Zero overhead · Wallet-to-wallet</p>
     </Overlay>
   );
 }
@@ -1066,416 +852,404 @@ function PrivacyModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function XRPLHubHome() {
-  const [user, setUser]               = useState<User|null>(null);
-  const [connectedWallet, setConnected] = useState('');
-  const [scoreData, setScoreData]     = useState<ScoreData|null>(null);
-  const [scoreLoading, setSL]         = useState(false);
-  const [scoreError, setSE]           = useState<string|null>(null);
-  const [walletInput, setWI]          = useState('');
-  const [activeProduct, setAP]        = useState<Product|null>(null);
-  const [mobileMenu, setMM]           = useState(false);
-  const [showScore, setShowScore]     = useState(false);
-  const [showDonate, setShowDonate]   = useState(false);
-  const [showGrant, setShowGrant]     = useState(false);
-  const [showLogin, setShowLogin]     = useState(false);
-  const [showAbout, setShowAbout]     = useState(false);
-  const [showFaq, setShowFaq]         = useState(false);
-  const [showTerms, setShowTerms]     = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showConnect, setShowConnect] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<Category>('All');
-  const liveStats = useLiveStats();
+  const liveStats                             = useLiveStats();
+  const { inXApp, xAppAddr, sdkReady, signXRP } = useXamanSDK();
 
+  const [walletInput,    setWalletInput]      = useState('');
+  const [walletAddr,     setWalletAddr]       = useState('');
+  const [walletConnected,setWalletConnected]  = useState(false);
+  const [scoreData,      setScoreData]        = useState<ScoreData | null>(null);
+  const [scoreLoading,   setScoreLoading]     = useState(false);
+  const [scoreError,     setScoreError]       = useState<string | null>(null);
+  const [activeProduct,  setActiveProduct]    = useState<Product | null>(null);
+  const [activeCat,      setActiveCat]        = useState('all');
+  const [tickerIdx,      setTickerIdx]        = useState(0);
+
+  // Modals
+  const [showScore,  setShowScore]   = useState(false);
+  const [showDonate, setShowDonate]  = useState(false);
+  const [showGrant,  setShowGrant]   = useState(false);
+
+  // xApp: auto-populate wallet
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const s = localStorage.getItem('xh_user');  if (s) { try { setUser(JSON.parse(s)); } catch {} }
-    const w = localStorage.getItem('xh_wallet'); if (w) { setConnected(w); setWI(w); }
+    if (xAppAddr) { setWalletAddr(xAppAddr); setWalletConnected(true); }
+  }, [xAppAddr]);
+
+  // Ticker
+  useEffect(() => {
+    const iv = setInterval(() => setTickerIdx(i => (i + 1) % TICKER.length), 4500);
+    return () => clearInterval(iv);
   }, []);
 
-  const handleWalletConnected = (addr: string) => {
-    setConnected(addr); setWI(addr);
-    if (typeof window !== 'undefined') localStorage.setItem('xh_wallet', addr);
-  };
-  const disconnectWallet = () => {
-    setConnected(''); setWI('');
-    if (typeof window !== 'undefined') localStorage.removeItem('xh_wallet');
-  };
-
-  const fetchScore = useCallback(async (address?: string) => {
-    const target = address || walletInput || connectedWallet || TREASURY;
-    setScoreData(null); setSE(null); setSL(true); setShowScore(true);
+  const fetchScore = useCallback(async (addr?: string) => {
+    const target = addr || walletAddr || walletInput || TREASURY;
+    setScoreData(null); setScoreError(null); setScoreLoading(true); setShowScore(true);
     try {
-      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 14000);
-      const res  = await fetch(`${API_URL}/api/score/${encodeURIComponent(target)}`, { signal:ctrl.signal });
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 14_000);
+      const res = await fetch(`${API_URL}/api/score/${encodeURIComponent(target)}`, { signal: ctrl.signal });
       clearTimeout(t);
-      if (!res.ok) { const b = await res.json().catch(()=>({})); throw new Error(b.error||b.message||`Error ${res.status}`); }
+      if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error || `Error ${res.status}`); }
       const raw = await res.json();
-      setScoreData({ ledgerScore:raw.ledgerScore||raw.score||650, grade:raw.grade, details:raw.details, scannedAt:raw.scannedAt });
+      setScoreData({
+        ledgerScore: raw.ledgerScore || raw.xrplScore || 300,
+        grade: raw.grade,
+        percentile: raw.percentile,
+        percentileLabel: raw.percentileLabel,
+        breakdown: raw.breakdown,
+        recommendations: raw.recommendations,
+        details: raw.details,
+      });
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') setSE('XRPL scan timed out. Try again.');
-      else setSE(err instanceof Error ? err.message : 'Scan failed.');
-    } finally { setSL(false); }
-  }, [walletInput, connectedWallet]);
+      if (err instanceof Error && err.name === 'AbortError') setScoreError('Request timed out — try again');
+      else setScoreError(err instanceof Error ? err.message : 'Could not fetch score');
+    } finally { setScoreLoading(false); }
+  }, [walletAddr, walletInput]);
 
-  const handleLogout = () => { setUser(null); if (typeof window !== 'undefined') localStorage.removeItem('xh_user'); };
-  const featured = PRODUCTS.filter(p => p.featured);
-  const filtered = PRODUCTS.filter(p => !p.featured && (activeCategory === 'All' || p.category === activeCategory));
+  const visibleProducts = PRODUCTS.filter(p =>
+    activeCat === 'all' ? true : p.cat === activeCat
+  );
+
+  const featuredIds = ['multisig','no-freeze','amm-create','nft-mint','identity'];
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{scroll-behavior:smooth}body{overflow-x:hidden}
+        html{scroll-behavior:smooth}
         ::placeholder{color:rgba(255,255,255,.18)!important}
         input,textarea,button,select{font-family:inherit}
-        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px}
-        ::selection{background:rgba(16,185,129,.28);color:#fff}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px}
+
         @keyframes popIn{from{opacity:0;transform:scale(.93) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
         @keyframes shimmer{0%{width:0%;margin-left:0}50%{width:70%;margin-left:0}100%{width:0%;margin-left:100%}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,.7)}50%{opacity:.75;box-shadow:0 0 0 6px rgba(16,185,129,0)}}
         @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(16,185,129,.25)}50%{box-shadow:0 0 55px rgba(16,185,129,.6)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-        @keyframes borderPulse{0%,100%{border-color:rgba(16,185,129,.22)}50%{border-color:rgba(16,185,129,.55)}}
-        @keyframes tickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-        @keyframes strobeColor{0%,100%{color:#fff;text-shadow:0 0 8px rgba(16,185,129,.3)}25%{color:#34d399}50%{color:#10b981}75%{color:#6ee7b7}}
-        .ticker-strobe{animation:strobeColor 4s ease-in-out infinite}
-        .pcard-featured{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard-featured:hover{transform:translateY(-6px);box-shadow:0 0 60px rgba(16,185,129,.18),0 28px 70px rgba(0,0,0,.6)!important}
-        .pcard{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard:hover{transform:translateY(-4px);box-shadow:0 0 40px rgba(16,185,129,.1),0 20px 50px rgba(0,0,0,.5)!important}
-        .navbtn{padding:8px 16px;border-radius:99px;font-weight:600;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.62);transition:all .15s;white-space:nowrap}.navbtn:hover{background:rgba(255,255,255,.1);color:#fff}
-        .hero-p:hover{transform:scale(1.04);box-shadow:0 0 55px rgba(255,255,255,.25)!important}
-        .hero-g:hover{background:rgba(255,255,255,.1)!important;border-color:rgba(255,255,255,.35)!important}
-        .score-inp:focus{border-color:rgba(16,185,129,.5)!important}
-        .footer-lnk{background:none;border:none;color:rgba(255,255,255,.38);font-size:13px;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}.footer-lnk:hover{color:#fff}
-        .xaman-banner{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(16,185,129,.14),rgba(16,185,129,.04));border:1px solid rgba(16,185,129,.28);border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;color:#10b981;text-decoration:none;transition:all .18s;cursor:pointer}.xaman-banner:hover{background:rgba(16,185,129,.22);border-color:#10b981;transform:translateY(-1px)}
-        .wallet-btn{padding:8px 18px;border-radius:99px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#10b981;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}.wallet-btn:hover{background:rgba(16,185,129,.22);border-color:#10b981}
-        .neural-surface{background-image:linear-gradient(to bottom,rgba(3,4,14,.68) 0%,rgba(3,4,14,.80) 100%),url('${NEURAL_BG}');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:local}
-        .tp-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(0,182,122,.10);border:1px solid rgba(0,182,122,.28);border-radius:99px;padding:6px 14px;text-decoration:none;transition:all .18s;white-space:nowrap}.tp-badge:hover{background:rgba(0,182,122,.20);border-color:rgba(0,182,122,.55);transform:translateY(-1px)}
-        .nav-desktop{display:flex}.nav-mobile-toggle{display:none}.nav-tagline-full{display:inline}.nav-tagline-mobile{display:none}.nav-mobile-drawer{display:none}
-        @media(max-width:880px){.nav-desktop{display:none}.nav-mobile-toggle{display:flex}.nav-tagline-full{display:none}.nav-tagline-mobile{display:inline}.nav-mobile-drawer{display:flex;flex-direction:column;gap:8px;padding:16px;background:rgba(3,3,10,.95);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px)}.nav-mobile-drawer .navbtn,.nav-mobile-drawer .wallet-btn{width:100%;text-align:center;padding:12px;justify-content:center}}
-        @media(max-width:600px){h1{letter-spacing:-2px!important}.section-pad{padding-left:16px!important;padding-right:16px!important}.hero-buttons{flex-direction:column}.hero-buttons button{width:100%}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+        .pcard{transition:transform .22s,box-shadow .22s,border-color .22s;cursor:pointer}
+        .pcard:hover{transform:translateY(-5px);box-shadow:0 0 50px rgba(16,185,129,.14),0 24px 60px rgba(0,0,0,.55)!important}
+        .navbtn{padding:8px 16px;border-radius:99px;font-weight:600;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.62);transition:all .15s}
+        .navbtn:hover{background:rgba(255,255,255,.1);color:#fff}
+        .catbtn{padding:8px 18px;border-radius:99px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
       `}</style>
 
-      <div style={{ position:'fixed',inset:0,zIndex:-1,background:'#030310' }} />
+      {/* BACKGROUND */}
+      <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
+        <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 20% 20%,rgba(16,185,129,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(6,182,212,.04) 0%,transparent 60%),linear-gradient(135deg,#030310 0%,#040418 50%,#030312 100%)' }} />
+      </div>
 
-      <div style={{ minHeight:'100vh',fontFamily:"'Syne',sans-serif",color:'#eeeef5' }}>
+      <div style={{ minHeight:'100vh', fontFamily:"'Syne',sans-serif", color:'#eeeef5' }}>
 
         {/* NAV */}
-        <nav className="neural-surface" style={{ position:'sticky',top:0,zIndex:100,backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',borderBottom:'1px solid rgba(16,185,129,.18)' }}>
-          <div style={{ padding:'0 20px',minHeight:68,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap' }}>
-            <div style={{ display:'flex',alignItems:'center',gap:9 }}>
-              <img src="/logo.png" alt="XRPLHub" style={{ width:42,height:42,borderRadius:9,objectFit:'contain',flexShrink:0 }} />
-              <div style={{ display:'flex',flexDirection:'column',gap:1 }}>
-                <span style={{ fontSize:18,fontWeight:900,letterSpacing:'-.5px',lineHeight:1 }}>xrplhub</span>
-                <span style={{ fontSize:9,color:'rgba(255,255,255,.45)',letterSpacing:'.07em',textTransform:'uppercase',lineHeight:1 }}>
-                  <span className="nav-tagline-full">XRPL Services&nbsp;•&nbsp;Community Grants&nbsp;•&nbsp;XRPLScore</span>
-                  <span className="nav-tagline-mobile">XRPL · Grants · Score</span>
-                </span>
-              </div>
+        <nav style={{ position:'sticky', top:0, zIndex:100, backdropFilter:'blur(22px)', WebkitBackdropFilter:'blur(22px)', background:'rgba(3,3,16,.85)', borderBottom:'1px solid rgba(16,185,129,.15)', padding:'0 28px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <img src="/logo.png" alt="XRPLHub" style={{ width:34, height:34, borderRadius:8 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+            <div>
+              <span style={{ fontSize:18, fontWeight:900, letterSpacing:'-.5px' }}>XRPLHub</span>
+              <span style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>
+                {inXApp ? '· xApp Mode' : '· xrplhub.io'}
+              </span>
             </div>
-            <div className="nav-desktop" style={{ alignItems:'center',gap:7,flexWrap:'wrap' }}>
-              {connectedWallet
-                ? <button className="wallet-btn" onClick={disconnectWallet} title="Disconnect wallet"><span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 6px #10b981' }} />{trunc(connectedWallet)} ✕</button>
-                : <button className="wallet-btn" onClick={()=>setShowConnect(true)}>🔐 Connect Wallet</button>
-              }
-              <button className="navbtn" onClick={()=>setShowDonate(true)}>Donate</button>
-              <button className="navbtn" onClick={()=>setShowGrant(true)}>Apply for Grant</button>
-              {user?<><span style={{ fontSize:12,color:'rgba(255,255,255,.42)',maxWidth:80,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user.name||user.email}</span><button className="navbtn" onClick={handleLogout}>Log Out</button></>:<button className="navbtn" onClick={()=>setShowLogin(true)}>Log In</button>}
-              <button onClick={()=>fetchScore()} style={{ padding:'8px 18px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:13,cursor:'pointer',border:'none',background:'#10b981',color:'#000',transition:'all .15s',whiteSpace:'nowrap' }}>Get XRPLScore</button>
-            </div>
-            <button className="nav-mobile-toggle" onClick={()=>setMM(!mobileMenu)} style={{ alignItems:'center',justifyContent:'center',width:42,height:42,borderRadius:10,background:'rgba(16,185,129,.12)',border:'1px solid rgba(16,185,129,.28)',color:'#10b981',cursor:'pointer',fontSize:20,fontWeight:700 }} aria-label="Menu">{mobileMenu?'✕':'☰'}</button>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.2)', borderRadius:99, padding:'3px 9px', fontSize:9, fontWeight:700, color:'#10b981', letterSpacing:'.1em', fontFamily:"'IBM Plex Mono',monospace" }}>
+              <span style={{ width:4, height:4, borderRadius:'50%', background:'#10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
+              XRPL MAINNET
+            </span>
           </div>
-          {mobileMenu && (
-            <div className="nav-mobile-drawer">
-              {connectedWallet
-                ? <button className="wallet-btn" onClick={()=>{disconnectWallet();setMM(false);}}><span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 6px #10b981' }} />{trunc(connectedWallet)} ✕</button>
-                : <button className="wallet-btn" onClick={()=>{setShowConnect(true);setMM(false);}}>🔐 Connect Wallet</button>
-              }
-              <a className="xaman-banner" href={XAMAN_DL} target="_blank" rel="noopener noreferrer" style={{ justifyContent:'center' }}><span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2.5s infinite' }} />Get Xaman — Free →</a>
-              <button className="navbtn" onClick={()=>{setShowDonate(true);setMM(false);}}>Donate</button>
-              <button className="navbtn" onClick={()=>{setShowGrant(true);setMM(false);}}>Apply for Grant</button>
-              {user?<button className="navbtn" onClick={()=>{handleLogout();setMM(false);}}>Log Out</button>:<button className="navbtn" onClick={()=>{setShowLogin(true);setMM(false);}}>Log In</button>}
-              <button onClick={()=>{fetchScore();setMM(false);}} style={{ padding:'12px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:14,cursor:'pointer',border:'none',background:'#10b981',color:'#000' }}>Get XRPLScore</button>
-            </div>
-          )}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            <button className="navbtn" onClick={() => setShowDonate(true)}>Donate</button>
+            <button className="navbtn" onClick={() => setShowGrant(true)}>Apply for Grant</button>
+            {walletConnected && (
+              <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:99, border:'1px solid rgba(16,185,129,.35)', background:'rgba(16,185,129,.07)', fontSize:11, fontWeight:600, color:'#34d399', fontFamily:"'IBM Plex Mono',monospace" }}>
+                <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 6px #10b981', display:'inline-block' }} />
+                {walletAddr.slice(0,8)}…{walletAddr.slice(-4)}
+              </div>
+            )}
+            <button onClick={() => fetchScore()} style={{ padding:'8px 18px', borderRadius:99, fontFamily:'inherit', fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background:'#10b981', color:'#000', transition:'all .15s' }}>
+              {inXApp && sdkReady ? 'XRPLScore' : 'Get XRPLScore'}
+            </button>
+          </div>
         </nav>
 
-        <TickerBar />
+        {/* TICKER */}
+        <div style={{ background:'rgba(16,185,129,.06)', borderBottom:'1px solid rgba(16,185,129,.12)', padding:'9px 28px', overflow:'hidden', display:'flex', alignItems:'center', gap:16 }}>
+          <span style={{ fontSize:9, fontWeight:800, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", flexShrink:0 }}>LIVE</span>
+          <span style={{ fontSize:12, color:'rgba(255,255,255,.55)', animation:'fadeUp .5s ease both', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} key={tickerIdx}>
+            {TICKER[tickerIdx]}
+          </span>
+          <span style={{ fontSize:12, color:'rgba(255,255,255,.25)', flexShrink:0 }}>
+            {liveStats ? `${(liveStats.xrplScores ?? 0).toLocaleString()} scores · ${liveStats.treasuryUSD} treasury · ${liveStats.servicesCount || 24} services` : 'Loading live stats…'}
+          </span>
+        </div>
 
         {/* HERO */}
-        <section className="section-pad" style={{ textAlign:'center',padding:'72px 24px 60px',position:'relative',overflow:'hidden' }}>
-          <div style={{ position:'absolute',top:'35%',left:'50%',transform:'translate(-50%,-50%)',width:'min(700px,95vw)',height:'min(700px,95vw)',borderRadius:'50%',background:'radial-gradient(circle,rgba(16,185,129,.07) 0%,transparent 68%)',pointerEvents:'none',animation:'float 9s ease-in-out infinite' }} />
-          <h1 style={{ fontSize:'clamp(48px,11vw,140px)',fontWeight:900,letterSpacing:'-4px',lineHeight:.95,marginBottom:10 }}>
-            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text' }}>XRPL Hub</span>
+        <section style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
+          <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:28, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
+            <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
+            FIRST-TO-MARKET · XRPL AMENDMENT SERVICES · XRPLSCORE™ · 2026
+          </div>
+          <h1 style={{ fontSize:'clamp(42px,8vw,90px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:20 }}>
+            XRPLHub<br />
+            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+              on the XRPL.
+            </span>
           </h1>
-          <div style={{ fontSize:'clamp(11px,1.8vw,16px)',fontWeight:800,letterSpacing:'.35em',textTransform:'uppercase',color:'rgba(255,255,255,.28)',marginBottom:20,fontFamily:"'IBM Plex Mono',monospace" }}>
-            ON BLOCKCHAIN
-          </div>
-          <div style={{ display:'flex',flexWrap:'wrap',gap:'8px 14px',justifyContent:'center',marginBottom:24,maxWidth:680,margin:'0 auto 24px' }}>
-            {['Community Grants','XRPLScore','XRPL Services'].map((kw,i)=>(
-              <span key={kw} style={{ fontSize:13,fontWeight:700,color:i%2===0?'#34d399':'#fff',letterSpacing:'.04em',fontFamily:"'IBM Plex Mono',monospace" }}>
-                {i>0&&<span style={{ color:'rgba(255,255,255,.2)',marginRight:14 }}>·</span>}{kw}
-              </span>
-            ))}
-          </div>
-
-          <div style={{ marginBottom:20 }}>
-            {connectedWallet
-              ? <div style={{ display:'inline-flex',alignItems:'center',gap:10,background:'rgba(16,185,129,.12)',border:'1px solid rgba(16,185,129,.3)',borderRadius:99,padding:'10px 22px' }}>
-                  <span style={{ width:8,height:8,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 10px #10b981',animation:'pulse 2s infinite' }} />
-                  <span style={{ fontSize:14,fontWeight:700,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace" }}>{trunc(connectedWallet)}</span>
-                  <span style={{ fontSize:12,color:'rgba(255,255,255,.4)' }}>connected</span>
-                </div>
-              : <button onClick={()=>setShowConnect(true)} style={{ display:'inline-flex',alignItems:'center',gap:10,background:'rgba(16,185,129,.14)',border:'1px solid rgba(16,185,129,.3)',borderRadius:99,padding:'12px 26px',fontSize:15,fontWeight:700,color:'#10b981',cursor:'pointer',fontFamily:'inherit',transition:'all .18s' }}>
-                  🔐 Connect Xaman Wallet
-                </button>
-            }
-          </div>
-
-          <div style={{ marginBottom:32 }}>
-            <a className="xaman-banner" href={XAMAN_DL} target="_blank" rel="noopener noreferrer" style={{ fontSize:14,padding:'10px 22px' }}>
-              📲 Xaman Wallet Required — Download Free (iOS / Android) →
-            </a>
-          </div>
-
-          <div className="hero-buttons" style={{ display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap',marginBottom:40 }}>
-            <button className="hero-p" onClick={()=>fetchScore()} style={{ display:'inline-flex',alignItems:'center',gap:8,padding:'16px 32px',background:'#fff',color:'#000',fontSize:16,fontWeight:700,borderRadius:99,border:'none',cursor:'pointer',transition:'all .18s',boxShadow:'0 4px 28px rgba(255,255,255,.12)' }}>
-              {connectedWallet?'Get My XRPLScore →':'Get My Free XRPLScore →'}
+          <p style={{ fontSize:17, color:'rgba(255,255,255,.5)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7 }}>
+            24 XRPL amendment services. XRPLScore™ on-chain credit scoring. Wallet-to-wallet community grants. AI builds the transaction. You sign in Xaman. On-chain in 4 seconds.
+          </p>
+          <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap', marginBottom:40 }}>
+            <button onClick={() => fetchScore()} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'16px 36px', background:'#fff', color:'#000', fontSize:16, fontWeight:700, borderRadius:99, border:'none', cursor:'pointer', transition:'all .18s', boxShadow:'0 4px 28px rgba(255,255,255,.12)' }}>
+              Free XRPLScore Check →
             </button>
-            <button className="hero-g" onClick={()=>document.getElementById('products')?.scrollIntoView({behavior:'smooth'})} style={{ display:'inline-flex',alignItems:'center',gap:8,padding:'16px 32px',border:'1.5px solid rgba(255,255,255,.22)',color:'#fff',fontSize:16,fontWeight:600,borderRadius:99,background:'transparent',cursor:'pointer',transition:'all .18s',backdropFilter:'blur(8px)' }}>
+            <button onClick={() => { const el = document.getElementById('products'); el?.scrollIntoView({ behavior:'smooth' }); }} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'16px 36px', border:'1.5px solid rgba(255,255,255,.2)', color:'#fff', fontSize:16, fontWeight:600, borderRadius:99, background:'transparent', cursor:'pointer', transition:'all .18s' }}>
               Browse Services ↓
             </button>
           </div>
-
-          <div style={{ display:'flex',gap:'18px 32px',justifyContent:'center',flexWrap:'wrap' }}>
-            {(liveStats ? [
-              [(liveStats.xrplScores ?? 0).toLocaleString(),'XRPLScores'],
-              [liveStats.treasuryUSD||'$0','Treasury'],
-              [liveStats.overhead||'0%','Overhead'],
-              ['1 Swipe','Checkout'],
-              [String(liveStats.servicesCount||35),'XRPL Services'],
-            ] : [['–','XRPLScores'],['–','Treasury'],['0%','Overhead'],['1 Swipe','Checkout'],['35','XRPL Services']]
-            ).map(([n,l])=>(
-              <div key={l} style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'clamp(20px,4vw,26px)',fontWeight:900,color:'#10b981',lineHeight:1,textShadow:'0 0 30px rgba(16,185,129,.5)',transition:'all .4s' }}>{n}</div>
-                <div style={{ fontSize:10,color:'rgba(255,255,255,.35)',marginTop:4,textTransform:'uppercase',letterSpacing:'.08em' }}>{l}</div>
+          <div style={{ display:'flex', gap:28, justifyContent:'center', flexWrap:'wrap' }}>
+            {[
+              [liveStats ? (liveStats.xrplScores ?? 0).toLocaleString() : '—', 'XRPLScores'],
+              [liveStats ? `${liveStats.treasuryXRP} XRP` : '—', 'Treasury'],
+              ['24', 'Services'],
+              ['0%', 'Overhead'],
+              ['~4s', 'On-Chain'],
+            ].map(([n, l]) => (
+              <div key={l as string} style={{ textAlign:'center' }}>
+                <div style={{ fontSize:22, fontWeight:900, color:'#10b981', lineHeight:1, textShadow:'0 0 28px rgba(16,185,129,.5)' }}>{n}</div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,.32)', marginTop:4, textTransform:'uppercase', letterSpacing:'.08em' }}>{l}</div>
               </div>
             ))}
           </div>
         </section>
 
         {/* PRODUCTS */}
-        <section id="products" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1280,margin:'0 auto' }}>
-          <div style={{ textAlign:'center',marginBottom:40 }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}>
-              <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981' }} />
-              <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>XRPL Amendment Services</span>
+        <section id="products" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:36 }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:10 }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block' }} />
+              <span style={{ fontSize:11, fontWeight:700, color:'#10b981', letterSpacing:'.14em', textTransform:'uppercase' }}>XRPL Amendment Services</span>
             </div>
-            <h2 style={{ fontSize:'clamp(24px,4vw,42px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>AI-delivered on-chain protection</h2>
-            <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:520,margin:'0 auto' }}>Pay with one swipe in Xaman → AI verifies on XRPL mainnet → service activates automatically.</p>
+            <h2 style={{ fontSize:'clamp(24px,4vw,44px)', fontWeight:900, letterSpacing:'-2px', marginBottom:10 }}>AI builds the transaction. You sign once.</h2>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,.42)', maxWidth:480, margin:'0 auto' }}>
+              Every service maps to a real XRPL transaction type. Pay in RLUSD or XRP. Sign in Xaman. Permanent on mainnet.
+            </p>
           </div>
 
-          <div style={{ display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:28 }}>
-            {CATEGORIES.map(cat => (
-              <button key={cat} onClick={()=>setActiveCategory(cat)} style={{ padding:'8px 18px',borderRadius:99,cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:12,border:`1px solid ${activeCategory===cat?'#10b981':'rgba(255,255,255,.12)'}`,background:activeCategory===cat?'rgba(16,185,129,.18)':'rgba(255,255,255,.05)',color:activeCategory===cat?'#10b981':'rgba(255,255,255,.5)',transition:'all .15s',letterSpacing:'.04em' }}>
-                {cat} {cat!=='All'&&<span style={{ fontSize:10,opacity:.6,marginLeft:4 }}>({PRODUCTS.filter(p=>!p.featured&&p.category===cat).length})</span>}
+          {/* Category tabs */}
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center', marginBottom:32 }}>
+            {CATS.map(c => (
+              <button key={c.id} className="catbtn" onClick={() => setActiveCat(c.id)} style={{ border:`1px solid ${activeCat===c.id?'#10b981':'rgba(255,255,255,.1)'}`, background:activeCat===c.id?'rgba(16,185,129,.15)':'rgba(255,255,255,.04)', color:activeCat===c.id?'#10b981':'rgba(255,255,255,.45)', fontFamily:'inherit' }}>
+                {c.label}
               </button>
             ))}
           </div>
 
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:18,marginBottom:18 }}>
-            {featured.map(p=>(
-              <div key={p.id} className="pcard-featured" onClick={()=>setAP(p)} style={{ background:`linear-gradient(135deg,${p.color}10,rgba(6,6,22,.8))`,border:`1px solid ${p.color}30`,borderRadius:22,padding:26,position:'relative',overflow:'hidden' }}>
-                <div style={{ position:'absolute',top:-30,right:-30,width:150,height:150,borderRadius:'50%',background:`radial-gradient(circle,${p.color}14 0%,transparent 70%)`,pointerEvents:'none' }} />
-                <div style={{ width:50,height:50,borderRadius:14,background:`${p.color}18`,border:`1px solid ${p.color}28`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,marginBottom:14,animation:'float 4s ease-in-out infinite' }}>{p.emoji}</div>
-                <div style={{ fontSize:9,fontWeight:700,color:p.color,letterSpacing:'.13em',textTransform:'uppercase',marginBottom:7,fontFamily:"'IBM Plex Mono',monospace" }}>{p.amendment}</div>
-                <h3 style={{ fontSize:18,fontWeight:900,marginBottom:8 }}>{p.name}</h3>
-                <p style={{ fontSize:12,color:'rgba(255,255,255,.46)',lineHeight:1.7,marginBottom:16 }}>{p.tagline}</p>
-                <ul style={{ listStyle:'none',marginBottom:20 }}>
-                  {p.features.slice(0,3).map(f=><li key={f} style={{ fontSize:11,color:'rgba(255,255,255,.48)',marginBottom:5,display:'flex',alignItems:'center',gap:7 }}><span style={{ color:p.color,fontSize:10 }}>✓</span>{f}</li>)}
-                </ul>
-                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',borderTop:`1px solid ${p.color}18`,paddingTop:14,gap:8,flexWrap:'wrap' }}>
-                  <div><span style={{ fontSize:20,fontWeight:900,color:p.color }}>{p.priceRLUSD} RLUSD</span><span style={{ fontSize:11,color:'rgba(255,255,255,.3)',marginLeft:8 }}>or {p.priceXRP} XRP</span></div>
-                  <button style={{ padding:'8px 16px',borderRadius:99,background:p.color,color:'#000',border:'none',fontWeight:800,fontSize:12,cursor:'pointer',fontFamily:'inherit' }}>Buy Now →</button>
+          {/* Product grid */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(290px,1fr))', gap:16 }}>
+            {visibleProducts.map(p => {
+              const isFeatured = featuredIds.includes(p.id) && activeCat === 'all';
+              const isCS = (p as any).comingSoon;
+              return (
+                <div key={p.id} className="pcard" onClick={() => setActiveProduct(p)}
+                  style={{ background:isFeatured?`linear-gradient(135deg,${p.color}10,rgba(6,6,22,.85))`:'rgba(6,6,22,.72)', backdropFilter:'blur(16px)', border:`1px solid ${p.color}${isFeatured?'30':'18'}`, borderRadius:20, padding:24, position:'relative', overflow:'hidden', opacity:isCS?0.65:1 }}>
+                  {isFeatured && <div style={{ position:'absolute', top:-20, right:-20, width:120, height:120, borderRadius:'50%', background:`radial-gradient(circle,${p.color}14 0%,transparent 70%)`, pointerEvents:'none' }} />}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
+                    <div style={{ width:46, height:46, borderRadius:12, background:`${p.color}18`, border:`1px solid ${p.color}28`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>{p.emoji}</div>
+                    {isCS
+                      ? <span style={{ fontSize:9, fontWeight:700, color:'#9ca3af', background:'rgba(156,163,175,.1)', border:'1px solid rgba(156,163,175,.2)', borderRadius:99, padding:'3px 8px', fontFamily:"'IBM Plex Mono',monospace" }}>COMING SOON</span>
+                      : <span style={{ fontSize:9, fontWeight:700, color:p.color, fontFamily:"'IBM Plex Mono',monospace", background:`${p.color}12`, border:`1px solid ${p.color}25`, borderRadius:99, padding:'3px 8px' }}>
+                          {p.priceRLUSD} RLUSD
+                        </span>
+                    }
+                  </div>
+                  <div style={{ fontSize:9, color:p.color, fontFamily:"'IBM Plex Mono',monospace", fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', marginBottom:6 }}>{p.amendment}</div>
+                  <h3 style={{ fontSize:15, fontWeight:800, marginBottom:6 }}>{p.name}</h3>
+                  <p style={{ fontSize:11, color:'rgba(255,255,255,.42)', lineHeight:1.65, marginBottom:14 }}>{p.tagline}</p>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:12, borderTop:`1px solid ${p.color}15` }}>
+                    {isCS
+                      ? <span style={{ fontSize:11, color:'rgba(255,255,255,.3)' }}>Notify me when live</span>
+                      : <span style={{ fontSize:16, fontWeight:900, color:p.color }}>{p.priceRLUSD} RLUSD</span>
+                    }
+                    <button onClick={() => setActiveProduct(p)} style={{ padding:'6px 14px', borderRadius:99, background:`${p.color}18`, border:`1px solid ${p.color}28`, color:p.color, fontWeight:700, fontSize:11, cursor:'pointer', fontFamily:'inherit', transition:'all .15s' }}>
+                      {isCS ? 'Learn More' : 'Activate →'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12 }}>
-            {filtered.map(p=>(
-              <div key={p.id} className="pcard" onClick={()=>setAP(p)} style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(16px)',border:`1px solid ${p.color}20`,borderRadius:18,padding:20,position:'relative',overflow:'hidden' }}>
-                {p.comingSoon&&<div style={{ position:'absolute',top:12,right:12,background:p.color,color:'#000',fontSize:9,fontWeight:800,padding:'3px 9px',borderRadius:99,animation:'pulse 2.5s infinite' }}>SOON</div>}
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12 }}>
-                  <div style={{ width:42,height:42,borderRadius:12,background:`${p.color}18`,border:`1px solid ${p.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20 }}>{p.emoji}</div>
-                  {!p.comingSoon&&<span style={{ fontSize:9,fontWeight:700,color:p.color,fontFamily:"'IBM Plex Mono',monospace",textTransform:'uppercase',letterSpacing:'.09em',border:`1px solid ${p.color}28`,borderRadius:99,padding:'3px 8px' }}>{(p as {isMonthly?:boolean}).isMonthly?'Monthly':'On-chain'}</span>}
-                </div>
-                <div style={{ fontSize:9,color:p.color,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',marginBottom:5 }}>{p.amendment}</div>
-                <h3 style={{ fontSize:15,fontWeight:800,marginBottom:5 }}>{p.name}</h3>
-                <p style={{ fontSize:11,color:'rgba(255,255,255,.42)',lineHeight:1.6,marginBottom:12 }}>{p.tagline}</p>
-                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:12,borderTop:`1px solid ${p.color}15`,gap:8,flexWrap:'wrap' }}>
-                  {p.comingSoon?<span style={{ fontSize:12,fontWeight:800,color:p.color }}>Pre-register free</span>:<span style={{ fontSize:15,fontWeight:900,color:p.color }}>{p.priceRLUSD} RLUSD{(p as {isMonthly?:boolean}).isMonthly?'/mo':''}</span>}
-                  <button style={{ padding:'6px 14px',borderRadius:99,background:`${p.color}18`,border:`1px solid ${p.color}28`,color:p.color,fontWeight:700,fontSize:11,cursor:'pointer',fontFamily:'inherit' }}>
-                    {p.comingSoon?'🔔 Notify →':(p as {isMonthly?:boolean}).isMonthly?'Subscribe →':'Buy →'}
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* XRPLSCORE */}
-        <section id="score" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
-          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.18)',borderRadius:24,padding:'40px 32px',backdropFilter:'blur(20px)',animation:'borderPulse 4s ease-in-out infinite' }}>
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:36,alignItems:'center' }}>
+        <section id="score" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.85))', border:'1px solid rgba(16,185,129,.18)', borderRadius:26, padding:'52px 44px', backdropFilter:'blur(20px)' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))', gap:48, alignItems:'center' }}>
               <div>
-                <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:14 }}>
-                  <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981' }} />
-                  <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>XRPLScore — World First</span>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:14 }}>
+                  <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block' }} />
+                  <span style={{ fontSize:11, fontWeight:700, color:'#10b981', letterSpacing:'.14em', textTransform:'uppercase' }}>XRPLScore™ — Proprietary</span>
                 </div>
-                <h2 style={{ fontSize:'clamp(24px,3.5vw,40px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>On-chain credit score.<br />No SSN. No bureau. Just truth.</h2>
-                <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8,marginBottom:20 }}>300–850. Scanned live from XRPL mainnet. {connectedWallet?'Your wallet is connected — tap Check Score.':'Connect your wallet or paste any XRPL address below.'}</p>
-                <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:9,marginBottom:22 }}>
-                  {[['Live XRPL Scan','Real data every time'],['300–850 Scale','New global standard'],['8 Signal Types','Comprehensive scoring'],['Permanent','On-chain forever']].map(([t,d])=>(
-                    <div key={t} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'11px 13px' }}>
-                      <div style={{ fontSize:11,fontWeight:700,color:'#10b981',marginBottom:2 }}>{t}</div>
-                      <div style={{ fontSize:10,color:'rgba(255,255,255,.38)' }}>{d}</div>
+                <h2 style={{ fontSize:'clamp(24px,3.5vw,42px)', fontWeight:900, letterSpacing:'-2px', marginBottom:16 }}>
+                  On-chain credit score.<br />No SSN. No bureau. Just truth.
+                </h2>
+                <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', lineHeight:1.82, marginBottom:22 }}>
+                  300–850. Eight signals. Calculated live from XRPL mainnet. Account history, transaction velocity, trust line diversity, DEX participation, AMM activity, reserve management, NFT portfolio, security configuration.
+                </p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:9, marginBottom:24 }}>
+                  {[['No SSN Required','Wallet-only identity'],['8-Signal Scoring','Proprietary algorithm'],['Real-Time','Calculated from mainnet'],['Permanent Record','On-chain forever']].map(([t,d]) => (
+                    <div key={t} style={{ background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', borderRadius:11, padding:'11px 13px' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#10b981', marginBottom:2 }}>{t}</div>
+                      <div style={{ fontSize:10, color:'rgba(255,255,255,.38)' }}>{d}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display:'flex',gap:9,flexWrap:'wrap' }}>
-                  <input className="score-inp" type="text" value={walletInput} onChange={e=>setWI(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchScore(walletInput)} placeholder={connectedWallet?trunc(connectedWallet):"Paste XRPL wallet address…"} style={{ ...INP,flex:1,minWidth:180,borderRadius:99,paddingLeft:20,fontFamily:"'IBM Plex Mono',monospace",fontSize:12 }} />
-                  <button onClick={()=>fetchScore(walletInput||connectedWallet)} style={{ padding:'12px 22px',borderRadius:99,background:'#10b981',color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Check Score →</button>
+                <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+                  <input type="text" value={walletInput} onChange={e => setWalletInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchScore(walletInput)} placeholder="Paste XRPL wallet address…" style={{ ...INP, flex:1, minWidth:200, borderRadius:99, paddingLeft:20, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }} />
+                  <button onClick={() => fetchScore(walletInput)} style={{ padding:'12px 22px', borderRadius:99, background:'#10b981', color:'#000', border:'none', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>Check Score →</button>
                 </div>
-                {!connectedWallet&&<p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginTop:10 }}>or <button onClick={()=>setShowConnect(true)} style={{ background:'none',border:'none',color:'#10b981',cursor:'pointer',fontWeight:700,fontSize:11,fontFamily:'inherit',padding:0 }}>connect your Xaman wallet</button> for instant one-tap access</p>}
               </div>
+
+              {/* Credit Builder — reframed */}
               <div>
-                <div style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:16 }}>Credit Builder — Monthly on XRPL</div>
-                <div style={{ display:'flex',flexDirection:'column',gap:11 }}>
-                  {[{name:'Starter',price:'$20 RLUSD/mo',color:'#34d399',sub:'XRPLScore monitoring · Equifax soft · Email alerts'},{name:'Builder',price:'$50 RLUSD/mo',color:'#10b981',sub:'All 3 bureaus soft · Score simulator · Dispute assist',popular:true},{name:'Pro',price:'$100 RLUSD/mo',color:'#f59e0b',sub:'Hard bureau reporting · RLUSD rewards · DeFi pre-approval'}].map(t=>(
-                    <div key={t.name} onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)} style={{ background:'rgba(255,255,255,.04)',border:`1px solid ${t.color}28`,borderRadius:14,padding:'14px 18px',cursor:'pointer',transition:'all .18s',position:'relative' }} onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}55`} onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}28`}>
-                      {t.popular&&<div style={{ position:'absolute',top:-8,right:12,background:'#10b981',color:'#000',fontSize:8,fontWeight:800,padding:'2px 8px',borderRadius:99 }}>POPULAR</div>}
-                      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,flexWrap:'wrap',gap:6 }}>
-                        <span style={{ fontWeight:800,fontSize:14,color:'#fff' }}>{t.name}</span>
-                        <span style={{ fontSize:16,fontWeight:900,color:t.color }}>{t.price}</span>
+                <div style={{ fontSize:11, fontWeight:700, color:'#10b981', letterSpacing:'.1em', textTransform:'uppercase', marginBottom:16 }}>Credit Builder — Monthly XRPLScore Building</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
+                  {[
+                    { name:'Starter', price:'15 RLUSD/mo', color:'#34d399', sub:'Monthly XRPLScore tracking · Improvement alerts · Email reports' },
+                    { name:'Builder', price:'25 RLUSD/mo', color:'#10b981', sub:'Score tracking + simulator · Dispute support · Priority review', popular:true },
+                    { name:'Pro',     price:'35 RLUSD/mo', color:'#f59e0b', sub:'All Builder features · First in line for bureau reporting (coming)' },
+                  ].map(t => (
+                    <div key={t.name} style={{ background:'rgba(255,255,255,.04)', border:`1px solid ${t.color}28`, borderRadius:14, padding:'14px 18px', cursor:'pointer', position:'relative', transition:'all .18s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}55`}
+                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}28`}>
+                      {t.popular && <div style={{ position:'absolute', top:-8, right:12, background:'#10b981', color:'#000', fontSize:8, fontWeight:800, padding:'2px 8px', borderRadius:99 }}>POPULAR</div>}
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                        <span style={{ fontWeight:800, fontSize:14 }}>{t.name}</span>
+                        <span style={{ fontSize:15, fontWeight:900, color:t.color }}>{t.price}</span>
                       </div>
-                      <div style={{ fontSize:11,color:'rgba(255,255,255,.38)',lineHeight:1.5 }}>{t.sub}</div>
+                      <div style={{ fontSize:11, color:'rgba(255,255,255,.38)', lineHeight:1.5 }}>{t.sub}</div>
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)} style={{ ...Btn('green',undefined,{width:'100%',marginTop:14,padding:'13px'}) }}>Subscribe to Credit Builder →</button>
-                <p style={{ fontSize:11,color:'rgba(255,255,255,.3)',textAlign:'center',marginTop:8 }}>First blockchain → FICO pathway ever built</p>
+                <div style={{ background:'rgba(255,255,255,.03)', border:'1px solid rgba(255,255,255,.07)', borderRadius:12, padding:'12px 14px', marginBottom:14, fontSize:11, color:'rgba(255,255,255,.35)', lineHeight:1.7 }}>
+                  Each monthly payment is recorded on XRPL mainnet and builds your XRPLScore history. Bureau furnishing coming when furnisher partnerships are established.
+                </div>
+                <button style={{ ...B('green', undefined, { width:'100%', padding:'13px' }) }}>
+                  Build Your XRPLScore →
+                </button>
               </div>
             </div>
           </div>
         </section>
 
         {/* GRANTS */}
-        <section id="grants" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
-          <div style={{ textAlign:'center',marginBottom:40 }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}><span style={{ width:5,height:5,borderRadius:'50%',background:'#8b5cf6',boxShadow:'0 0 8px #8b5cf6' }} /><span style={{ fontSize:11,fontWeight:700,color:'#8b5cf6',letterSpacing:'.14em',textTransform:'uppercase' }}>AI-Reviewed Grants</span></div>
-            <h2 style={{ fontSize:'clamp(24px,4vw,42px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>Real people. Real money. Wallet to wallet.</h2>
-            <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:520,margin:'0 auto' }}>No NGOs. No dark money. AI reviews every application. 100% verifiable on the XRP Ledger.</p>
-          </div>
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:20 }}>
-            <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.2)',borderRadius:22,padding:'30px 26px',backdropFilter:'blur(20px)' }}>
-              <div style={{ fontSize:40,marginBottom:14,animation:'float 4s ease-in-out infinite' }}>💚</div>
-              <h3 style={{ fontSize:21,fontWeight:900,marginBottom:10 }}>Fund the Treasury</h3>
-              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:22 }}>Send XRP or RLUSD. <strong style={{ color:'#fff' }}>100%</strong> goes to grant recipients. Treasury public on XRPScan.</p>
-              <div style={{ display:'flex',gap:18,flexWrap:'wrap',marginBottom:20 }}>{[['0%','Overhead'],['<5s','Transfer'],['∞','On-Chain']].map(([n,l])=><div key={l} style={{ textAlign:'center' }}><div style={{ fontSize:20,fontWeight:900,color:'#10b981' }}>{n}</div><div style={{ fontSize:9,color:'rgba(255,255,255,.32)',textTransform:'uppercase',letterSpacing:'.08em' }}>{l}</div></div>)}</div>
-              <div style={{ background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.3)',borderRadius:11,padding:'10px 13px',marginBottom:8,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}><span style={{ fontSize:9,fontWeight:700,color:'#10b981',textTransform:'uppercase',fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS</span><code style={{ fontSize:13,color:'#10b981',fontWeight:700,fontFamily:"'IBM Plex Mono',monospace",wordBreak:'break-all' }}>{TREASURY_DOMAIN}</code></div>
-              <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'9px 13px',marginBottom:18 }}><code style={{ fontSize:10,color:'#34d399',wordBreak:'break-all',fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code></div>
-              <button onClick={()=>setShowDonate(true)} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15}) }}>Donate — Scan QR in Xaman →</button>
+        <section id="grants" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:40 }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:10 }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background:'#8b5cf6', boxShadow:'0 0 8px #8b5cf6', display:'inline-block' }} />
+              <span style={{ fontSize:11, fontWeight:700, color:'#8b5cf6', letterSpacing:'.14em', textTransform:'uppercase' }}>Community Grants</span>
             </div>
-            <div style={{ background:'linear-gradient(135deg,rgba(139,92,246,.08),rgba(6,6,22,.8))',border:'1px solid rgba(139,92,246,.2)',borderRadius:22,padding:'30px 26px',backdropFilter:'blur(20px)' }}>
-              <div style={{ fontSize:40,marginBottom:14,animation:'float 4s ease-in-out infinite',animationDelay:'1s' }}>❤️</div>
-              <h3 style={{ fontSize:21,fontWeight:900,marginBottom:10 }}>Apply for Emergency Aid</h3>
-              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:22 }}>Need help? Apply for $25–$100. AI reviews within 24 hours. Approved funds go directly to your XRPL wallet.</p>
-              <div style={{ display:'flex',flexDirection:'column',gap:7,marginBottom:22 }}>{['Submit a help form','AI reviews using community treasury','Help is on the way — direct to wallet','No bank account, no ID required'].map(f=><div key={f} style={{ display:'flex',alignItems:'center',gap:8,fontSize:12,color:'rgba(255,255,255,.52)' }}><span style={{ color:'#8b5cf6',fontSize:11 }}>✓</span>{f}</div>)}</div>
-              <button onClick={()=>setShowGrant(true)} style={{ ...Btn('color','#8b5cf6',{width:'100%',padding:'14px',fontSize:15}) }}>Apply for Emergency Grant →</button>
+            <h2 style={{ fontSize:'clamp(24px,4vw,44px)', fontWeight:900, letterSpacing:'-2px', marginBottom:10 }}>Real people. Real money. Wallet to wallet.</h2>
+            <p style={{ fontSize:13, color:'rgba(255,255,255,.42)', maxWidth:500, margin:'0 auto' }}>
+              Zero overhead. AI-assisted review. Every dollar verifiable on XRPScan. No NGOs. No middlemen. That is not a promise. That is math.
+            </p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))', gap:20 }}>
+            <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,6,22,.85))', border:'1px solid rgba(16,185,129,.2)', borderRadius:22, padding:'32px 28px', backdropFilter:'blur(20px)' }}>
+              <div style={{ fontSize:40, marginBottom:14, animation:'float 4s ease-in-out infinite' }}>💚</div>
+              <h3 style={{ fontSize:22, fontWeight:900, marginBottom:10 }}>Fund the Treasury</h3>
+              <p style={{ fontSize:13, color:'rgba(255,255,255,.48)', lineHeight:1.8, marginBottom:20 }}>Send XRP or RLUSD. 100% reaches grant recipients. Treasury publicly visible on XRPScan 24/7. Every transaction permanent and verifiable.</p>
+              <div style={{ background:'rgba(16,185,129,.06)', border:'1px solid rgba(16,185,129,.15)', borderRadius:11, padding:'9px 13px', marginBottom:18 }}>
+                <code style={{ fontSize:10, color:'#34d399', wordBreak:'break-all', fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
+              </div>
+              <button onClick={() => setShowDonate(true)} style={{ ...B('green', undefined, { width:'100%', padding:'14px', fontSize:15 }) }}>Donate via Xaman →</button>
+            </div>
+            <div style={{ background:'linear-gradient(135deg,rgba(139,92,246,.08),rgba(6,6,22,.85))', border:'1px solid rgba(139,92,246,.2)', borderRadius:22, padding:'32px 28px', backdropFilter:'blur(20px)' }}>
+              <div style={{ fontSize:40, marginBottom:14, animation:'float 4s ease-in-out infinite', animationDelay:'1s' }}>❤️</div>
+              <h3 style={{ fontSize:22, fontWeight:900, marginBottom:10 }}>Apply for Emergency Aid</h3>
+              <p style={{ fontSize:13, color:'rgba(255,255,255,.48)', lineHeight:1.8, marginBottom:20 }}>Need help? Apply for $25–$100. No bank account required. No paperwork. AI-assisted review. Approved funds go directly to your XRPL wallet.</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:20 }}>
+                {['$25–$100 direct to your XRPL wallet','AI-assisted review within 24 hours','No bank account or ID required','Permanently verifiable on XRPScan'].map(f => (
+                  <div key={f} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'rgba(255,255,255,.52)' }}>
+                    <span style={{ color:'#8b5cf6', fontSize:11 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowGrant(true)} style={{ ...B('color', '#8b5cf6', { width:'100%', padding:'14px', fontSize:15 }) }}>Apply for Grant →</button>
             </div>
           </div>
         </section>
 
         {/* WHY XRPL */}
-        <section className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
-          <div style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,.08)',borderRadius:22,padding:'36px 28px',textAlign:'center' }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:14 }}><span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981' }} /><span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>Why XRPL</span></div>
-            <h2 style={{ fontSize:'clamp(22px,3.5vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>The only blockchain built for this.</h2>
-            <p style={{ fontSize:13,color:'rgba(255,255,255,.44)',maxWidth:480,margin:'0 auto 32px',lineHeight:1.7 }}>Over a decade of continuous operation. Sub-cent fees. 3–5 second finality.</p>
-            <div style={{ display:'flex',justifyContent:'center',gap:'16px 28px',flexWrap:'wrap' }}>
-              {[['3–5s','Finality'],['$0.000001','Avg Fee'],['10+','Years Live'],['1,500','TPS'],['0.0079kWh','Per TX']].map(([v,l])=>(
-                <div key={l} style={{ textAlign:'center',minWidth:80 }}><div style={{ fontSize:'clamp(20px,3vw,26px)',fontWeight:900,color:'#10b981',textShadow:'0 0 28px rgba(16,185,129,.5)' }}>{v}</div><div style={{ fontSize:10,color:'rgba(255,255,255,.35)',marginTop:4,textTransform:'uppercase',letterSpacing:'.08em' }}>{l}</div></div>
+        <section style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+          <div style={{ ...GLASS, borderRadius:22, padding:'44px 40px', textAlign:'center' }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:14 }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block' }} />
+              <span style={{ fontSize:11, fontWeight:700, color:'#10b981', letterSpacing:'.14em', textTransform:'uppercase' }}>Why XRPL</span>
+            </div>
+            <h2 style={{ fontSize:'clamp(20px,3vw,36px)', fontWeight:900, letterSpacing:'-2px', marginBottom:12 }}>The only blockchain built for this.</h2>
+            <div style={{ display:'flex', justifyContent:'center', gap:32, flexWrap:'wrap' }}>
+              {[['3–5s','Finality'],['$0.000001','Avg Fee'],['10+','Years Live'],['1,500','TPS'],['~0.0079kWh','Per TX']].map(([v,l]) => (
+                <div key={l} style={{ textAlign:'center', minWidth:80 }}>
+                  <div style={{ fontSize:24, fontWeight:900, color:'#10b981', textShadow:'0 0 24px rgba(16,185,129,.5)' }}>{v}</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.35)', marginTop:3, textTransform:'uppercase', letterSpacing:'.08em' }}>{l}</div>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="section-pad" style={{ padding:'0 24px 64px',maxWidth:820,margin:'0 auto',textAlign:'center' }}>
-          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,6,22,.85))',border:'1px solid rgba(16,185,129,.24)',borderRadius:24,padding:'48px 32px',backdropFilter:'blur(20px)' }}>
-            <h2 style={{ fontSize:'clamp(24px,5vw,46px)',fontWeight:900,letterSpacing:'-2.5px',lineHeight:1.06,marginBottom:14 }}>Your wallet has a story.<br /><span style={{ color:'#10b981' }}>Let the ledger score it.</span></h2>
-            <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',marginBottom:28,lineHeight:1.7 }}>Free. No SSN. No bank account. 100% on-chain.</p>
-            <div className="hero-buttons" style={{ display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap' }}>
-              <button className="hero-p" onClick={()=>fetchScore()} style={{ display:'inline-flex',alignItems:'center',gap:8,padding:'15px 30px',background:'#fff',color:'#000',fontSize:15,fontWeight:700,borderRadius:99,border:'none',cursor:'pointer',transition:'all .18s',boxShadow:'0 4px 28px rgba(255,255,255,.12)' }}>Get Free XRPLScore →</button>
-              <button className="hero-g" onClick={()=>setShowDonate(true)} style={{ display:'inline-flex',alignItems:'center',gap:8,padding:'15px 30px',border:'1.5px solid rgba(255,255,255,.22)',color:'#fff',fontSize:15,fontWeight:600,borderRadius:99,background:'transparent',cursor:'pointer',transition:'all .18s' }}>💚 Fund a Grant</button>
+        <section style={{ padding:'0 28px 100px', maxWidth:820, margin:'0 auto', textAlign:'center' }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,6,22,.9))', border:'1px solid rgba(16,185,129,.22)', borderRadius:26, padding:'60px 44px', backdropFilter:'blur(20px)' }}>
+            <h2 style={{ fontSize:'clamp(24px,5vw,50px)', fontWeight:900, letterSpacing:'-2.5px', lineHeight:1.04, marginBottom:16 }}>
+              Your wallet has a story.<br />
+              <span style={{ color:'#10b981' }}>Let the ledger score it.</span>
+            </h2>
+            <p style={{ fontSize:14, color:'rgba(255,255,255,.42)', marginBottom:32, lineHeight:1.65 }}>Free XRPLScore check. No SSN. No bank account. 100% on-chain. 24 amendment services available now.</p>
+            <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
+              <button onClick={() => fetchScore()} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'15px 34px', background:'#fff', color:'#000', fontSize:15, fontWeight:700, borderRadius:99, border:'none', cursor:'pointer', transition:'all .18s', boxShadow:'0 4px 28px rgba(255,255,255,.12)' }}>Get Free XRPLScore →</button>
+              <button onClick={() => setShowDonate(true)} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'15px 34px', border:'1.5px solid rgba(255,255,255,.2)', color:'#fff', fontSize:15, fontWeight:600, borderRadius:99, background:'transparent', cursor:'pointer', transition:'all .18s' }}>Fund a Grant</button>
             </div>
-            <p style={{ fontSize:11,color:'rgba(255,255,255,.22)',marginTop:20 }}>Seeking institutional partnerships · <a href="mailto:partners@xrplhub.io" style={{ color:'#10b981' }}>partners@xrplhub.io</a></p>
+            <p style={{ fontSize:11, color:'rgba(255,255,255,.2)', marginTop:20 }}>
+              Partnerships: XRPL Foundation · Ripple Impact · Evernorth · <a href="mailto:partners@xrplhub.io" style={{ color:'#10b981' }}>partners@xrplhub.io</a>
+            </p>
           </div>
         </section>
 
         {/* FOOTER */}
-        <footer className="neural-surface" style={{ backdropFilter:'blur(14px)',borderTop:'1px solid rgba(255,255,255,.07)',padding:'32px 24px 24px' }}>
-          <div style={{ maxWidth:1240,margin:'0 auto' }}>
-            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:18,marginBottom:20 }}>
-              <div>
-                <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:6 }}>
-                  <img src="/logo.png" alt="XRPLHub" style={{ width:36,height:36,borderRadius:7,objectFit:'contain' }} />
-                  <span style={{ fontWeight:800,fontSize:15 }}>xrplhub</span>
-                  <span style={{ fontSize:10,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,marginLeft:6,background:'rgba(16,185,129,.1)',padding:'2px 8px',borderRadius:99,border:'1px solid rgba(16,185,129,.25)' }}>{TREASURY_DOMAIN}</span>
-                </div>
-                <p style={{ fontSize:11,color:'rgba(255,255,255,.22)' }}>© {new Date().getFullYear()} XRPLHub.io · Social Impact Finance · Powered by the XRP Ledger</p>
-                <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
+        <footer style={{ backdropFilter:'blur(14px)', background:'rgba(3,3,16,.8)', borderTop:'1px solid rgba(255,255,255,.07)', padding:'36px 28px 28px' }}>
+          <div style={{ maxWidth:1280, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:18 }}>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                <img src="/logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
+                <span style={{ fontWeight:800, fontSize:15 }}>XRPLHub.io</span>
               </div>
-              <div style={{ display:'flex',gap:'10px 18px',flexWrap:'wrap',alignItems:'center' }}>
-                <a href={XAMAN_DL} target="_blank" rel="noopener noreferrer" className="footer-lnk" style={{ color:'#10b981',textDecoration:'none' }}>📲 Get Xaman</a>
-                <button className="footer-lnk" onClick={()=>setShowAbout(true)}>About</button>
-                <button className="footer-lnk" onClick={()=>setShowFaq(true)}>FAQ</button>
-                <button className="footer-lnk" onClick={()=>setShowTerms(true)}>Terms</button>
-                <button className="footer-lnk" onClick={()=>setShowPrivacy(true)}>Privacy</button>
-                <a href="mailto:support@xrplhub.io" style={{ fontSize:13,color:'rgba(255,255,255,.38)',textDecoration:'none' }}>support@xrplhub.io</a>
-                <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:11,color:'#10b981',textDecoration:'none',display:'flex',alignItems:'center',gap:5,fontFamily:"'IBM Plex Mono',monospace" }}>
-                  <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',animation:'pulse 2.5s infinite' }} />Treasury Live ↗
-                </a>
-              </div>
+              <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · Morrbiz LLC · US Copyright Reg. #1-15166646291</p>
+              <p style={{ fontSize:10, color:'rgba(255,255,255,.15)', marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
             </div>
-            <div style={{ borderTop:'1px solid rgba(255,255,255,.06)',paddingTop:16,display:'flex',alignItems:'center',justifyContent:'center' }}>
-              <a href="https://www.trustpilot.com/review/xrplhub.io" target="_blank" rel="noopener noreferrer" className="tp-badge">
-                <span style={{ display:'inline-flex',alignItems:'center',justifyContent:'center',width:20,height:20,borderRadius:4,background:'#00b67a',fontWeight:900,fontSize:11,color:'#fff',flexShrink:0 }}>★</span>
-                <span style={{ display:'flex',flexDirection:'column',gap:1 }}>
-                  <span style={{ display:'flex',alignItems:'center',gap:4 }}><span style={{ color:'#00b67a',fontSize:13,letterSpacing:1 }}>★★★★★</span><span style={{ fontSize:12,fontWeight:900,color:'#fff',letterSpacing:'-.3px' }}>Trust<span style={{ color:'#00b67a' }}>pilot</span></span></span>
-                  <span style={{ fontSize:10,color:'rgba(255,255,255,.45)',fontWeight:600 }}>Trusted on Trustpilot</span>
-                </span>
+            <div style={{ display:'flex', gap:18, flexWrap:'wrap', alignItems:'center' }}>
+              <a href="/terms"   style={{ fontSize:13, color:'rgba(255,255,255,.38)', textDecoration:'none' }}>Terms</a>
+              <a href="/privacy" style={{ fontSize:13, color:'rgba(255,255,255,.38)', textDecoration:'none' }}>Privacy</a>
+              <a href="/support" style={{ fontSize:13, color:'rgba(255,255,255,.38)', textDecoration:'none' }}>Support</a>
+              <a href="mailto:support@xrplhub.io" style={{ fontSize:13, color:'rgba(255,255,255,.38)', textDecoration:'none' }}>support@xrplhub.io</a>
+              <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:'#10b981', textDecoration:'none', display:'flex', alignItems:'center', gap:5, fontFamily:"'IBM Plex Mono',monospace" }}>
+                <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', animation:'pulse 2.5s infinite', display:'inline-block' }} />
+                Treasury Live ↗
               </a>
             </div>
           </div>
         </footer>
-
       </div>
 
-      {/* ALL MODALS */}
-      <ConnectWalletModal show={showConnect} onClose={()=>setShowConnect(false)} onConnected={handleWalletConnected} />
-      <ScoreModal show={showScore} onClose={()=>setShowScore(false)} scoreData={scoreData} loading={scoreLoading} error={scoreError} onRetry={()=>fetchScore(walletInput||connectedWallet)} walletAddress={walletInput||connectedWallet} />
-      <ProductModal show={!!activeProduct} onClose={()=>setAP(null)} product={activeProduct} connectedWallet={connectedWallet} />
-      <DonateModal show={showDonate} onClose={()=>setShowDonate(false)} />
-      <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} connectedWallet={connectedWallet} />
-      <LoginModal show={showLogin} onClose={()=>setShowLogin(false)} onLoggedIn={u=>setUser(u)} />
-      <AboutModal show={showAbout} onClose={()=>setShowAbout(false)} />
-      <FAQModal show={showFaq} onClose={()=>setShowFaq(false)} />
-      <TermsModal show={showTerms} onClose={()=>setShowTerms(false)} />
-      <PrivacyModal show={showPrivacy} onClose={()=>setShowPrivacy(false)} />
-      <Analytics />
+      {/* MODALS */}
+      <ScoreModal show={showScore} onClose={() => setShowScore(false)} data={scoreData} loading={scoreLoading} error={scoreError} onRetry={() => fetchScore()} address={walletAddr || walletInput} />
+      <ProductModal show={!!activeProduct} onClose={() => setActiveProduct(null)} product={activeProduct} inXApp={inXApp} signXRP={signXRP} />
+      <DonateModal  show={showDonate}  onClose={() => setShowDonate(false)} />
+      <GrantModal   show={showGrant}   onClose={() => setShowGrant(false)} />
     </>
   );
 }
