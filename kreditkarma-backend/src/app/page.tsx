@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 const XUMM_KEY = '33894f1f-b5ac-4b47-a0ec-77b27b59d224';
 const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
 const API_URL  = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || '';
-// © 2026 XRPLHub.io · XRPLScore™ · US Copyright Reg. #1-15166646291
+// © 2026 XRPLHub.io · XRPLScore™ · All Rights Reserved
 
 // ─── XAPP SDK HOOK ────────────────────────────────────────────────────────────
 function useXamanSDK() {
@@ -972,7 +972,7 @@ export default function XRPLHubHome() {
             <div style={{ minWidth:0 }}>
               <span style={{ fontSize:17, fontWeight:900, letterSpacing:'-.5px' }}>XRPLHub.io</span>
               <span className="xh-nav-sub" style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>
-                {inXApp ? '· xApp Mode' : '· XRPL Mainnet'}
+                {inXApp ? '· xApp Mode' : '· xrplhub.io'}
               </span>
             </div>
             <span className="xh-nav-pill" style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.2)', borderRadius:99, padding:'3px 9px', fontSize:9, fontWeight:700, color:'#10b981', letterSpacing:'.1em', fontFamily:"'IBM Plex Mono',monospace" }}>
@@ -1253,7 +1253,7 @@ export default function XRPLHubHome() {
                 <img src="/hub-logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                 <span style={{ fontWeight:800, fontSize:15 }}>XRPLHub.io</span>
               </div>
-              <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · US Copyright Reg. #1-15166646291</p>
+              <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · All Rights Reserved</p>
               <p style={{ fontSize:10, color:'rgba(255,255,255,.15)', marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
             </div>
             <div style={{ display:'flex', gap:18, flexWrap:'wrap', alignItems:'center' }}>
