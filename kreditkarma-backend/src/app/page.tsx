@@ -917,6 +917,8 @@ export default function XRPLHubHome() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html,body{overflow-x:hidden;max-width:100%;width:100%}
+        img,svg,video{max-width:100%;height:auto}
         html{scroll-behavior:smooth}
         ::placeholder{color:rgba(255,255,255,.18)!important}
         input,textarea,button,select{font-family:inherit}
@@ -949,7 +951,11 @@ export default function XRPLHubHome() {
           .xh-hide-sm{display:none!important}
           .xh-nav-actions{gap:6px}
           .navbtn{padding:7px 13px;font-size:12px}
+          .xh-section{padding-left:16px!important;padding-right:16px!important}
+          .xh-hero{padding:60px 16px 48px!important}
+          .xh-card-pad{padding:28px 20px!important}
         }
+        .xh-section{width:100%;max-width:1280px;margin:0 auto}
       `}</style>
 
       {/* BACKGROUND */}
@@ -1007,7 +1013,7 @@ export default function XRPLHubHome() {
         </div>
 
         {/* HERO */}
-        <section style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
+        <section className="xh-hero" style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
           <h1 style={{ fontSize:'clamp(48px,9vw,110px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:16 }}>
             <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
@@ -1046,7 +1052,7 @@ export default function XRPLHubHome() {
         </section>
 
         {/* PRODUCTS */}
-        <section id="products" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+        <section id="products" className="xh-section" style={{ padding:'0 28px 80px' }}>
           <div style={{ textAlign:'center', marginBottom:36 }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:10 }}>
               <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block' }} />
@@ -1104,7 +1110,7 @@ export default function XRPLHubHome() {
         </section>
 
         {/* XRPLSCORE */}
-        <section id="score" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+        <section id="score" className="xh-section" style={{ padding:'0 28px 80px' }}>
           <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.85))', border:'1px solid rgba(16,185,129,.18)', borderRadius:26, padding:'52px 44px', backdropFilter:'blur(20px)' }}>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))', gap:48, alignItems:'center' }}>
               <div>
@@ -1127,7 +1133,7 @@ export default function XRPLHubHome() {
                   ))}
                 </div>
                 <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
-                  <input type="text" value={walletInput} onChange={e => setWalletInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchScore(walletInput)} placeholder="Paste XRPL wallet address…" style={{ ...INP, flex:1, minWidth:200, borderRadius:99, paddingLeft:20, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }} />
+                  <input type="text" value={walletInput} onChange={e => setWalletInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && fetchScore(walletInput)} placeholder="Paste XRPL wallet address…" style={{ ...INP, flex:1, minWidth:0, borderRadius:99, paddingLeft:20, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }} />
                   <button onClick={() => fetchScore(walletInput)} style={{ padding:'12px 22px', borderRadius:99, background:'#10b981', color:'#000', border:'none', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap' }}>Check Score →</button>
                 </div>
               </div>
@@ -1165,7 +1171,7 @@ export default function XRPLHubHome() {
         </section>
 
         {/* GRANTS */}
-        <section id="grants" style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+        <section id="grants" className="xh-section" style={{ padding:'0 28px 80px' }}>
           <div style={{ textAlign:'center', marginBottom:40 }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:10 }}>
               <span style={{ width:5, height:5, borderRadius:'50%', background:'#8b5cf6', boxShadow:'0 0 8px #8b5cf6', display:'inline-block' }} />
@@ -1203,7 +1209,7 @@ export default function XRPLHubHome() {
         </section>
 
         {/* WHY XRPL */}
-        <section style={{ padding:'0 28px 80px', maxWidth:1280, margin:'0 auto' }}>
+        <section className="xh-section" style={{ padding:'0 28px 80px' }}>
           <div style={{ ...GLASS, borderRadius:22, padding:'44px 40px', textAlign:'center' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginBottom:14 }}>
               <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block' }} />
@@ -1222,7 +1228,7 @@ export default function XRPLHubHome() {
         </section>
 
         {/* CTA */}
-        <section style={{ padding:'0 28px 100px', maxWidth:820, margin:'0 auto', textAlign:'center' }}>
+        <section className="xh-section" style={{ padding:'0 28px 100px', maxWidth:820, textAlign:'center' }}>
           <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,6,22,.9))', border:'1px solid rgba(16,185,129,.22)', borderRadius:26, padding:'60px 44px', backdropFilter:'blur(20px)' }}>
             <h2 style={{ fontSize:'clamp(24px,5vw,50px)', fontWeight:900, letterSpacing:'-2.5px', lineHeight:1.04, marginBottom:16 }}>
               Your wallet has a story.<br />
@@ -1247,7 +1253,7 @@ export default function XRPLHubHome() {
                 <img src="/hub-logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                 <span style={{ fontWeight:800, fontSize:15 }}>XRPLHub.io</span>
               </div>
-              <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · Morrbiz LLC · US Copyright Reg. #1-15166646291</p>
+              <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · US Copyright Reg. #1-15166646291</p>
               <p style={{ fontSize:10, color:'rgba(255,255,255,.15)', marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
             </div>
             <div style={{ display:'flex', gap:18, flexWrap:'wrap', alignItems:'center' }}>
