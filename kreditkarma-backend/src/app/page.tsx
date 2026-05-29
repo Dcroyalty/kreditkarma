@@ -877,24 +877,11 @@ export default function XRPLHubHome() {
   const [activeProduct,  setActiveProduct]    = useState<Product | null>(null);
   const [activeCat,      setActiveCat]        = useState('all');
   const [tickerIdx,      setTickerIdx]        = useState(0);
-  const [cursorPos,      setCursorPos]        = useState({ x: -200, y: -200 });
 
   // Modals
   const [showScore,  setShowScore]   = useState(false);
   const [showDonate, setShowDonate]  = useState(false);
   const [showGrant,  setShowGrant]   = useState(false);
-
-  // Cursor-following glow — gives the site life
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    let raf = 0;
-    const onMove = (e: MouseEvent) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setCursorPos({ x: e.clientX, y: e.clientY }));
-    };
-    window.addEventListener('mousemove', onMove);
-    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
-  }, []);
 
   // xApp: auto-populate wallet
   useEffect(() => {
@@ -984,11 +971,9 @@ export default function XRPLHubHome() {
         .xh-section{width:100%;max-width:1280px;margin:0 auto}
       `}</style>
 
-      {/* BACKGROUND */}
+      {/* BACKGROUND — dark base only; image lives in header + footer bands */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
         <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 20% 20%,rgba(16,185,129,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(6,182,212,.04) 0%,transparent 60%),linear-gradient(135deg,#030310 0%,#040418 50%,#030312 100%)' }} />
-        {/* Cursor-following glow */}
-        <div style={{ position:'absolute', left:cursorPos.x, top:cursorPos.y, width:480, height:480, transform:'translate(-50%,-50%)', borderRadius:'50%', background:'radial-gradient(circle,rgba(34,211,238,.07) 0%,rgba(16,185,129,.04) 35%,transparent 70%)', pointerEvents:'none', transition:'left .18s cubic-bezier(.2,.8,.2,1),top .18s cubic-bezier(.2,.8,.2,1)', willChange:'left,top' }} />
       </div>
 
       <div style={{ minHeight:'100vh', fontFamily:"'Syne',sans-serif", color:'#eeeef5' }}>
@@ -1032,7 +1017,7 @@ export default function XRPLHubHome() {
           </div>
           {/* Marquee track — two identical halves for seamless -50% loop */}
           <div style={{ overflow:'hidden', flex:1, maskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)', WebkitMaskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)' }}>
-            <div style={{ display:'inline-flex', whiteSpace:'nowrap', animation:'tickerScroll 75s linear infinite', willChange:'transform' }}>
+            <div style={{ display:'inline-flex', whiteSpace:'nowrap', animation:'tickerScroll 100s linear infinite', willChange:'transform' }}>
               {[0,1].map(half => (
                 <div key={half} style={{ display:'inline-flex', whiteSpace:'nowrap' }} aria-hidden={half===1}>
                   {TICKER.map((msg, i) => (
@@ -1049,6 +1034,10 @@ export default function XRPLHubHome() {
 
         {/* HERO */}
         <section className="xh-hero" style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
+          {/* Background image band — header */}
+          <div style={{ position:'absolute', inset:0, backgroundImage:"url('/xrpl-background.jpg')", backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat', zIndex:0 }} />
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(3,3,16,.72) 0%,rgba(4,4,22,.80) 60%,rgba(3,3,18,.95) 100%)', zIndex:0 }} />
+          <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
           <h1 style={{ fontSize:'clamp(48px,9vw,110px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:16 }}>
             <span style={{ background:'linear-gradient(135deg,#10b981,#34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>XRPL</span><span style={{ color:'#38bdf8', filter:'drop-shadow(0 0 24px rgba(56,189,248,.45))' }}>Hub</span>
@@ -1081,6 +1070,7 @@ export default function XRPLHubHome() {
                 <div style={{ fontSize:10, color:'rgba(255,255,255,.32)', marginTop:4, textTransform:'uppercase', letterSpacing:'.08em' }}>{l}</div>
               </div>
             ))}
+          </div>
           </div>
         </section>
 
@@ -1279,7 +1269,11 @@ export default function XRPLHubHome() {
         </section>
 
         {/* FOOTER */}
-        <footer style={{ backdropFilter:'blur(14px)', background:'rgba(3,3,16,.8)', borderTop:'1px solid rgba(255,255,255,.07)', padding:'36px 28px 28px' }}>
+        <footer style={{ position:'relative', borderTop:'1px solid rgba(255,255,255,.07)', padding:'36px 28px 28px', overflow:'hidden' }}>
+          {/* Background image band — footer */}
+          <div style={{ position:'absolute', inset:0, backgroundImage:"url('/xrpl-background.jpg')", backgroundSize:'cover', backgroundPosition:'center', backgroundRepeat:'no-repeat', zIndex:0 }} />
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg,rgba(3,3,18,.95) 0%,rgba(4,4,22,.82) 40%,rgba(3,3,16,.88) 100%)', zIndex:0, backdropFilter:'blur(2px)' }} />
+          <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ maxWidth:1280, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:18 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
@@ -1299,6 +1293,7 @@ export default function XRPLHubHome() {
                 Treasury Live ↗
               </a>
             </div>
+          </div>
           </div>
         </footer>
       </div>
