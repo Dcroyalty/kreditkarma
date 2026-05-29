@@ -62,21 +62,34 @@ function useLiveStats() {
   return stats;
 }
 
-// ─── TICKER ───────────────────────────────────────────────────────────────────
+// ─── TICKER — value-driven sales messages, all products ──────────────────────
 const TICKER = [
-  'XRPLScore — First Proprietary On-Chain Credit Score on the XRP Ledger',
-  'Multi-Sig Fortress — Require Multiple Approvals to Move Any Funds',
-  'Token Issuers: Permanently Surrender Freeze Rights with One Transaction',
-  'Apply for Emergency Grants — Wallet to Wallet · Zero Overhead · 100% On-Chain',
-  'AMM Pool Launch — Deploy Your Liquidity Pool in ~4 Seconds via Xaman',
-  'Mint XRPL NFTs with Up to 50% Royalties — AI Builds the Transaction',
-  'On-Chain Identity — Link Your Verified Domain to Your XRPL Wallet',
-  'DID Creator — W3C-Compliant Decentralized Identity on XRPL Mainnet',
-  'Smart Swap Router — Cross-Currency Payments via XRPL Native Pathfinding',
-  'Compliance Bundle — Enterprise-Grade XRPL Configuration in One Bundle',
-  'Escrow Setup — Time-Lock XRP with Custom Release Conditions',
-  'AI Constructs Your Transaction · You Sign in Xaman · On-Chain in 4 Seconds',
+  '🎯 XRPLScore™ — Check any wallet free · 300–850 · No SSN · No bureau',
+  '🛡️ Multi-Sig Fortress — No single key can ever move your funds again · 60 RLUSD',
+  '🔑 Regular Key Rotator — Keep your master key in cold storage · 30 RLUSD',
+  '🚧 Deposit Auth Guard — Block every spam airdrop permanently · 20 RLUSD',
+  '🎯 Destination Tag Lock — Never lose a deposit to a missing tag · 15 RLUSD',
+  '🤝 Issuer Trustless Declaration — Build holder trust forever · 40 RLUSD',
+  '💰 Token Transfer Fee — Earn on every trade of your token · 25 RLUSD',
+  '🏛️ Full Issuer Setup — Launch a credible token in one bundle · 80 RLUSD',
+  '🔗 Trust Line Configurator — Hold any XRPL token, your terms · 20 RLUSD',
+  '📈 DEX Order Builder — Precision limit orders on the XRPL DEX · 25 RLUSD',
+  '🌊 AMM Pool Launch — Deploy your pool, earn every swap fee · 75 RLUSD',
+  '💧 AMM Liquidity Entry — Put your assets to work earning fees · 35 RLUSD',
+  '🔄 Smart Swap Router — Best-rate token swaps via pathfinding · 25 RLUSD',
+  '⚡ Payment Channel — Stream micropayments off-chain · 50 RLUSD',
+  '🎨 NFT Minter — Mint with up to 50% royalties built in · 30 RLUSD',
+  '🔥 NFT Burn Certificate — Permanent proof-of-burn on-chain · 20 RLUSD',
+  '🏷️ NFT Offer Creator — List or bid on any XRPL NFT · 20 RLUSD',
+  '🆔 On-Chain Identity — Your verified domain on every explorer · 20 RLUSD',
+  '🪪 DID Creator — W3C self-sovereign identity on XRPL · 35 RLUSD',
+  '✅ Compliance Bundle — Enterprise-grade wallet setup · 55 RLUSD',
+  '🏛️ Escrow Setup — Time-lock XRP with your conditions · 40 RLUSD',
+  '💚 Community Grants — Wallet-to-wallet aid · Zero overhead · 100% on-chain',
+  '⚡ AI builds it · You sign once in Xaman · Permanent in ~4 seconds',
 ];
+
+// ─── TICKER (legacy var retained for compatibility) ──────────────────────────
 
 // ─── PRODUCTS ─────────────────────────────────────────────────────────────────
 // Honest framing: AI builds transaction → user signs in Xaman → on-chain ~4s
@@ -945,7 +958,7 @@ export default function XRPLHubHome() {
         @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(16,185,129,.25)}50%{box-shadow:0 0 55px rgba(16,185,129,.6)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        @keyframes tickerScroll{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-50%,0,0)}}
 
         .pcard{transition:transform .22s,box-shadow .22s,border-color .22s;cursor:pointer}
         .pcard:hover{transform:translateY(-5px);box-shadow:0 0 50px rgba(16,185,129,.14),0 24px 60px rgba(0,0,0,.55)!important}
@@ -985,10 +998,10 @@ export default function XRPLHubHome() {
           <div className="xh-nav-brand">
             <img src="/hub-logo.png" alt="XRPLHub" style={{ width:34, height:34, borderRadius:8, flexShrink:0 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
             <div style={{ minWidth:0 }}>
-              <span style={{ fontSize:17, fontWeight:900, letterSpacing:'-.5px' }}>XRPLHub.io</span>
-              <span className="xh-nav-sub" style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>
-                {inXApp ? '· xApp Mode' : '· xrplhub.io'}
+              <span style={{ fontSize:17, fontWeight:900, letterSpacing:'-.5px' }}>
+                <span style={{ color:'#fff' }}>XRPL</span><span style={{ color:'#38bdf8' }}>Hub</span><span style={{ color:'#ef4444' }}>.io</span>
               </span>
+              {inXApp && <span className="xh-nav-sub" style={{ fontSize:9, color:'rgba(255,255,255,.35)', marginLeft:6, letterSpacing:'.08em', textTransform:'uppercase' }}>· xApp Mode</span>}
             </div>
             <span className="xh-nav-pill" style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.2)', borderRadius:99, padding:'3px 9px', fontSize:9, fontWeight:700, color:'#10b981', letterSpacing:'.1em', fontFamily:"'IBM Plex Mono',monospace" }}>
               <span style={{ width:4, height:4, borderRadius:'50%', background:'#10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
@@ -1010,18 +1023,25 @@ export default function XRPLHubHome() {
           </div>
         </nav>
 
-        {/* TICKER — continuous scroll */}
-        <div style={{ background:'rgba(16,185,129,.06)', borderBottom:'1px solid rgba(16,185,129,.12)', padding:'8px 0', overflow:'hidden', display:'flex', alignItems:'center', position:'relative' }}>
-          {/* LIVE badge pinned left */}
-          <div style={{ flexShrink:0, padding:'0 14px 0 20px', fontSize:9, fontWeight:800, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", zIndex:2, background:'linear-gradient(90deg,rgba(3,3,16,1) 70%,transparent)', position:'relative' }}>LIVE ▶</div>
-          {/* Scrolling track */}
-          <div style={{ overflow:'hidden', flex:1 }}>
-            <div style={{ display:'flex', animation:'tickerScroll 35s linear infinite', willChange:'transform' }}>
-              {[...TICKER, ...(liveStats ? [`${(liveStats.xrplScores ?? 0).toLocaleString()} XRPLScores checked`, `${liveStats.treasuryUSD} in treasury`, `${liveStats.servicesCount || 24} services live on xrplhub.io`] : []), ...TICKER].map((msg, i) => (
-                <span key={i} style={{ fontSize:12, color:'rgba(255,255,255,.6)', padding:'0 36px', whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:10, flexShrink:0 }}>
-                  <span style={{ color:'#10b981', fontSize:8 }}>◆</span>
-                  {msg}
-                </span>
+        {/* TICKER — seamless infinite marquee */}
+        <div style={{ background:'linear-gradient(90deg,rgba(16,185,129,.08),rgba(56,189,248,.05))', borderBottom:'1px solid rgba(16,185,129,.14)', padding:'9px 0', overflow:'hidden', display:'flex', alignItems:'center', position:'relative' }}>
+          {/* LIVE badge pinned left with fade mask */}
+          <div style={{ flexShrink:0, paddingLeft:18, paddingRight:18, fontSize:10, fontWeight:800, color:'#10b981', letterSpacing:'.14em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", zIndex:3, position:'relative', display:'flex', alignItems:'center', gap:6, background:'linear-gradient(90deg,#050514 60%,transparent)' }}>
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 1.8s infinite' }} />
+            LIVE
+          </div>
+          {/* Marquee track — two identical halves for seamless -50% loop */}
+          <div style={{ overflow:'hidden', flex:1, maskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)', WebkitMaskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)' }}>
+            <div style={{ display:'inline-flex', whiteSpace:'nowrap', animation:'tickerScroll 60s linear infinite', willChange:'transform' }}>
+              {[0,1].map(half => (
+                <div key={half} style={{ display:'inline-flex', whiteSpace:'nowrap' }} aria-hidden={half===1}>
+                  {TICKER.map((msg, i) => (
+                    <span key={i} style={{ fontSize:12.5, fontWeight:600, color:'rgba(255,255,255,.62)', padding:'0 30px', display:'inline-flex', alignItems:'center', gap:9 }}>
+                      <span style={{ color:'#38bdf8', fontSize:7 }}>◆</span>
+                      {msg}
+                    </span>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
@@ -1031,7 +1051,7 @@ export default function XRPLHubHome() {
         <section className="xh-hero" style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
           <h1 style={{ fontSize:'clamp(48px,9vw,110px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:16 }}>
-            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>XRPL</span><span style={{ background:'linear-gradient(135deg,#22d3ee,#38bdf8,#818cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', filter:'drop-shadow(0 0 24px rgba(34,211,238,.45))' }}>Hub</span>
+            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>XRPL</span><span style={{ color:'#38bdf8', filter:'drop-shadow(0 0 24px rgba(56,189,248,.45))' }}>Hub</span>
           </h1>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:24, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
             <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
@@ -1264,7 +1284,7 @@ export default function XRPLHubHome() {
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
                 <img src="/hub-logo.png" alt="XRPLHub" style={{ width:28, height:28, borderRadius:6 }} onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-                <span style={{ fontWeight:800, fontSize:15 }}>XRPLHub.io</span>
+                <span style={{ fontWeight:800, fontSize:15 }}><span style={{ color:'#fff' }}>XRPL</span><span style={{ color:'#38bdf8' }}>Hub</span><span style={{ color:'#ef4444' }}>.io</span></span>
               </div>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.22)' }}>© 2026 XRPLHub.io · XRPLScore™ · All Rights Reserved</p>
               <p style={{ fontSize:10, color:'rgba(255,255,255,.15)', marginTop:2 }}>Not a bank · Not a broker · Not an insurer · 100% on-chain</p>
