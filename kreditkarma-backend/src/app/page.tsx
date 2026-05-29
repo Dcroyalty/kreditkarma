@@ -864,11 +864,24 @@ export default function XRPLHubHome() {
   const [activeProduct,  setActiveProduct]    = useState<Product | null>(null);
   const [activeCat,      setActiveCat]        = useState('all');
   const [tickerIdx,      setTickerIdx]        = useState(0);
+  const [cursorPos,      setCursorPos]        = useState({ x: -200, y: -200 });
 
   // Modals
   const [showScore,  setShowScore]   = useState(false);
   const [showDonate, setShowDonate]  = useState(false);
   const [showGrant,  setShowGrant]   = useState(false);
+
+  // Cursor-following glow — gives the site life
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let raf = 0;
+    const onMove = (e: MouseEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setCursorPos({ x: e.clientX, y: e.clientY }));
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
+  }, []);
 
   // xApp: auto-populate wallet
   useEffect(() => {
@@ -961,6 +974,8 @@ export default function XRPLHubHome() {
       {/* BACKGROUND */}
       <div style={{ position:'fixed', inset:0, zIndex:-1 }}>
         <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at 20% 20%,rgba(16,185,129,.06) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(6,182,212,.04) 0%,transparent 60%),linear-gradient(135deg,#030310 0%,#040418 50%,#030312 100%)' }} />
+        {/* Cursor-following glow */}
+        <div style={{ position:'absolute', left:cursorPos.x, top:cursorPos.y, width:480, height:480, transform:'translate(-50%,-50%)', borderRadius:'50%', background:'radial-gradient(circle,rgba(34,211,238,.07) 0%,rgba(16,185,129,.04) 35%,transparent 70%)', pointerEvents:'none', transition:'left .18s cubic-bezier(.2,.8,.2,1),top .18s cubic-bezier(.2,.8,.2,1)', willChange:'left,top' }} />
       </div>
 
       <div style={{ minHeight:'100vh', fontFamily:"'Syne',sans-serif", color:'#eeeef5' }}>
@@ -1001,7 +1016,7 @@ export default function XRPLHubHome() {
           <div style={{ flexShrink:0, padding:'0 14px 0 20px', fontSize:9, fontWeight:800, color:'#10b981', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace", zIndex:2, background:'linear-gradient(90deg,rgba(3,3,16,1) 70%,transparent)', position:'relative' }}>LIVE ▶</div>
           {/* Scrolling track */}
           <div style={{ overflow:'hidden', flex:1 }}>
-            <div style={{ display:'flex', animation:'tickerScroll 55s linear infinite', willChange:'transform' }}>
+            <div style={{ display:'flex', animation:'tickerScroll 35s linear infinite', willChange:'transform' }}>
               {[...TICKER, ...(liveStats ? [`${(liveStats.xrplScores ?? 0).toLocaleString()} XRPLScores checked`, `${liveStats.treasuryUSD} in treasury`, `${liveStats.servicesCount || 24} services live on xrplhub.io`] : []), ...TICKER].map((msg, i) => (
                 <span key={i} style={{ fontSize:12, color:'rgba(255,255,255,.6)', padding:'0 36px', whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:10, flexShrink:0 }}>
                   <span style={{ color:'#10b981', fontSize:8 }}>◆</span>
@@ -1016,9 +1031,7 @@ export default function XRPLHubHome() {
         <section className="xh-hero" style={{ textAlign:'center', padding:'90px 24px 64px', position:'relative', overflow:'hidden' }}>
           <div style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)', width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,.06) 0%,transparent 68%)', pointerEvents:'none', animation:'float 9s ease-in-out infinite' }} />
           <h1 style={{ fontSize:'clamp(48px,9vw,110px)', fontWeight:900, letterSpacing:'-4px', lineHeight:.92, marginBottom:16 }}>
-            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399,#6ee7b7)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-              XRPLHub.io
-            </span>
+            <span style={{ background:'linear-gradient(135deg,#10b981,#34d399)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>XRPL</span><span style={{ background:'linear-gradient(135deg,#22d3ee,#38bdf8,#818cf8)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', filter:'drop-shadow(0 0 24px rgba(34,211,238,.45))' }}>Hub</span>
           </h1>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:24, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
             <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
