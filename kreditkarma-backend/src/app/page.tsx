@@ -1032,7 +1032,7 @@ export default function XRPLHubHome() {
           </div>
           {/* Marquee track — two identical halves for seamless -50% loop */}
           <div style={{ overflow:'hidden', flex:1, maskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)', WebkitMaskImage:'linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)' }}>
-            <div style={{ display:'inline-flex', whiteSpace:'nowrap', animation:'tickerScroll 60s linear infinite', willChange:'transform' }}>
+            <div style={{ display:'inline-flex', whiteSpace:'nowrap', animation:'tickerScroll 75s linear infinite', willChange:'transform' }}>
               {[0,1].map(half => (
                 <div key={half} style={{ display:'inline-flex', whiteSpace:'nowrap' }} aria-hidden={half===1}>
                   {TICKER.map((msg, i) => (
@@ -1055,7 +1055,7 @@ export default function XRPLHubHome() {
           </h1>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(16,185,129,.1)', border:'1px solid rgba(16,185,129,.25)', color:'#10b981', padding:'6px 16px', borderRadius:99, fontSize:10, fontWeight:700, marginBottom:24, letterSpacing:'.09em', fontFamily:"'IBM Plex Mono',monospace" }}>
             <span style={{ width:5, height:5, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 8px #10b981', display:'inline-block', animation:'pulse 2.5s infinite' }} />
-            FIRST-TO-MARKET · XRPL AMENDMENT SERVICES · XRPLSCORE™ · 2026
+            COMMUNITY GRANTS · XRPL AMENDMENT SERVICES · XRPLSCORE™ · 2026
           </div>
           <p style={{ fontSize:17, color:'rgba(255,255,255,.5)', maxWidth:520, margin:'0 auto 40px', lineHeight:1.7 }}>
             24 XRPL amendment services. XRPLScore™ on-chain credit scoring. Wallet-to-wallet community grants. AI builds the transaction. You sign in Xaman. On-chain in 4 seconds.
