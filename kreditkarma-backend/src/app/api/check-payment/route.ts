@@ -1,34 +1,116 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
+// src/app/api/check-payment/route.ts
+// Polled every 3s by the frontend after the Xaman QR is shown.
+// Returns: pending | verified | expired | rejected
+// A "verified" status REQUIRES a real tesSUCCESS Payment to the treasury on XRPL mainnet.
+// Requires env vars: XUMM_API_KEY, XUMM_API_SECRET
+
+import { NextRequest, NextResponse } from 'next/server'
+
 const XUMM_STATUS = 'https://xumm.app/api/v1/platform/payload'
-const XRPL_API = 'https://xrplcluster.com/'
-const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF'
-async function fetchTx(hash: string) { try { const r = await fetch(XRPL_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({method:'tx',params:[{transaction:hash,binary:false}]}), signal: AbortSignal.timeout(8000) }); const d = await r.json(); return d?.result?.Account ? d.result : null } catch { return null } }
+const XRPL_API    = 'https://xrplcluster.com/'
+const XRPL_BACKUP = 'https://s1.ripple.com:51234/'
+const TREASURY    = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF'
+
+async function fetchTx(txHash: string): Promise<Record<string, unknown> | null> {
+  for (const url of [XRPL_API, XRPL_BACKUP]) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'tx', params: [{ transaction: txHash, binary: false }] }),
+        signal: AbortSignal.timeout(8_000),
+      })
+      const d = await res.json()
+      if (d?.result?.Account) return d.result
+    } catch { continue }
+  }
+  return null
+}
+
+async function verifyTx(txHash: string, expectedAmt: number, currency: string) {
+  const tx = await fetchTx(txHash)
+  if (!tx) return { ok: false, reason: 'Transaction not yet visible on XRPL — retry in a moment' }
+
+  const meta = tx.meta as Record<string, unknown>
+  if (meta?.TransactionResult !== 'tesSUCCESS')
+    return { ok: false, reason: `Transaction failed on ledger: ${meta?.TransactionResult}` }
+  if (tx.TransactionType !== 'Payment')
+    return { ok: false, reason: 'Not a payment transaction' }
+  if (tx.Destination !== TREASURY)
+    return { ok: false, reason: 'Payment sent to wrong address' }
+
+  const TOLERANCE = 0.95
+  if (currency === 'XRP') {
+    const xrp = parseInt(tx.Amount as string) / 1_000_000
+    if (xrp < expectedAmt * TOLERANCE)
+      return { ok: false, reason: `Amount too low: sent ${xrp.toFixed(2)} XRP, needed ${expectedAmt}` }
+  } else {
+    const amt = tx.Amount as Record<string, string>
+    const val = parseFloat(amt?.value || '0')
+    if (val < expectedAmt * TOLERANCE)
+      return { ok: false, reason: `Amount too low: sent ${val} RLUSD, needed ${expectedAmt}` }
+  }
+  return { ok: true, sender: tx.Account as string }
+}
+
+async function postVerify(productId: string, currency: string, amount: string, email: string, txHash: string, sender: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || ''
+  Promise.allSettled([
+    fetch(`${base}/api/purchase`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId, currency, amount, email, txHash, sender, verifiedAt: new Date().toISOString() }),
+    }),
+    email ? fetch(`${base}/api/send-email`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: email, type: 'purchase', productId, txHash, amount, currency }),
+    }) : Promise.resolve(),
+  ]).catch(() => {})
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const p = req.nextUrl.searchParams
-    const uuid = p.get('uuid'), productId = p.get('productId') || '', amount = parseFloat(p.get('amount') || '0'), currency = p.get('currency') || 'XRP', email = p.get('email') || ''
+    const p          = req.nextUrl.searchParams
+    const uuid       = p.get('uuid')
+    const productId  = p.get('productId') || ''
+    const amount     = parseFloat(p.get('amount') || '0')
+    const currency   = p.get('currency') || 'XRP'
+    const email      = p.get('email') || ''
+
     if (!uuid) return NextResponse.json({ status: 'error', reason: 'Missing payment ID' }, { status: 400 })
-    const apiKey = process.env.XUMM_API_KEY, apiSecret = process.env.XUMM_API_SECRET
-    if (!apiKey || !apiSecret) return NextResponse.json({ status: 'error', reason: 'Not configured' }, { status: 503 })
-    const res = await fetch(`${XUMM_STATUS}/${uuid}`, { headers: { 'X-API-Key': apiKey, 'X-API-Secret': apiSecret }, signal: AbortSignal.timeout(8000) })
+
+    const apiKey    = process.env.XUMM_API_KEY
+    const apiSecret = process.env.XUMM_API_SECRET
+    if (!apiKey || !apiSecret)
+      return NextResponse.json({ status: 'error', reason: 'Payment gateway not configured' }, { status: 503 })
+
+    const res  = await fetch(`${XUMM_STATUS}/${uuid}`, {
+      headers: { 'X-API-Key': apiKey, 'X-API-Secret': apiSecret },
+      signal: AbortSignal.timeout(8_000),
+    })
     const data = await res.json()
     const meta = data?.meta
-    if (!meta?.exists) return NextResponse.json({ status: 'error', reason: 'Not found' })
-    if (meta?.expired) return NextResponse.json({ status: 'expired' })
-    if (meta?.cancelled) return NextResponse.json({ status: 'rejected', reason: 'Payment cancelled' })
-    if (!meta?.signed) return NextResponse.json({ status: 'pending' })
+
+    if (!meta?.exists)   return NextResponse.json({ status: 'error',    reason: 'Payment request not found' })
+    if (meta?.expired)   return NextResponse.json({ status: 'expired' })
+    if (meta?.cancelled) return NextResponse.json({ status: 'rejected', reason: 'Payment cancelled in Xaman' })
+    if (!meta?.signed)   return NextResponse.json({ status: 'pending' })
+
     const txHash = data?.payload?.response?.txid as string | undefined
     if (!txHash) return NextResponse.json({ status: 'pending' })
-    const tx = await fetchTx(txHash)
-    if (!tx) return NextResponse.json({ status: 'pending' })
-    const txMeta = tx.meta as Record<string,unknown>
-    if (txMeta?.TransactionResult !== 'tesSUCCESS') return NextResponse.json({ status: 'rejected', reason: `TX failed: ${txMeta?.TransactionResult}` })
-    if (tx.Destination !== TREASURY) return NextResponse.json({ status: 'rejected', reason: 'Wrong destination' })
-    const TOL = 0.95
-    if (currency === 'XRP') { const xrp = parseInt(tx.Amount as string) / 1e6; if (xrp < amount * TOL) return NextResponse.json({ status: 'rejected', reason: `Amount too low: ${xrp} XRP` }) }
-    else { const a = tx.Amount as Record<string,string>; if (parseFloat(a?.value||'0') < amount * TOL) return NextResponse.json({ status: 'rejected', reason: 'Amount too low' }) }
-    const base = process.env.NEXT_PUBLIC_API_URL || ''
-    Promise.allSettled([ fetch(`${base}/api/purchase`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId,currency,amount:String(amount),email,txHash,sender:tx.Account,verifiedAt:new Date().toISOString()})}), email ? fetch(`${base}/api/send-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,type:'purchase',productId,txHash,amount:String(amount),currency})}) : Promise.resolve() ]).catch(()=>{})
-    return NextResponse.json({ status: 'verified', txHash, sender: tx.Account, message: `${amount} ${currency} confirmed` })
-  } catch (err) { console.error('[check-payment]', err); return NextResponse.json({ status: 'error', reason: 'Verification failed' }, { status: 500 }) }
+
+    const verify = await verifyTx(txHash, amount, currency)
+    if (!verify.ok) return NextResponse.json({ status: 'rejected', reason: verify.reason })
+
+    postVerify(productId, currency, String(amount), email, txHash, verify.sender!)
+
+    return NextResponse.json({
+      status:  'verified',
+      txHash,
+      sender:  verify.sender,
+      message: `${amount} ${currency} confirmed on XRPL mainnet`,
+    })
+  } catch (err) {
+    console.error('[check-payment]', err)
+    return NextResponse.json({ status: 'error', reason: 'Verification failed — please retry' }, { status: 500 })
+  }
 }
