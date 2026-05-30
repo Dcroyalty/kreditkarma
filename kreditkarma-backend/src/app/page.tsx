@@ -806,6 +806,126 @@ function GrantModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
   );
 }
 
+// ─── ABOUT ───
+function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  return (
+    <Overlay show={show} onClose={onClose} wide>
+      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:8 }}>About XRPLHub</div>
+      <h2 style={{ fontSize:24,fontWeight:900,marginBottom:18 }}>A fully autonomous financial ecosystem on the XRP Ledger.</h2>
+      <div style={{ fontSize:14,color:'rgba(255,255,255,.65)',lineHeight:1.9,display:'flex',flexDirection:'column',gap:14 }}>
+        <p>XRPLHub was built for the people legacy finance was designed to exclude. No bank account. No credit history. No gatekeepers. Just an XRPL wallet and access to real services.</p>
+        <p>We build entirely on the <strong style={{ color:'#fff' }}>XRP Ledger</strong> — fast, low-cost, and energy-efficient. Three pillars power the platform: XRPL Services, Community Grants, and XRPLScore.</p>
+        <p><strong style={{ color:'#10b981' }}>XRPLScore™</strong> is our proprietary on-chain rating, 300–850, computed live from your wallet. No FICO. No bureau. No SSN. The Builder lets you grow it over time through verifiable on-chain history.</p>
+        <p>Our <strong style={{ color:'#fff' }}>XRPL Services</strong> are AI-delivered on-chain tools covering major XRPL transaction types — pay in Xaman, AI verifies on mainnet, the service activates in seconds.</p>
+        <p><strong style={{ color:'#10b981' }}>Community Grants</strong>: donors fund a public XRPL treasury. AI reviews every application, and approved grants go wallet-to-wallet after final human approval. No NGO. No middlemen. Permanently verifiable on-chain.</p>
+      </div>
+      <button onClick={onClose} style={{ ...Btn('green',undefined,{marginTop:24}) }}>Close</button>
+    </Overlay>
+  );
+}
+
+// ─── FAQ ───
+function FAQModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  const [open, setOpen] = useState<number|null>(0);
+  const faqs:[string,string][] = [
+    ['What is XRPLScore?',"XRPLScore is XRPLHub's proprietary on-chain rating — 300 to 850, computed live from your XRPL wallet. No SSN, no credit bureau, no FICO affiliation. It's your verifiable on-chain reputation."],
+    ['How do the XRPL Services work?','You pay in Xaman and get a TX hash. Our AI verifies the transaction on XRPL mainnet, confirms the amount and destination, and activates your service within one ledger close (~4 seconds).'],
+    ['How does the grant system work?',"Donate XRP/RLUSD to the public treasury (viewable on XRPScan). Anyone in need can apply for $25–$100. AI reviews each application, and after final human approval, funds go directly to the recipient's XRPL wallet."],
+    ['What is the XRPLScore Builder?','A monthly subscription that builds verifiable on-chain history, raising your XRPLScore over time. The first reputation builder native to the XRP Ledger.'],
+    ['Do I need a Xaman wallet?','Yes — Xaman is the XRPL wallet, free on iOS and Android at xaman.app. Payments are a single QR scan and swipe.'],
+    ['Is XRPLHub a bank?','No. Not a bank, broker, insurer, or FDIC institution. XRPLHub is a financial technology platform on the XRP Ledger. All services are on-chain operational tools.'],
+  ];
+  return (
+    <Overlay show={show} onClose={onClose} wide>
+      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:20 }}>FAQ</div>
+      <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
+        {faqs.map(([q,a],i)=>(
+          <div key={i} style={{ background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.07)',borderRadius:14,overflow:'hidden' }}>
+            <button onClick={()=>setOpen(open===i?null:i)} style={{ width:'100%',padding:'15px 18px',background:'transparent',border:'none',color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer',textAlign:'left',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:'inherit',gap:10 }}>
+              <span style={{ flex:1 }}>{q}</span><span style={{ color:'#10b981',fontSize:18,flexShrink:0 }}>{open===i?'−':'+'}</span>
+            </button>
+            {open===i && <div style={{ padding:'0 18px 16px',fontSize:13,color:'rgba(255,255,255,.55)',lineHeight:1.8 }}>{a}</div>}
+          </div>
+        ))}
+      </div>
+      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:20}) }}>Close</button>
+    </Overlay>
+  );
+}
+
+// ─── TERMS ───
+function TermsModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  const H:React.CSSProperties = { color:'#10b981',fontWeight:800,display:'block',marginTop:20,marginBottom:6,fontSize:13,textTransform:'uppercase',letterSpacing:'.04em' };
+  const P:React.CSSProperties = { fontSize:13,color:'rgba(255,255,255,.58)',lineHeight:1.85,marginBottom:8 };
+  return (
+    <Overlay show={show} onClose={onClose} wide>
+      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:6 }}>Legal</div>
+      <h2 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Terms of Service</h2>
+      <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginBottom:18 }}>xrplhub.io · Last updated {new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
+      <div style={{ maxHeight:'60vh',overflowY:'auto',paddingRight:8 }}>
+        <p style={P}>By using xrplhub.io you agree to these Terms in full.</p>
+        <span style={H}>1. Who We Are</span>
+        <p style={P}>XRPLHub is a financial technology platform on the XRP Ledger providing XRPL Services, XRPLScore, the XRPLScore Builder, and a community grant program. We are not a bank, broker-dealer, investment advisor, insurer, or FDIC-insured institution.</p>
+        <span style={H}>2. Eligibility</span>
+        <p style={P}>You must be 18+ and legally able to enter contracts in your jurisdiction. Service unavailable where prohibited by law, including OFAC-sanctioned regions.</p>
+        <span style={H}>3. XRPL Services & AI Verification</span>
+        <p style={P}>Services are on-chain operational tools. You pay in Xaman, and our AI verifies the transaction on XRPL mainnet. <strong style={{ color:'rgba(255,255,255,.8)' }}>All XRPL transactions are final and irrevocable.</strong> Services are not insurance contracts, securities, or financial instruments.</p>
+        <span style={H}>4. XRPLScore™</span>
+        <p style={P}>XRPLScore is our proprietary on-chain assessment derived from public XRPL wallet data. It is not a FICO score, consumer credit report, or NRSRO rating, and has no affiliation with any credit bureau.</p>
+        <span style={H}>5. XRPLScore Builder</span>
+        <p style={P}>Monthly subscriptions build on-chain history that factors into your XRPLScore. Subscriptions cancel at end-of-cycle. All payments are non-refundable (irrevocable XRPL transactions).</p>
+        <span style={H}>6. Community Grant Program</span>
+        <p style={P}>Donations are voluntary and irrevocable. Grant applications are subject to AI review and final human approval. Submission does not guarantee disbursement. Grants range $25–$100 subject to treasury availability.</p>
+        <span style={H}>7. Your Wallet — Your Responsibility</span>
+        <p style={P}>You are solely responsible for your XRPL wallet, private keys, and seed phrases. XRPLHub never has access to your private keys. Lost keys result in permanent, unrecoverable loss.</p>
+        <span style={H}>8. Prohibited Uses</span>
+        <p style={P}>No use for money laundering, fraud, terrorist financing, false grant applications, score manipulation, reverse engineering, or automated scraping beyond normal human use.</p>
+        <span style={H}>9. Disclaimers & Liability</span>
+        <p style={P}>PLATFORM PROVIDED "AS IS." LIABILITY CAPPED AT THE GREATER OF $100 OR 12-MONTH PAYMENTS. NO INDIRECT, CONSEQUENTIAL, OR PUNITIVE DAMAGES.</p>
+        <span style={H}>10. Contact</span>
+        <p style={P}><a href="mailto:legal@xrplhub.io" style={{ color:'#10b981' }}>legal@xrplhub.io</a></p>
+      </div>
+      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:18,width:'100%'}) }}>Close</button>
+    </Overlay>
+  );
+}
+
+// ─── PRIVACY ───
+function PrivacyModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  const H:React.CSSProperties = { color:'#10b981',fontWeight:800,display:'block',marginTop:20,marginBottom:6,fontSize:13,textTransform:'uppercase',letterSpacing:'.04em' };
+  const P:React.CSSProperties = { fontSize:13,color:'rgba(255,255,255,.58)',lineHeight:1.85,marginBottom:8 };
+  return (
+    <Overlay show={show} onClose={onClose} wide>
+      <div style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase',marginBottom:6 }}>Legal</div>
+      <h2 style={{ fontSize:22,fontWeight:900,marginBottom:4 }}>Privacy Policy</h2>
+      <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginBottom:18 }}>xrplhub.io · Last updated {new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
+      <div style={{ maxHeight:'60vh',overflowY:'auto',paddingRight:8 }}>
+        <span style={H}>1. What We Collect</span>
+        <p style={P}>Name, email, phone, XRPL wallet address, and grant application details you provide. Public on-chain XRPL data used to compute XRPLScore. Standard usage analytics.</p>
+        <span style={H}>2. What We Never Collect</span>
+        <p style={P}>Private keys or seed phrases · Plain-text passwords · Payment card numbers · Full SSN. We will never ask for your private key. Any such request is fraud.</p>
+        <span style={H}>3. How We Use Your Information</span>
+        <p style={P}>Service delivery · XRPLScore calculation · Grant review and processing · Transaction receipts · Legal compliance · Fraud investigation.</p>
+        <span style={H}>4. On-Chain Data</span>
+        <p style={P}>Because XRPL is a public blockchain, your wallet address and transactions are publicly visible. We read this public data to compute XRPLScore. On-chain data cannot be modified or deleted by anyone.</p>
+        <span style={H}>5. Sharing</span>
+        <p style={P}>We do not sell or rent your data. Shared only with: service providers under confidentiality agreements · law enforcement when legally required.</p>
+        <span style={H}>6. Security</span>
+        <p style={P}>TLS in transit · encryption at rest · role-based access controls. No system is 100% secure.</p>
+        <span style={H}>7. Your Rights</span>
+        <p style={P}>Access · correction · deletion (subject to retention laws) · data portability. Contact: <a href="mailto:privacy@xrplhub.io" style={{ color:'#10b981' }}>privacy@xrplhub.io</a> — 30-day response.</p>
+        <span style={H}>8. California (CCPA)</span>
+        <p style={P}>CA residents: right to know, delete, and opt out of sale (we do not sell data).</p>
+        <span style={H}>9. Children</span>
+        <p style={P}>Service is for 18+. We do not knowingly collect data from minors.</p>
+        <span style={H}>10. Contact</span>
+        <p style={P}><a href="mailto:privacy@xrplhub.io" style={{ color:'#10b981' }}>privacy@xrplhub.io</a></p>
+      </div>
+      <button onClick={onClose} style={{ ...Btn('ghost',undefined,{marginTop:18,width:'100%'}) }}>Close</button>
+    </Overlay>
+  );
+}
+
 // ═══ MAIN PAGE ═══
 export default function XRPLHubHome() {
   const [user, setUser]               = useState<User|null>(null);
@@ -820,6 +940,10 @@ export default function XRPLHubHome() {
   const [showDonate, setShowDonate]   = useState(false);
   const [showGrant, setShowGrant]     = useState(false);
   const [showLogin, setShowLogin]     = useState(false);
+  const [showAbout, setShowAbout]     = useState(false);
+  const [showFaq, setShowFaq]         = useState(false);
+  const [showTerms, setShowTerms]     = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
 
   useEffect(() => {
@@ -1033,23 +1157,9 @@ export default function XRPLHubHome() {
                 </div>
                 <h2 style={{ fontSize:'clamp(22px,3.3vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>Our own on-chain score.<br />No FICO. No bureau. No SSN.</h2>
                 <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8,marginBottom:20 }}>
-                  XRPLScore is XRPLHub's proprietary 300–850 rating computed live from XRPL mainnet.
-                  It has <strong style={{ color:'#fff' }}>zero affiliation with FICO, Equifax, TransUnion, or any credit bureau.</strong> It is your verifiable on-chain reputation — built entirely from what the ledger can see.
+                  XRPLScore is XRPLHub's proprietary 300–850 rating, computed live from your XRPL wallet.
+                  <strong style={{ color:'#fff' }}> No FICO. No bureau. No SSN.</strong> Connect your Xaman wallet to see your score instantly — your results save to your account.
                 </p>
-
-                {/* 8 signals */}
-                <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10 }}>The 8 proprietary signals</div>
-                  <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8 }}>
-                    {[['⏱️','Account age','How long your wallet has been active'],['💸','TX velocity','Volume and frequency of transactions'],['🔗','Trust lines','Diversity of token trust lines held'],['📊','DEX activity','Participation in native XRPL trading'],['🌀','AMM activity','Liquidity provision history'],['🏦','Reserve ratio','Healthy XRP reserve above minimum'],['🎨','NFT activity','On-chain NFT minting and ownership'],['🔐','Security flags','Multisig, regular key, deposit auth']].map(([e,t,d])=>(
-                      <div key={t} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'10px 12px' }}>
-                        <div style={{ fontSize:16,marginBottom:5 }}>{e}</div>
-                        <div style={{ fontSize:11,fontWeight:700,color:'#10b981',marginBottom:2 }}>{t}</div>
-                        <div style={{ fontSize:10,color:'rgba(255,255,255,.35)',lineHeight:1.4 }}>{d}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* score checker */}
                 <div style={{ display:'flex',gap:9,flexWrap:'wrap' }}>
@@ -1067,28 +1177,15 @@ export default function XRPLHubHome() {
                 </div>
                 <h3 style={{ fontSize:'clamp(18px,2.5vw,26px)',fontWeight:900,letterSpacing:'-1px',marginBottom:10 }}>Build real on-chain reputation.<br />Watch your score climb.</h3>
                 <p style={{ fontSize:12,color:'rgba(255,255,255,.48)',lineHeight:1.7,marginBottom:18 }}>
-                  Each monthly payment you make through XRPLHub is recorded on-chain with a structured memo. That on-chain history factors directly into your XRPLScore — the more consistent your payment record, the higher your score rises. This is the world's first reputation builder native to the XRP Ledger.
+                  Subscribe monthly and build verifiable on-chain history that raises your XRPLScore over time. The first reputation builder native to the XRP Ledger.
                 </p>
-
-                {/* how it works steps */}
-                <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:20 }}>
-                  {[['💳','Subscribe','Make your first monthly payment in Xaman.'],['📝','On-chain record','Your payment is permanently written to XRPL mainnet with a structured memo.'],['📈','Score increases','XRPLScore re-scans your wallet — consistent payments raise your rating.'],['🏦','Lending-ready','When the XRPL native borrow/lend amendment goes live, your score positions you first.']].map(([e,t,d])=>(
-                    <div key={t} style={{ display:'flex',alignItems:'flex-start',gap:12,padding:'10px 13px',background:'rgba(255,255,255,.03)',borderRadius:11,border:'1px solid rgba(255,255,255,.06)' }}>
-                      <span style={{ fontSize:18,flexShrink:0,marginTop:1 }}>{e}</span>
-                      <div>
-                        <div style={{ fontSize:12,fontWeight:700,color:'#fff',marginBottom:2 }}>{t}</div>
-                        <div style={{ fontSize:11,color:'rgba(255,255,255,.42)',lineHeight:1.5 }}>{d}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
                 {/* tier cards */}
                 <div style={{ display:'flex',flexDirection:'column',gap:10,marginBottom:14 }}>
                   {[
                     { name:'Starter', price:'15 RLUSD/mo', color:'#34d399', perks:'XRPLScore tracking · monthly on-chain record · email alerts' },
                     { name:'Builder', price:'25 RLUSD/mo', color:'#10b981', perks:'All Starter · score-history graph · trend simulator', popular:true },
-                    { name:'Pro',     price:'35 RLUSD/mo', color:'#f59e0b', perks:'All Builder · priority signals · lending-readiness profile' },
+                    { name:'Pro',     price:'35 RLUSD/mo', color:'#f59e0b', perks:'All Builder · priority signals · full score-history export' },
                   ].map(t=>(
                     <div key={t.name} onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)}
                       style={{ background:'rgba(255,255,255,.04)',border:`1px solid ${t.color}28`,borderRadius:14,padding:'14px 18px',cursor:'pointer',transition:'all .18s',position:'relative' }}
@@ -1111,36 +1208,6 @@ export default function XRPLHubHome() {
                 </p>
               </div>
 
-            </div>
-          </div>
-        </section>
-
-        {/* BORROW / LEND AMENDMENT POSITIONING */}
-        <section className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
-          <div style={{ background:'linear-gradient(135deg,rgba(56,189,248,.06),rgba(16,185,129,.05),rgba(6,6,22,.9))',border:'1px solid rgba(56,189,248,.18)',borderRadius:22,padding:'32px 28px',backdropFilter:'blur(20px)' }}>
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:28,alignItems:'center' }}>
-              <div>
-                <div style={{ display:'inline-flex',alignItems:'center',gap:7,background:'rgba(56,189,248,.1)',border:'1px solid rgba(56,189,248,.25)',borderRadius:99,padding:'5px 14px',marginBottom:14 }}>
-                  <span style={{ width:6,height:6,borderRadius:'50%',background:'#38bdf8',boxShadow:'0 0 8px #38bdf8',animation:'pulse 2s infinite' }} />
-                  <span style={{ fontSize:10,fontWeight:700,color:'#38bdf8',letterSpacing:'.12em',textTransform:'uppercase' }}>Coming to XRPL Mainnet</span>
-                </div>
-                <h3 style={{ fontSize:'clamp(20px,2.8vw,30px)',fontWeight:900,letterSpacing:'-1.5px',marginBottom:12 }}>XRPL Native Borrow / Lend<br /><span style={{ color:'#10b981' }}>XRPLHub is already positioned.</span></h3>
-                <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8 }}>
-                  The XRPL Foundation's native lending amendment will enable on-ledger borrowing and lending without any smart contracts. When it goes live, your <strong style={{ color:'#10b981' }}>XRPLScore is the reputation layer.</strong> Users who have been building consistent on-chain history through XRPLHub's Credit Builder will be positioned ahead of everyone who starts from zero on amendment day.
-                </p>
-              </div>
-              <div style={{ display:'flex',flexDirection:'column',gap:10 }}>
-                {[['📈','Start building XRPLScore now','Every month of history before the amendment matters.'],['🏆','First-mover advantage','Your on-chain reputation precedes the amendment.'],['🔓','Borrow against your score','The amendment enables native lending — your score opens access.'],['💰','Lend to earn','Provide liquidity natively on XRPL, no intermediaries.']].map(([e,t,d])=>(
-                  <div key={t} style={{ display:'flex',gap:12,alignItems:'flex-start',background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,padding:'12px 15px' }}>
-                    <span style={{ fontSize:18,flexShrink:0 }}>{e}</span>
-                    <div>
-                      <div style={{ fontSize:12,fontWeight:700,color:'#fff',marginBottom:2 }}>{t}</div>
-                      <div style={{ fontSize:11,color:'rgba(255,255,255,.4)',lineHeight:1.5 }}>{d}</div>
-                    </div>
-                  </div>
-                ))}
-                <button onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)} style={{ ...Btn('color','#38bdf8',{marginTop:4,padding:'13px',fontSize:14}) }}>Build Your Score Now — Get Lending-Ready →</button>
-              </div>
             </div>
           </div>
         </section>
@@ -1198,6 +1265,10 @@ export default function XRPLHubHome() {
               </div>
               <div style={{ display:'flex',gap:'10px 18px',flexWrap:'wrap',alignItems:'center' }}>
                 <a href={XAMAN_DL} target="_blank" rel="noopener noreferrer" className="footer-lnk" style={{ color:'#10b981',textDecoration:'none' }}>📲 Get Xaman</a>
+                <button className="footer-lnk" onClick={()=>setShowAbout(true)}>About</button>
+                <button className="footer-lnk" onClick={()=>setShowFaq(true)}>FAQ</button>
+                <button className="footer-lnk" onClick={()=>setShowTerms(true)}>Terms</button>
+                <button className="footer-lnk" onClick={()=>setShowPrivacy(true)}>Privacy</button>
                 <a href="mailto:support@xrplhub.io" style={{ fontSize:13,color:'rgba(255,255,255,.38)',textDecoration:'none' }}>support@xrplhub.io</a>
                 <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:11,color:'#10b981',textDecoration:'none',display:'flex',alignItems:'center',gap:5,fontFamily:"'IBM Plex Mono',monospace" }}>
                   <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',animation:'pulse 2.5s infinite' }} />Treasury Live ↗
@@ -1215,6 +1286,10 @@ export default function XRPLHubHome() {
       <DonateModal show={showDonate} onClose={()=>setShowDonate(false)} />
       <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} />
       <LoginModal show={showLogin} onClose={()=>setShowLogin(false)} onLoggedIn={u=>setUser(u)} />
+      <AboutModal show={showAbout} onClose={()=>setShowAbout(false)} />
+      <FAQModal show={showFaq} onClose={()=>setShowFaq(false)} />
+      <TermsModal show={showTerms} onClose={()=>setShowTerms(false)} />
+      <PrivacyModal show={showPrivacy} onClose={()=>setShowPrivacy(false)} />
     </>
   );
 }
