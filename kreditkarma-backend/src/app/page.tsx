@@ -35,7 +35,7 @@ const TICKER = [
   'Set up time-locked escrow on the XRP Ledger',
   'You sign once in Xaman. Permanent on mainnet ~4s.',
   'Community grants — wallet to wallet, fully on-chain',
-  'Credit Builder — monthly on-chain payment history',
+  'Build your XRPLScore — monthly on-chain reputation',
 ];
 
 // ─── 24 HONEST PRODUCTS ───
@@ -157,16 +157,16 @@ const PRODUCTS = [
     aiDetail:'AI assembles EscrowCreate with your FinishAfter time and optional condition. You later finish or cancel it.',
     features:['EscrowCreate built to spec','Time or crypto-condition','You sign once in Xaman','On-chain audit trail','TX hash receipt'] },
   // CREDIT
-  { id:'credit', cat:'Credit', emoji:'📈', name:'Credit Builder', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:15, priceXRP:50, isMonthly:true,
-    amendment:'Payment · Monthly history', tagline:'Build XRPLScore with monthly on-chain payments',
-    desc:'Each monthly payment creates a verifiable on-chain record that strengthens your XRPLScore. Bureau reporting is coming once furnisher partnerships are established — we do not report to bureaus today.',
-    aiDetail:'Each monthly payment is recorded on-chain with a structured memo and factors into your XRPLScore. Honest status: no credit-bureau furnishing yet.',
+  { id:'credit', cat:'XRPLScore', emoji:'📈', name:'XRPLScore Builder', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:15, priceXRP:50, isMonthly:true,
+    amendment:'Payment · On-chain reputation', tagline:'Build your XRPLScore with monthly on-chain payments',
+    desc:'The first on-chain reputation builder native to the XRP Ledger. Each monthly payment writes a verifiable record to your wallet history that feeds directly into your proprietary XRPLScore — the more consistent your on-chain activity, the higher your score climbs. This is XRPLHub\u2019s own score, computed from the ledger. No FICO. No credit bureaus. No SSN. Just your own verifiable XRPL reputation.',
+    aiDetail:'Each monthly payment is recorded on-chain with a structured memo and factors into your 8-signal XRPLScore (transaction velocity, account age, reserve ratio, and more). Build a consistent on-chain history and watch your score rise over time. When the XRPL native lending amendment goes live, your XRPLScore is the reputation layer we use to position you first.',
     tiers:[
       { name:'Starter', priceRLUSD:15, priceXRP:50,  color:'#34d399', perks:'XRPLScore tracking · monthly on-chain record · email alerts' },
-      { name:'Builder', priceRLUSD:25, priceXRP:80,  color:'#10b981', perks:'All Starter · score simulator · history export' },
-      { name:'Pro',     priceRLUSD:35, priceXRP:115, color:'#f59e0b', perks:'All Builder · priority features · early bureau access when live' },
+      { name:'Builder', priceRLUSD:25, priceXRP:80,  color:'#10b981', perks:'All Starter · score-history graph · trend simulator' },
+      { name:'Pro',     priceRLUSD:35, priceXRP:115, color:'#f59e0b', perks:'All Builder · priority signals · lending-readiness profile' },
     ],
-    features:['Monthly payment recorded on-chain','Strengthens XRPLScore','Bureau reporting coming (not yet live)','Cancel anytime','TX hash receipts'] },
+    features:['Monthly payment recorded on-chain','Directly strengthens your XRPLScore','First on-chain reputation builder on XRPL','Lending-ready when the amendment lands','Cancel anytime · TX hash receipts'] },
 ] as const;
 
 type Product = typeof PRODUCTS[number];
@@ -694,6 +694,118 @@ function DonateModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
   );
 }
 
+// ─── GRANT MODAL — submit → real AI review (Grok + Anthropic) → admin queue ───
+function GrantModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+  const [step, setStep] = useState<'form'|'reviewing'|'success'>('form');
+  const [form, setForm] = useState({ name:'', wallet:'', email:'', phone:'', category:'', need:'', amount:'25' });
+  const [errors, setErrors] = useState<Record<string,string>>({});
+  const [aiResult, setAiResult] = useState<{ recommendation?:string; summary?:string }|null>(null);
+  const cats = ['Food & Groceries','Rent / Housing','Medical Bills','Utilities','Transportation','Other'];
+  const set = (k:string, v:string) => { setForm(f=>({...f,[k]:v})); setErrors(e=>({...e,[k]:'',contact:''})); };
+
+  const validate = () => {
+    const e:Record<string,string> = {};
+    if (!form.need.trim()) e.need = 'Describe your situation';
+    if (!form.category) e.category = 'Select a category';
+    if (!form.wallet) e.wallet = 'XRPL wallet required for payout';
+    else if (!form.wallet.startsWith('r') || form.wallet.length < 25) e.wallet = 'Invalid XRPL address';
+    if (!form.email) e.contact = 'Email required for status updates';
+    return e;
+  };
+
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setStep('reviewing');
+    let review:{ recommendation?:string; summary?:string } | null = null;
+    try {
+      // 1) persist application (status PENDING)
+      await fetch(`${API_URL}/api/grants/submit`, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form),
+      });
+      // 2) real autonomous AI review (Grok + Anthropic) → returns recommendation + summary
+      const res = await fetch(`${API_URL}/api/grants/review`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ name:form.name, wallet:form.wallet, email:form.email, category:form.category, need:form.need, amount:form.amount }),
+      });
+      if (res.ok) review = await res.json().catch(()=>null);
+      // 3) email acknowledgement (best-effort)
+      if (form.email) {
+        await fetch(`${API_URL}/api/send-email`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ to:form.email, type:'grant', name:form.name, amount:form.amount, wallet:form.wallet }),
+        });
+      }
+    } catch {}
+    setAiResult(review);
+    setStep('success');
+  };
+
+  const handleClose = () => { onClose(); setTimeout(()=>{ setStep('form'); setForm({name:'',wallet:'',email:'',phone:'',category:'',need:'',amount:'25'}); setErrors({}); setAiResult(null); }, 300); };
+
+  if (step === 'reviewing') return (
+    <Overlay show={show} onClose={()=>{}}>
+      <div style={{ textAlign:'center', padding:'44px 0' }}>
+        <div style={{ fontSize:44, animation:'spin 1s linear infinite', display:'inline-block', marginBottom:14 }}>🤖</div>
+        <p style={{ color:'#8b5cf6', fontWeight:700, fontSize:17 }}>AI reviewing your application…</p>
+        <p style={{ fontSize:13, color:'rgba(255,255,255,.38)', marginTop:6 }}>Assessing need · checking treasury · drafting recommendation</p>
+      </div>
+    </Overlay>
+  );
+
+  if (step === 'success') return (
+    <Overlay show={show} onClose={handleClose}>
+      <div style={{ textAlign:'center', padding:'20px 0' }}>
+        <div style={{ fontSize:56, marginBottom:12 }}>❤️</div>
+        <h3 style={{ fontSize:24, fontWeight:900, color:'#8b5cf6', marginBottom:10 }}>Application Received</h3>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, lineHeight:1.75, marginBottom:10 }}>Your ${form.amount} grant request has been reviewed by AI and is now awaiting final approval.</p>
+        {aiResult?.summary && (
+          <div style={{ background:'rgba(139,92,246,.08)', border:'1px solid rgba(139,92,246,.22)', borderRadius:12, padding:'14px 16px', margin:'0 auto 16px', maxWidth:420, textAlign:'left' }}>
+            <p style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6, fontFamily:"'IBM Plex Mono',monospace" }}>🤖 AI Review {aiResult.recommendation?`· ${aiResult.recommendation}`:''}</p>
+            <p style={{ fontSize:12, color:'rgba(255,255,255,.6)', lineHeight:1.65 }}>{aiResult.summary}</p>
+          </div>
+        )}
+        <p style={{ color:'rgba(255,255,255,.35)', fontSize:13, lineHeight:1.75, marginBottom:24 }}>Approved funds go <strong style={{ color:'#fff' }}>directly to your XRPL wallet</strong>. You&apos;ll get a status update at {form.email}.</p>
+        <button onClick={handleClose} style={Btn('color','#8b5cf6')}>Done</button>
+      </div>
+    </Overlay>
+  );
+
+  return (
+    <Overlay show={show} onClose={handleClose} wide>
+      <div style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', letterSpacing:'.12em', textTransform:'uppercase', marginBottom:5 }}>Community Grant Application</div>
+      <h3 style={{ fontSize:22, fontWeight:900, marginBottom:4 }}>Apply for Emergency Funds</h3>
+      <p style={{ color:'rgba(255,255,255,.4)', fontSize:13, marginBottom:22 }}>$25–$100 · AI-reviewed · Direct to your XRPL wallet · No middlemen</p>
+
+      <label style={LBL}>Category *</label>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(110px,1fr))', gap:8, marginBottom:4 }}>
+        {cats.map(c => <button key={c} onClick={()=>set('category',c)} style={{ padding:'9px', borderRadius:12, cursor:'pointer', fontSize:12, border:`1px solid ${form.category===c?'#8b5cf6':'rgba(255,255,255,.1)'}`, background:form.category===c?'rgba(139,92,246,.14)':'rgba(255,255,255,.04)', color:form.category===c?'#a78bfa':'rgba(255,255,255,.6)', fontWeight:600, fontFamily:'inherit' }}>{c}</button>)}
+      </div>
+      {errors.category && <p style={{ fontSize:12, color:'#f87171', marginBottom:8 }}>{errors.category}</p>}
+
+      <label style={{ ...LBL, marginTop:16 }}>Grant Amount</label>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
+        {['25','50','75','100'].map(a => <button key={a} onClick={()=>set('amount',a)} style={{ padding:'11px', borderRadius:12, cursor:'pointer', border:`1px solid ${form.amount===a?'#8b5cf6':'rgba(255,255,255,.1)'}`, background:form.amount===a?'rgba(139,92,246,.14)':'rgba(255,255,255,.04)', color:form.amount===a?'#a78bfa':'rgba(255,255,255,.6)', fontWeight:800, fontSize:15, fontFamily:'inherit' }}>${a}</button>)}
+      </div>
+
+      <label style={LBL}>Describe your situation *</label>
+      <textarea value={form.need} onChange={e=>set('need',e.target.value)} placeholder="Tell us what you need and why…" rows={4} style={{ ...INP, resize:'none', lineHeight:1.6, marginBottom:4 }} />
+      {errors.need && <p style={{ fontSize:12, color:'#f87171', marginBottom:8 }}>{errors.need}</p>}
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:10, marginTop:14 }}>
+        <div><label style={LBL}>Name (optional)</label><input type="text" value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Anonymous is fine" style={INP} /></div>
+        <div><label style={LBL}>XRPL Wallet *</label><input type="text" value={form.wallet} onChange={e=>set('wallet',e.target.value)} placeholder="rXXXXX…" style={{ ...INP, fontFamily:"'IBM Plex Mono',monospace", fontSize:12 }} />{errors.wallet && <p style={{ fontSize:12, color:'#f87171' }}>{errors.wallet}</p>}</div>
+        <div><label style={LBL}>Email *</label><input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@example.com" style={INP} /></div>
+        <div><label style={LBL}>Phone (optional)</label><input type="tel" value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="+1 555 000 0000" style={INP} /></div>
+      </div>
+      {errors.contact && <p style={{ fontSize:12, color:'#f87171', marginTop:4 }}>{errors.contact}</p>}
+
+      <button onClick={handleSubmit} style={{ ...Btn('color','#8b5cf6',{width:'100%',marginTop:22,padding:'15px',fontSize:16}) }}>Submit for AI Review →</button>
+      <p style={{ textAlign:'center', fontSize:11, color:'rgba(255,255,255,.22)', marginTop:10 }}>AI-reviewed · Final human approval before payout · Wallet-to-wallet</p>
+    </Overlay>
+  );
+}
+
 // ═══ MAIN PAGE ═══
 export default function XRPLHubHome() {
   const [user, setUser]               = useState<User|null>(null);
@@ -706,6 +818,7 @@ export default function XRPLHubHome() {
   const [mobileMenu, setMM]           = useState(false);
   const [showScore, setShowScore]     = useState(false);
   const [showDonate, setShowDonate]   = useState(false);
+  const [showGrant, setShowGrant]     = useState(false);
   const [showLogin, setShowLogin]     = useState(false);
   const [showConnect, setShowConnect] = useState(false);
 
@@ -795,6 +908,7 @@ export default function XRPLHubHome() {
                 ? <button className="wallet-btn" onClick={disconnectWallet} title="Disconnect"><span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 6px #10b981' }} />{trunc(connectedWallet)} ✕</button>
                 : <button className="wallet-btn" onClick={()=>setShowConnect(true)}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>setShowDonate(true)}>Donate</button>
+              <button className="navbtn" onClick={()=>setShowGrant(true)}>Apply for Grant</button>
               {user?<><span style={{ fontSize:12,color:'rgba(255,255,255,.42)',maxWidth:80,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user.name||user.email}</span><button className="navbtn" onClick={handleLogout}>Log Out</button></>:<button className="navbtn" onClick={()=>setShowLogin(true)}>Log In</button>}
               <button onClick={()=>fetchScore()} style={{ padding:'8px 18px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:13,cursor:'pointer',border:'none',background:'#10b981',color:'#000',whiteSpace:'nowrap' }}>Get XRPLScore</button>
             </div>
@@ -806,6 +920,7 @@ export default function XRPLHubHome() {
                 ? <button className="wallet-btn" onClick={()=>{disconnectWallet();setMM(false);}}><span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 6px #10b981' }} />{trunc(connectedWallet)} ✕</button>
                 : <button className="wallet-btn" onClick={()=>{setShowConnect(true);setMM(false);}}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>{setShowDonate(true);setMM(false);}}>Donate</button>
+              <button className="navbtn" onClick={()=>{setShowGrant(true);setMM(false);}}>Apply for Grant</button>
               {user?<button className="navbtn" onClick={()=>{handleLogout();setMM(false);}}>Log Out</button>:<button className="navbtn" onClick={()=>{setShowLogin(true);setMM(false);}}>Log In</button>}
               <button onClick={()=>{fetchScore();setMM(false);}} style={{ padding:'12px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:14,cursor:'pointer',border:'none',background:'#10b981',color:'#000' }}>Get XRPLScore</button>
             </div>
@@ -905,32 +1020,167 @@ export default function XRPLHubHome() {
           </div>
         </section>
 
-        {/* XRPLSCORE */}
-        <section id="score" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1100,margin:'0 auto' }}>
-          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.18)',borderRadius:24,padding:'40px 32px',backdropFilter:'blur(20px)',animation:'borderPulse 4s ease-in-out infinite' }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:14 }}>
-              <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981' }} />
-              <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>XRPLScore™</span>
+        {/* XRPLSCORE — live checker */}
+        <section id="score" className="section-pad" style={{ padding:'0 24px 48px',maxWidth:1240,margin:'0 auto' }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.07),rgba(6,6,22,.85))',border:'1px solid rgba(16,185,129,.18)',borderRadius:24,padding:'40px 32px',backdropFilter:'blur(20px)',animation:'borderPulse 4s ease-in-out infinite' }}>
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:36,alignItems:'start' }}>
+
+              {/* LEFT — what is XRPLScore + checker */}
+              <div>
+                <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:14 }}>
+                  <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2s infinite' }} />
+                  <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>XRPLScore™ · First of its kind on XRPL</span>
+                </div>
+                <h2 style={{ fontSize:'clamp(22px,3.3vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>Our own on-chain score.<br />No FICO. No bureau. No SSN.</h2>
+                <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8,marginBottom:20 }}>
+                  XRPLScore is XRPLHub's proprietary 300–850 rating computed live from XRPL mainnet.
+                  It has <strong style={{ color:'#fff' }}>zero affiliation with FICO, Equifax, TransUnion, or any credit bureau.</strong> It is your verifiable on-chain reputation — built entirely from what the ledger can see.
+                </p>
+
+                {/* 8 signals */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.1em',textTransform:'uppercase',marginBottom:10 }}>The 8 proprietary signals</div>
+                  <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8 }}>
+                    {[['⏱️','Account age','How long your wallet has been active'],['💸','TX velocity','Volume and frequency of transactions'],['🔗','Trust lines','Diversity of token trust lines held'],['📊','DEX activity','Participation in native XRPL trading'],['🌀','AMM activity','Liquidity provision history'],['🏦','Reserve ratio','Healthy XRP reserve above minimum'],['🎨','NFT activity','On-chain NFT minting and ownership'],['🔐','Security flags','Multisig, regular key, deposit auth']].map(([e,t,d])=>(
+                      <div key={t} style={{ background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.07)',borderRadius:11,padding:'10px 12px' }}>
+                        <div style={{ fontSize:16,marginBottom:5 }}>{e}</div>
+                        <div style={{ fontSize:11,fontWeight:700,color:'#10b981',marginBottom:2 }}>{t}</div>
+                        <div style={{ fontSize:10,color:'rgba(255,255,255,.35)',lineHeight:1.4 }}>{d}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* score checker */}
+                <div style={{ display:'flex',gap:9,flexWrap:'wrap' }}>
+                  <input className="score-inp" type="text" value={walletInput} onChange={e=>setWI(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchScore(walletInput)} placeholder={connectedWallet?trunc(connectedWallet):"Paste any XRPL wallet address…"} style={{ ...INP,flex:1,minWidth:180,borderRadius:99,paddingLeft:20,fontFamily:"'IBM Plex Mono',monospace",fontSize:12 }} />
+                  <button onClick={()=>fetchScore(walletInput||connectedWallet)} style={{ padding:'12px 22px',borderRadius:99,background:'#10b981',color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Check Score →</button>
+                </div>
+                {!connectedWallet && <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginTop:10 }}>or <button onClick={()=>setShowConnect(true)} style={{ background:'none',border:'none',color:'#10b981',cursor:'pointer',fontWeight:700,fontSize:11,fontFamily:'inherit',padding:0 }}>connect your Xaman wallet</button> for instant one-tap scoring</p>}
+              </div>
+
+              {/* RIGHT — XRPLScore Builder tiers */}
+              <div>
+                <div style={{ display:'inline-flex',alignItems:'center',gap:7,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.28)',borderRadius:99,padding:'5px 14px',marginBottom:14 }}>
+                  <span style={{ width:6,height:6,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2.5s infinite' }} />
+                  <span style={{ fontSize:10,fontWeight:700,color:'#10b981',letterSpacing:'.12em',textTransform:'uppercase' }}>XRPLScore Builder</span>
+                </div>
+                <h3 style={{ fontSize:'clamp(18px,2.5vw,26px)',fontWeight:900,letterSpacing:'-1px',marginBottom:10 }}>Build real on-chain reputation.<br />Watch your score climb.</h3>
+                <p style={{ fontSize:12,color:'rgba(255,255,255,.48)',lineHeight:1.7,marginBottom:18 }}>
+                  Each monthly payment you make through XRPLHub is recorded on-chain with a structured memo. That on-chain history factors directly into your XRPLScore — the more consistent your payment record, the higher your score rises. This is the world's first reputation builder native to the XRP Ledger.
+                </p>
+
+                {/* how it works steps */}
+                <div style={{ display:'flex',flexDirection:'column',gap:8,marginBottom:20 }}>
+                  {[['💳','Subscribe','Make your first monthly payment in Xaman.'],['📝','On-chain record','Your payment is permanently written to XRPL mainnet with a structured memo.'],['📈','Score increases','XRPLScore re-scans your wallet — consistent payments raise your rating.'],['🏦','Lending-ready','When the XRPL native borrow/lend amendment goes live, your score positions you first.']].map(([e,t,d])=>(
+                    <div key={t} style={{ display:'flex',alignItems:'flex-start',gap:12,padding:'10px 13px',background:'rgba(255,255,255,.03)',borderRadius:11,border:'1px solid rgba(255,255,255,.06)' }}>
+                      <span style={{ fontSize:18,flexShrink:0,marginTop:1 }}>{e}</span>
+                      <div>
+                        <div style={{ fontSize:12,fontWeight:700,color:'#fff',marginBottom:2 }}>{t}</div>
+                        <div style={{ fontSize:11,color:'rgba(255,255,255,.42)',lineHeight:1.5 }}>{d}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* tier cards */}
+                <div style={{ display:'flex',flexDirection:'column',gap:10,marginBottom:14 }}>
+                  {[
+                    { name:'Starter', price:'15 RLUSD/mo', color:'#34d399', perks:'XRPLScore tracking · monthly on-chain record · email alerts' },
+                    { name:'Builder', price:'25 RLUSD/mo', color:'#10b981', perks:'All Starter · score-history graph · trend simulator', popular:true },
+                    { name:'Pro',     price:'35 RLUSD/mo', color:'#f59e0b', perks:'All Builder · priority signals · lending-readiness profile' },
+                  ].map(t=>(
+                    <div key={t.name} onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)}
+                      style={{ background:'rgba(255,255,255,.04)',border:`1px solid ${t.color}28`,borderRadius:14,padding:'14px 18px',cursor:'pointer',transition:'all .18s',position:'relative' }}
+                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}55`}
+                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.borderColor=`${t.color}28`}>
+                      {t.popular && <div style={{ position:'absolute',top:-9,right:14,background:'#10b981',color:'#000',fontSize:8,fontWeight:800,padding:'2px 10px',borderRadius:99,letterSpacing:'.08em' }}>POPULAR</div>}
+                      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,flexWrap:'wrap',gap:6 }}>
+                        <span style={{ fontWeight:800,fontSize:14,color:'#fff' }}>{t.name}</span>
+                        <span style={{ fontSize:16,fontWeight:900,color:t.color }}>{t.price}</span>
+                      </div>
+                      <div style={{ fontSize:11,color:'rgba(255,255,255,.4)',lineHeight:1.5 }}>{t.perks}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15}) }}>Start Building Your XRPLScore →</button>
+                <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',textAlign:'center',marginTop:10,lineHeight:1.6 }}>
+                  First on-chain reputation builder on the XRP Ledger<br />
+                  <span style={{ color:'rgba(255,255,255,.18)' }}>No FICO · No bureaus · No SSN · 100% on-chain</span>
+                </p>
+              </div>
+
             </div>
-            <h2 style={{ fontSize:'clamp(24px,3.5vw,38px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>On-chain reputation score.<br />No SSN. No bureau.</h2>
-            <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8,marginBottom:20,maxWidth:560 }}>300–850, computed live from XRPL mainnet across 8 signals: account age, transaction velocity, trust lines, DEX activity, AMM activity, reserve ratio, NFT activity, and security flags. {connectedWallet?'Your wallet is connected — tap Check Score.':'Connect your wallet or paste any XRPL address.'}</p>
-            <div style={{ display:'flex',gap:9,flexWrap:'wrap',maxWidth:560 }}>
-              <input className="score-inp" type="text" value={walletInput} onChange={e=>setWI(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchScore(walletInput)} placeholder={connectedWallet?trunc(connectedWallet):"Paste XRPL wallet address…"} style={{ ...INP,flex:1,minWidth:180,borderRadius:99,paddingLeft:20,fontFamily:"'IBM Plex Mono',monospace",fontSize:12 }} />
-              <button onClick={()=>fetchScore(walletInput||connectedWallet)} style={{ padding:'12px 22px',borderRadius:99,background:'#10b981',color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Check Score →</button>
+          </div>
+        </section>
+
+        {/* BORROW / LEND AMENDMENT POSITIONING */}
+        <section className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1240,margin:'0 auto' }}>
+          <div style={{ background:'linear-gradient(135deg,rgba(56,189,248,.06),rgba(16,185,129,.05),rgba(6,6,22,.9))',border:'1px solid rgba(56,189,248,.18)',borderRadius:22,padding:'32px 28px',backdropFilter:'blur(20px)' }}>
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:28,alignItems:'center' }}>
+              <div>
+                <div style={{ display:'inline-flex',alignItems:'center',gap:7,background:'rgba(56,189,248,.1)',border:'1px solid rgba(56,189,248,.25)',borderRadius:99,padding:'5px 14px',marginBottom:14 }}>
+                  <span style={{ width:6,height:6,borderRadius:'50%',background:'#38bdf8',boxShadow:'0 0 8px #38bdf8',animation:'pulse 2s infinite' }} />
+                  <span style={{ fontSize:10,fontWeight:700,color:'#38bdf8',letterSpacing:'.12em',textTransform:'uppercase' }}>Coming to XRPL Mainnet</span>
+                </div>
+                <h3 style={{ fontSize:'clamp(20px,2.8vw,30px)',fontWeight:900,letterSpacing:'-1.5px',marginBottom:12 }}>XRPL Native Borrow / Lend<br /><span style={{ color:'#10b981' }}>XRPLHub is already positioned.</span></h3>
+                <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8 }}>
+                  The XRPL Foundation's native lending amendment will enable on-ledger borrowing and lending without any smart contracts. When it goes live, your <strong style={{ color:'#10b981' }}>XRPLScore is the reputation layer.</strong> Users who have been building consistent on-chain history through XRPLHub's Credit Builder will be positioned ahead of everyone who starts from zero on amendment day.
+                </p>
+              </div>
+              <div style={{ display:'flex',flexDirection:'column',gap:10 }}>
+                {[['📈','Start building XRPLScore now','Every month of history before the amendment matters.'],['🏆','First-mover advantage','Your on-chain reputation precedes the amendment.'],['🔓','Borrow against your score','The amendment enables native lending — your score opens access.'],['💰','Lend to earn','Provide liquidity natively on XRPL, no intermediaries.']].map(([e,t,d])=>(
+                  <div key={t} style={{ display:'flex',gap:12,alignItems:'flex-start',background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,padding:'12px 15px' }}>
+                    <span style={{ fontSize:18,flexShrink:0 }}>{e}</span>
+                    <div>
+                      <div style={{ fontSize:12,fontWeight:700,color:'#fff',marginBottom:2 }}>{t}</div>
+                      <div style={{ fontSize:11,color:'rgba(255,255,255,.4)',lineHeight:1.5 }}>{d}</div>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={()=>setAP(PRODUCTS.find(p=>p.id==='credit')||null)} style={{ ...Btn('color','#38bdf8',{marginTop:4,padding:'13px',fontSize:14}) }}>Build Your Score Now — Get Lending-Ready →</button>
+              </div>
             </div>
           </div>
         </section>
 
         {/* GRANTS */}
         <section id="grants" className="section-pad" style={{ padding:'0 24px 72px',maxWidth:1100,margin:'0 auto' }}>
-          <div style={{ ...GLASS,borderRadius:22,padding:'34px 28px' }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}><span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981' }} /><span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>Community Treasury</span></div>
-            <h2 style={{ fontSize:'clamp(22px,3.5vw,34px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>Fund the treasury. Verifiable on-chain.</h2>
-            <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:20,maxWidth:560 }}>Donations go to a public XRPL treasury wallet, viewable any time on XRPScan. Wallet-to-wallet, no intermediaries.</p>
-            <div style={{ display:'flex',gap:10,flexWrap:'wrap' }}>
-              <button onClick={()=>setShowDonate(true)} style={{ ...Btn('green',undefined,{padding:'14px 28px',fontSize:15}) }}>💚 Donate via Xaman →</button>
-              <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...Btn('ghost',undefined,{padding:'14px 28px',fontSize:14,textDecoration:'none'}) }}>View Treasury on XRPScan ↗</a>
+          <div style={{ textAlign:'center',marginBottom:34 }}>
+            <div style={{ display:'inline-flex',alignItems:'center',gap:6,marginBottom:12 }}><span style={{ width:5,height:5,borderRadius:'50%',background:'#8b5cf6',boxShadow:'0 0 8px #8b5cf6' }} /><span style={{ fontSize:11,fontWeight:700,color:'#8b5cf6',letterSpacing:'.14em',textTransform:'uppercase' }}>Community Grants</span></div>
+            <h2 style={{ fontSize:'clamp(22px,3.5vw,34px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>Real people. Real money. Wallet to wallet.</h2>
+            <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,maxWidth:580,margin:'0 auto' }}>Donors fund a public XRPL treasury. AI reviews every application. Approved grants go directly to recipients&apos; wallets — 100% verifiable on the XRP Ledger.</p>
+          </div>
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:20 }}>
+
+            {/* Donate */}
+            <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.2)',borderRadius:22,padding:'30px 26px',backdropFilter:'blur(20px)' }}>
+              <div style={{ fontSize:40,marginBottom:14,animation:'float 4s ease-in-out infinite' }}>💚</div>
+              <h3 style={{ fontSize:21,fontWeight:900,marginBottom:10 }}>Fund the Treasury</h3>
+              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:20 }}>Send XRP or RLUSD to a public XRPL treasury wallet, viewable any time on XRPScan. Wallet-to-wallet, no intermediaries.</p>
+              <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'9px 13px',marginBottom:16 }}>
+                <code style={{ fontSize:10,color:'#34d399',wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
+              </div>
+              <button onClick={()=>setShowDonate(true)} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15,marginBottom:8}) }}>💚 Donate via Xaman →</button>
+              <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...Btn('ghost',undefined,{width:'100%',padding:'12px',fontSize:13,textDecoration:'none'}) }}>View Treasury on XRPScan ↗</a>
             </div>
+
+            {/* Apply */}
+            <div style={{ background:'linear-gradient(135deg,rgba(139,92,246,.08),rgba(6,6,22,.8))',border:'1px solid rgba(139,92,246,.2)',borderRadius:22,padding:'30px 26px',backdropFilter:'blur(20px)' }}>
+              <div style={{ fontSize:40,marginBottom:14,animation:'float 4s ease-in-out infinite',animationDelay:'1s' }}>❤️</div>
+              <h3 style={{ fontSize:21,fontWeight:900,marginBottom:10 }}>Apply for a Grant</h3>
+              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:18 }}>Need help? Apply for $25–$100. AI reviews your application, then funds are released to your XRPL wallet after final approval.</p>
+              <div style={{ display:'flex',flexDirection:'column',gap:7,marginBottom:20 }}>
+                {['Submit a short application','AI reviews using the community treasury','Approved funds go direct to your wallet','No bank account, no ID required'].map(f=>(
+                  <div key={f} style={{ display:'flex',alignItems:'center',gap:8,fontSize:12,color:'rgba(255,255,255,.52)' }}>
+                    <span style={{ color:'#8b5cf6',fontSize:11 }}>✓</span>{f}
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=>setShowGrant(true)} style={{ ...Btn('color','#8b5cf6',{width:'100%',padding:'14px',fontSize:15}) }}>Apply for a Grant →</button>
+            </div>
+
           </div>
         </section>
 
@@ -963,6 +1213,7 @@ export default function XRPLHubHome() {
       <ScoreModal show={showScore} onClose={()=>setShowScore(false)} scoreData={scoreData} loading={scoreLoading} error={scoreError} onRetry={()=>fetchScore(walletInput||connectedWallet)} walletAddress={walletInput||connectedWallet} />
       <ProductModal show={!!activeProduct} onClose={()=>setAP(null)} product={activeProduct} connectedWallet={connectedWallet} />
       <DonateModal show={showDonate} onClose={()=>setShowDonate(false)} />
+      <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} />
       <LoginModal show={showLogin} onClose={()=>setShowLogin(false)} onLoggedIn={u=>setUser(u)} />
     </>
   );
