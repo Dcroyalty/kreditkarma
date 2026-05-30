@@ -26,16 +26,19 @@ function Wordmark({ size = 18 }: { size?: number }) {
 }
 
 const TICKER = [
-  'Worried one leaked key drains everything? Multi-Sig Fortress',
-  'Build XRPLScore — on-chain credit, no SSN',
-  'Lock your account against unauthorized spend',
-  'Issue tokens correctly — Issuer Trustless Declaration',
-  'Launch an AMM pool in one signed transaction',
-  'Mint NFTs with protocol-level royalties',
-  'Set up time-locked escrow on the XRP Ledger',
-  'You sign once in Xaman. Permanent on mainnet ~4s.',
-  'Community grants — wallet to wallet, fully on-chain',
-  'Build your XRPLScore — monthly on-chain reputation',
+  'XRPLScore™ — your own on-chain credit score. No FICO. No bureau. No SSN.',
+  'One leaked key shouldn\'t drain your wallet — lock it down with Multi-Sig Fortress',
+  'Build XRPLScore™ monthly — turn on-chain history into real reputation',
+  'Behind on rent or groceries? Apply for a Community Grant — money straight to your wallet',
+  'Launch a token the right way — Issuer Trustless Declaration in one signed transaction',
+  'Protect your assets from clawback — permanent on-chain shield in ~4 seconds',
+  'Spin up an AMM liquidity pool with a single Xaman signature',
+  'Mint NFTs with protocol-level royalties baked in — yours forever',
+  'Donate to the Community Grant treasury — 100% reaches real people, verifiable on-chain',
+  'Time-lock funds with on-chain Escrow — release exactly when you choose',
+  'Check any XRPL wallet\'s XRPLScore™ free — instant, live from mainnet',
+  '24 XRPL services · You sign once in Xaman · Live on mainnet in ~4 seconds',
+  'XRPLHub.io — XRPL Services · Community Grants · XRPLScore™',
 ];
 
 // ─── 24 HONEST PRODUCTS ───
@@ -193,16 +196,21 @@ function Btn(v: 'green'|'ghost'|'color', color?: string, extra?: React.CSSProper
 }
 
 function TickerBar() {
-  const r = [...TICKER, ...TICKER];
+  const Half = () => (
+    <div style={{ display:'flex', flexShrink:0 }}>
+      {TICKER.map((m, i) => (
+        <span key={`${m}-${i}`} style={{ display:'inline-flex', alignItems:'center', gap:12, padding:'0 26px', fontSize:12, fontWeight:700, letterSpacing:'.06em', color:'#fff', fontFamily:"'IBM Plex Mono',monospace", textTransform:'uppercase' }}>
+          <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 10px #10b981', flexShrink:0 }} />
+          <span style={{ whiteSpace:'nowrap' }}>{m}</span>
+        </span>
+      ))}
+    </div>
+  );
   return (
-    <div style={{ overflow:'hidden', width:'100%', maxWidth:'100%', background:'linear-gradient(90deg,rgba(16,185,129,.10),rgba(56,189,248,.07),rgba(16,185,129,.10))', borderBottom:'1px solid rgba(16,185,129,.22)', backdropFilter:'blur(10px)', zIndex:50 }}>
-      <div className="ticker-track" style={{ display:'inline-flex', whiteSpace:'nowrap', padding:'10px 0', animation:'tickerScroll 95s linear infinite', willChange:'transform' }}>
-        {r.map((m, i) => (
-          <span key={`${m}-${i}`} style={{ display:'inline-flex', alignItems:'center', gap:12, padding:'0 22px', fontSize:12, fontWeight:700, letterSpacing:'.06em', color:'#fff', fontFamily:"'IBM Plex Mono',monospace", textTransform:'uppercase' }}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', boxShadow:'0 0 10px #10b981', flexShrink:0 }} />
-            <span>{m}</span>
-          </span>
-        ))}
+    <div style={{ overflow:'hidden', width:'100%', maxWidth:'100%', background:'linear-gradient(90deg,rgba(16,185,129,.10),rgba(56,189,248,.07),rgba(16,185,129,.10))', borderBottom:'1px solid rgba(16,185,129,.22)', zIndex:50 }}>
+      <div className="ticker-track" style={{ display:'flex', width:'max-content', padding:'10px 0', animation:'tickerScroll 90s linear infinite' }}>
+        <Half />
+        <Half />
       </div>
     </div>
   );
@@ -828,7 +836,7 @@ function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 function FAQModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
   const [open, setOpen] = useState<number|null>(0);
   const faqs:[string,string][] = [
-    ['What is XRPLScore?',"XRPLScore is XRPLHub's proprietary on-chain rating — 300 to 850, computed live from your XRPL wallet. No SSN, no credit bureau, no FICO affiliation. It's your verifiable on-chain reputation."],
+    ['What is XRPLScore™?',"XRPLScore™ is XRPLHub's proprietary on-chain rating — 300 to 850, computed live from your XRPL wallet. No SSN, no credit bureau, no FICO affiliation. It's your verifiable on-chain reputation."],
     ['How do the XRPL Services work?','You pay in Xaman and get a TX hash. Our AI verifies the transaction on XRPL mainnet, confirms the amount and destination, and activates your service within one ledger close (~4 seconds).'],
     ['How does the grant system work?',"Donate XRP/RLUSD to the public treasury (viewable on XRPScan). Anyone in need can apply for $25–$100. AI reviews each application, and after final human approval, funds go directly to the recipient's XRPL wallet."],
     ['What is the XRPLScore Builder?','A monthly subscription that builds verifiable on-chain history, raising your XRPLScore over time. The first reputation builder native to the XRP Ledger.'],
@@ -871,7 +879,7 @@ function TermsModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
         <span style={H}>3. XRPL Services & AI Verification</span>
         <p style={P}>Services are on-chain operational tools. You pay in Xaman, and our AI verifies the transaction on XRPL mainnet. <strong style={{ color:'rgba(255,255,255,.8)' }}>All XRPL transactions are final and irrevocable.</strong> Services are not insurance contracts, securities, or financial instruments.</p>
         <span style={H}>4. XRPLScore™</span>
-        <p style={P}>XRPLScore is our proprietary on-chain assessment derived from public XRPL wallet data. It is not a FICO score, consumer credit report, or NRSRO rating, and has no affiliation with any credit bureau.</p>
+        <p style={P}>XRPLScore™ is our proprietary on-chain assessment derived from public XRPL wallet data. It is not a FICO score, consumer credit report, or NRSRO rating, and has no affiliation with any credit bureau.</p>
         <span style={H}>5. XRPLScore Builder</span>
         <p style={P}>Monthly subscriptions build on-chain history that factors into your XRPLScore. Subscriptions cancel at end-of-cycle. All payments are non-refundable (irrevocable XRPL transactions).</p>
         <span style={H}>6. Community Grant Program</span>
@@ -999,6 +1007,8 @@ export default function XRPLHubHome() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes borderPulse{0%,100%{border-color:rgba(16,185,129,.22)}50%{border-color:rgba(16,185,129,.55)}}
         @keyframes tickerScroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+        .ticker-track{will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+        .ticker-track:hover{animation-play-state:paused}
         .pcard-featured{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard-featured:hover{transform:translateY(-6px);box-shadow:0 0 60px rgba(16,185,129,.18),0 28px 70px rgba(0,0,0,.6)!important}
         .pcard{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard:hover{transform:translateY(-4px);box-shadow:0 0 40px rgba(16,185,129,.1),0 20px 50px rgba(0,0,0,.5)!important}
         .navbtn{padding:8px 16px;border-radius:99px;font-weight:600;font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.62);transition:all .15s;white-space:nowrap}.navbtn:hover{background:rgba(255,255,255,.1);color:#fff}
@@ -1157,7 +1167,7 @@ export default function XRPLHubHome() {
                 </div>
                 <h2 style={{ fontSize:'clamp(22px,3.3vw,36px)',fontWeight:900,letterSpacing:'-2px',marginBottom:14 }}>Our own on-chain score.<br />No FICO. No bureau. No SSN.</h2>
                 <p style={{ fontSize:13,color:'rgba(255,255,255,.5)',lineHeight:1.8,marginBottom:20 }}>
-                  XRPLScore is XRPLHub's proprietary 300–850 rating, computed live from your XRPL wallet.
+                  XRPLScore™ is XRPLHub's proprietary 300–850 rating, computed live from your XRPL wallet.
                   <strong style={{ color:'#fff' }}> No FICO. No bureau. No SSN.</strong> Connect your Xaman wallet to see your score instantly — your results save to your account.
                 </p>
 
@@ -1261,6 +1271,7 @@ export default function XRPLHubHome() {
                   <Wordmark size={15} />
                 </div>
                 <p style={{ fontSize:11,color:'rgba(255,255,255,.24)' }}>© 2026 XRPLHub.io · XRPLScore™ · All Rights Reserved</p>
+                <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>XRPLHub™ and XRPLScore™ are trademarks. Platform and content protected by copyright.</p>
                 <p style={{ fontSize:10,color:'rgba(255,255,255,.16)',marginTop:2 }}>Not a bank · Not a broker · You sign every transaction · 100% on-chain</p>
               </div>
               <div style={{ display:'flex',gap:'10px 18px',flexWrap:'wrap',alignItems:'center' }}>
