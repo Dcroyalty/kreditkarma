@@ -452,22 +452,22 @@ function Overlay({ show, onClose, children, wide=false }: { show:boolean; onClos
 }
 
 // ─── TREASURY STATS LIVE COUNTER ───
-// Polls /api/treasury-stats every 30s. Shows treasury balance, total donated,
-// grants funded. Pure social-proof for donors/applicants.
+// Polls /api/treasury-stats every 30s. Field names match the route exactly:
+// treasuryXRP (number) · treasuryUSD (preformatted string) · donorCount · grantCount.
 function TreasuryStatsBar() {
-  const [stats, setStats] = useState<{ balanceXRP:number; balanceUSD:number; totalDonated:number; grantsFunded:number }|null>(null);
+  const [stats, setStats] = useState<{ treasuryXRP:number; treasuryUSD:string; donorCount:number; grantCount:number }|null>(null);
   useEffect(() => {
     let stop = false;
     const load = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/treasury-stats`);
+        const res = await fetch(`${API_URL}/api/treasury-stats`, { cache: 'no-store' });
         if (!res.ok) return;
         const d = await res.json();
         if (!stop) setStats({
-          balanceXRP: Number(d.balanceXRP || d.balance || 0),
-          balanceUSD: Number(d.balanceUSD || d.usdValue || 0),
-          totalDonated: Number(d.totalDonated || 0),
-          grantsFunded: Number(d.grantsFunded || d.grantsApproved || 0),
+          treasuryXRP: Number(d.treasuryXRP || 0),
+          treasuryUSD: String(d.treasuryUSD || '$0'),
+          donorCount:  Number(d.donorCount  || 0),
+          grantCount:  Number(d.grantCount  || 0),
         });
       } catch {}
     };
@@ -475,7 +475,7 @@ function TreasuryStatsBar() {
     const iv = setInterval(load, 30_000);
     return () => { stop = true; clearInterval(iv); };
   }, []);
-  const fmt = (n:number) => n >= 1000 ? n.toLocaleString('en-US', { maximumFractionDigits:0 }) : n.toFixed(0);
+  const fmt = (n:number) => n.toLocaleString('en-US', { maximumFractionDigits:0 });
   const Cell = ({ label, value, suffix, color }: { label:string; value:string; suffix?:string; color:string }) => (
     <div style={{ flex:1, minWidth:140, textAlign:'center', padding:'14px 12px' }}>
       <div style={{ fontSize:11,fontWeight:700,color:'rgba(255,255,255,.36)',letterSpacing:'.13em',textTransform:'uppercase',marginBottom:6 }}>{label}</div>
@@ -487,16 +487,19 @@ function TreasuryStatsBar() {
   return (
     <div style={{ background:'linear-gradient(135deg,rgba(139,92,246,.07),rgba(16,185,129,.06),rgba(6,6,22,.85))',border:'1px solid rgba(139,92,246,.22)',borderRadius:18,padding:'4px 10px',marginBottom:24,backdropFilter:'blur(20px)' }}>
       <div style={{ display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:0 }}>
-        <Cell label="Treasury Balance" value={stats ? fmt(stats.balanceXRP) : '—'} suffix="XRP"     color="#10b981" />
-        <Cell label="≈ USD Value"      value={stats ? '$'+fmt(stats.balanceUSD) : '—'}              color="#34d399" />
-        <Cell label="Total Donated"    value={stats ? fmt(stats.totalDonated) : '—'} suffix="XRP"   color="#38bdf8" />
-        <Cell label="Grants Funded"    value={stats ? fmt(stats.grantsFunded) : '—'}                color="#8b5cf6" />
+        <Cell label="Treasury Balance" value={stats ? fmt(stats.treasuryXRP) : '—'} suffix="XRP" color="#10b981" />
+        <Cell label="≈ USD Value"      value={stats ? stats.treasuryUSD : '—'}                    color="#34d399" />
+        <Cell label="Donors"           value={stats ? fmt(stats.donorCount) : '—'}                color="#38bdf8" />
+        <Cell label="Grants Funded"    value={stats ? fmt(stats.grantCount) : '—'}                color="#8b5cf6" />
       </div>
-      <div style={{ textAlign:'center',padding:'4px 0 10px' }}>
-        <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.13em',textTransform:'uppercase',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6 }}>
+      <div style={{ display:'flex',flexWrap:'wrap',justifyContent:'center',gap:14,padding:'4px 0 10px' }}>
+        <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.45)',letterSpacing:'.13em',textTransform:'uppercase',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6 }}>
           <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2s infinite' }} />
           Live on XRPL ↗
         </a>
+        <span style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.45)',letterSpacing:'.13em',textTransform:'uppercase',display:'inline-flex',alignItems:'center',gap:6 }}>
+          🟢 Pay to <strong style={{ color:'#10b981',fontFamily:"'IBM Plex Mono',monospace" }}>xrplhub.xrp</strong>
+        </span>
       </div>
     </div>
   );
@@ -1671,9 +1674,14 @@ export default function XRPLHubHome() {
             <div style={{ background:'linear-gradient(135deg,rgba(16,185,129,.08),rgba(6,6,22,.8))',border:'1px solid rgba(16,185,129,.2)',borderRadius:22,padding:'30px 26px',backdropFilter:'blur(20px)' }}>
               <div style={{ fontSize:40,marginBottom:14,animation:'float 4s ease-in-out infinite' }}>💚</div>
               <h3 style={{ fontSize:21,fontWeight:900,marginBottom:10 }}>Fund the Treasury</h3>
-              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:20 }}>Send XRP or RLUSD to a public XRPL treasury wallet, viewable any time on XRPScan. Wallet-to-wallet, no intermediaries.</p>
-              <div style={{ background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.15)',borderRadius:11,padding:'9px 13px',marginBottom:16 }}>
-                <code style={{ fontSize:10,color:'#34d399',wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
+              <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,marginBottom:20 }}>Send XRP or RLUSD to our public XRPL treasury — wallet-to-wallet, no intermediaries, viewable any time on XRPScan.</p>
+              <div style={{ background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.22)',borderRadius:11,padding:'11px 14px',marginBottom:10,textAlign:'center' }}>
+                <div style={{ fontSize:9,fontWeight:700,color:'rgba(255,255,255,.4)',letterSpacing:'.13em',textTransform:'uppercase',marginBottom:4 }}>Pay in Xaman to</div>
+                <div style={{ fontSize:18,fontWeight:900,color:'#10b981',fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'-.5px' }}>xrplhub.xrp</div>
+                <div style={{ fontSize:10,color:'rgba(255,255,255,.32)',marginTop:4,fontFamily:"'IBM Plex Mono',monospace" }}>XRPNS · resolves to {TREASURY.slice(0,10)}…{TREASURY.slice(-6)}</div>
+              </div>
+              <div style={{ background:'rgba(16,185,129,.04)',border:'1px solid rgba(16,185,129,.12)',borderRadius:11,padding:'8px 12px',marginBottom:16 }}>
+                <code style={{ fontSize:10,color:'rgba(255,255,255,.5)',wordBreak:'break-all',lineHeight:1.5,fontFamily:"'IBM Plex Mono',monospace" }}>{TREASURY}</code>
               </div>
               <button onClick={()=>setShowDonate(true)} style={{ ...Btn('green',undefined,{width:'100%',padding:'14px',fontSize:15,marginBottom:8}) }}>💚 Donate via Xaman →</button>
               <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ ...Btn('ghost',undefined,{width:'100%',padding:'12px',fontSize:13,textDecoration:'none'}) }}>View Treasury on XRPScan ↗</a>
