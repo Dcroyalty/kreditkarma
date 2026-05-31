@@ -1,150 +1,103 @@
+// src/app/api/treasury-stats/route.ts
+// Live XRPL treasury stats — matches Xaman's "available balance" exactly.
+
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
-const XRPL_API  = 'https://xrplcluster.com';
+const XRPL_API = 'https://xrplcluster.com';
+const XRPL_BACKUP = 'https://s1.ripple.com:51234/';
 
-// ─── Cache so XRPL isn't hammered on every poll ──────────────────────────────
-let cache: { data: StatsPayload; ts: number } | null = null;
-const CACHE_TTL = 25_000; // 25s — slightly under the 30s frontend poll
+let cache: { data: object; ts: number } | null = null;
+const CACHE_TTL = 25_000;
 
-interface StatsPayload {
-  xrplScores:   number;
-  grantsfunded: string;   // USD string e.g. "$1,240"
-  treasuryXRP:  number;
-  treasuryUSD:  string;
-  txCount:      number;
-  servicesCount: number;
-  overhead:     string;
-  donorCount:   number;
-  grantCount:   number;
-  updatedAt:    string;
+async function rpc(method: string, params: object[]): Promise<Record<string, unknown> | null> {
+  for (const url of [XRPL_API, XRPL_BACKUP]) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, params }),
+        signal: AbortSignal.timeout(8_000),
+      });
+      const json = await res.json();
+      if (json?.result) return json.result as Record<string, unknown>;
+    } catch { continue; }
+  }
+  return null;
 }
 
-async function fetchXRPLAccountInfo() {
-  const res = await fetch(XRPL_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      method: 'account_info',
-      params: [{ account: TREASURY, ledger_index: 'validated' }]
-    }),
-    next: { revalidate: 0 }
-  });
-  const json = await res.json();
-  return json?.result?.account_data;
-}
-
-async function fetchXRPLTxCount() {
-  const res = await fetch(XRPL_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      method: 'account_tx',
-      params: [{ account: TREASURY, limit: 400, ledger_index_min: -1, ledger_index_max: -1 }]
-    }),
-    next: { revalidate: 0 }
-  });
-  const json = await res.json();
-  return {
-    txCount: json?.result?.transactions?.length || 0,
-    // Count incoming payments as donations
-    donorCount: (json?.result?.transactions || []).filter((t: {tx?: {TransactionType?: string; Destination?: string}}) =>
-      t.tx?.TransactionType === 'Payment' && t.tx?.Destination === TREASURY
-    ).length
-  };
+// Returns the SPENDABLE balance (matches what Xaman shows).
+// XRPL reserves: 1 XRP base + 0.2 XRP per owned ledger object.
+async function fetchAvailableBalance(): Promise<number> {
+  const r = await rpc('account_info', [{ account: TREASURY, ledger_index: 'validated' }]);
+  const acc = r?.account_data as { Balance?: string; OwnerCount?: number } | undefined;
+  if (!acc?.Balance) return 0;
+  const totalXRP = Number(acc.Balance) / 1_000_000;
+  const ownerCount = Number(acc.OwnerCount || 0);
+  const reserveXRP = 1 + ownerCount * 0.2;
+  return Math.max(0, totalXRP - reserveXRP);
 }
 
 async function fetchXRPPrice(): Promise<number> {
   try {
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd', {
-      next: { revalidate: 60 }
-    });
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd',
+      { signal: AbortSignal.timeout(5_000), next: { revalidate: 60 } }
+    );
     const json = await res.json();
     return json?.ripple?.usd || 0.5;
-  } catch {
-    return 0.5;
-  }
+  } catch { return 0.5; }
 }
 
-async function getDBStats() {
-  try {
-    const [scoreCount, grantCount] = await Promise.all([
-      prisma.scoreCheck?.count().catch(() => 0) || 0,
-      prisma.grantApplication?.count().catch(() => 0) || 0,
-    ]);
-    return { scoreCount, grantCount };
-  } catch {
-    return { scoreCount: 0, grantCount: 0 };
+async function fetchInboundStats(): Promise<{ donorCount: number; paymentCount: number }> {
+  const r = await rpc('account_tx', [{
+    account: TREASURY, limit: 200, ledger_index_min: -1, ledger_index_max: -1,
+  }]);
+  const txs = (r?.transactions as Array<Record<string, unknown>> | undefined) || [];
+  const senders = new Set<string>();
+  let payments = 0;
+  for (const item of txs) {
+    const tx = item.tx as Record<string, unknown> | undefined;
+    const meta = item.meta as Record<string, unknown> | undefined;
+    if (!tx || !meta) continue;
+    if (tx.TransactionType !== 'Payment') continue;
+    if (meta.TransactionResult !== 'tesSUCCESS') continue;
+    if (tx.Destination !== TREASURY) continue;
+    if (typeof tx.Account === 'string') senders.add(tx.Account);
+    payments++;
   }
+  return { donorCount: senders.size, paymentCount: payments };
 }
+
+const fmtUSD = (n: number) =>
+  n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : `$${n.toFixed(2)}`;
 
 export async function GET() {
+  if (cache && Date.now() - cache.ts < CACHE_TTL) {
+    return NextResponse.json(cache.data, { headers: { 'Cache-Control': 'no-store' } });
+  }
   try {
-    // Return cached data if fresh
-    if (cache && Date.now() - cache.ts < CACHE_TTL) {
-      return NextResponse.json(cache.data, {
-        headers: { 'Cache-Control': 'no-store' }
-      });
-    }
-
-    // Fetch all data in parallel
-    const [accountInfo, txData, xrpPrice, dbStats] = await Promise.all([
-      fetchXRPLAccountInfo().catch(() => null),
-      fetchXRPLTxCount().catch(() => ({ txCount: 0, donorCount: 0 })),
+    const [availXRP, xrpPrice, inbound] = await Promise.all([
+      fetchAvailableBalance(),
       fetchXRPPrice(),
-      getDBStats(),
+      fetchInboundStats(),
     ]);
-
-    // Treasury balance in XRP (drops / 1,000,000)
-    const balanceXRP = accountInfo?.Balance
-      ? Math.floor(Number(accountInfo.Balance) / 1_000_000)
-      : 0;
-
-    const balanceUSD = balanceXRP * xrpPrice;
-
-    // Format USD display
-    const fmtUSD = (n: number) =>
-      n >= 1000
-        ? `$${(n / 1000).toFixed(1)}K`
-        : `$${Math.floor(n).toLocaleString()}`;
-
-    const payload: StatsPayload = {
-      xrplScores:    dbStats.scoreCount,
-      grantsEnabled: true,
-      grantsUSD:     fmtUSD(balanceUSD * 0.85), // 85% of treasury earmarked for grants
-      treasuryXRP:   balanceXRP,
-      treasuryUSD:   fmtUSD(balanceUSD),
-      txCount:       txData.txCount,
-      servicesCount: 35,
-      overhead:      '0%',
-      donorCount:    txData.donorCount,
-      grantCount:    dbStats.grantCount,
-      updatedAt:     new Date().toISOString(),
-    } as unknown as StatsPayload;
-
-    // Update cache
+    const payload = {
+      treasuryXRP: Number(availXRP.toFixed(2)),
+      treasuryUSD: fmtUSD(availXRP * xrpPrice),
+      donorCount:  inbound.donorCount,
+      grantCount:  0,
+      paymentCount: inbound.paymentCount,
+      updatedAt:   new Date().toISOString(),
+      source:      'xrpl-live',
+    };
     cache = { data: payload, ts: Date.now() };
-
-    return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'no-store' }
-    });
-
+    return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
-    console.error('Stats error:', err);
-    // Return safe fallback on error
+    console.error('[treasury-stats]', err);
     return NextResponse.json({
-      xrplScores:   0,
-      grantsUSD:    '$0',
-      treasuryXRP:  0,
-      treasuryUSD:  '$0',
-      txCount:      0,
-      servicesCount: 35,
-      overhead:     '0%',
-      donorCount:   0,
-      grantCount:   0,
-      updatedAt:    new Date().toISOString(),
+      treasuryXRP: 0, treasuryUSD: '$0.00', donorCount: 0, grantCount: 0,
+      paymentCount: 0, updatedAt: new Date().toISOString(), source: 'error',
     });
   }
 }

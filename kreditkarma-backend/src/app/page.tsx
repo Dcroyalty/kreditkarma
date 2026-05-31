@@ -475,7 +475,8 @@ function TreasuryStatsBar() {
     const iv = setInterval(load, 30_000);
     return () => { stop = true; clearInterval(iv); };
   }, []);
-  const fmt = (n:number) => n.toLocaleString('en-US', { maximumFractionDigits:0 });
+  const fmt = (n:number) => n >= 1000 ? n.toLocaleString('en-US', { maximumFractionDigits:0 }) : n.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const fmtCount = (n:number) => n.toLocaleString('en-US', { maximumFractionDigits:0 });
   const Cell = ({ label, value, suffix, color }: { label:string; value:string; suffix?:string; color:string }) => (
     <div style={{ flex:1, minWidth:140, textAlign:'center', padding:'14px 12px' }}>
       <div style={{ fontSize:11,fontWeight:700,color:'rgba(255,255,255,.36)',letterSpacing:'.13em',textTransform:'uppercase',marginBottom:6 }}>{label}</div>
@@ -489,8 +490,8 @@ function TreasuryStatsBar() {
       <div style={{ display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:0 }}>
         <Cell label="Treasury Balance" value={stats ? fmt(stats.treasuryXRP) : '—'} suffix="XRP" color="#10b981" />
         <Cell label="≈ USD Value"      value={stats ? stats.treasuryUSD : '—'}                    color="#34d399" />
-        <Cell label="Donors"           value={stats ? fmt(stats.donorCount) : '—'}                color="#38bdf8" />
-        <Cell label="Grants Funded"    value={stats ? fmt(stats.grantCount) : '—'}                color="#8b5cf6" />
+        <Cell label="Donors"           value={stats ? fmtCount(stats.donorCount) : '—'}           color="#38bdf8" />
+        <Cell label="Grants Funded"    value={stats ? fmtCount(stats.grantCount) : '—'}           color="#8b5cf6" />
       </div>
       <div style={{ display:'flex',flexWrap:'wrap',justifyContent:'center',gap:14,padding:'4px 0 10px' }}>
         <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.45)',letterSpacing:'.13em',textTransform:'uppercase',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6 }}>
