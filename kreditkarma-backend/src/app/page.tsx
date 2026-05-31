@@ -598,6 +598,26 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
     return () => clearInterval(iv);
   }, [payStatus]);
 
+  // Poll execution signing → on-chain delivery (must be above any early return)
+  useEffect(() => {
+    if (exStatus !== 'signing' || !exUuid) return;
+    let stop = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/execute/verify?uuid=${exUuid}`);
+        const data = await res.json();
+        if (stop) return;
+        if (data.status === 'delivered') { setExTx(data.txHash||''); setExStatus('delivered'); }
+        else if (data.status === 'rejected') { setExError('You declined the signature.'); setExStatus('form'); }
+        else if (data.status === 'expired') { setExError('Sign request expired. Try again.'); setExStatus('form'); }
+        else if (data.status === 'failed') { setExError(`Ledger rejected it: ${data.result||'failed'}`); setExStatus('failed'); }
+        else { exPollRef.current = setTimeout(poll, 3000); }
+      } catch { if (!stop) exPollRef.current = setTimeout(poll, 5000); }
+    };
+    poll();
+    return () => { stop = true; if (exPollRef.current) clearTimeout(exPollRef.current); };
+  }, [exStatus, exUuid]); // eslint-disable-line
+
   if (!product) return null;
 
   const handleClose = () => {
@@ -633,26 +653,6 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
       setExUuid(data.uuid); setExQr(data.qr_png); setExLink(data.deep_link); setExLabel(data.label||''); setExStatus('signing');
     } catch (e:unknown) { setExError(e instanceof Error ? e.message : 'Execution failed'); setExStatus('form'); }
   };
-
-  // Poll execution signing → on-chain delivery
-  useEffect(() => {
-    if (exStatus !== 'signing' || !exUuid) return;
-    let stop = false;
-    const poll = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/execute/verify?uuid=${exUuid}`);
-        const data = await res.json();
-        if (stop) return;
-        if (data.status === 'delivered') { setExTx(data.txHash||''); setExStatus('delivered'); }
-        else if (data.status === 'rejected') { setExError('You declined the signature.'); setExStatus('form'); }
-        else if (data.status === 'expired') { setExError('Sign request expired. Try again.'); setExStatus('form'); }
-        else if (data.status === 'failed') { setExError(`Ledger rejected it: ${data.result||'failed'}`); setExStatus('failed'); }
-        else { exPollRef.current = setTimeout(poll, 3000); }
-      } catch { if (!stop) exPollRef.current = setTimeout(poll, 5000); }
-    };
-    poll();
-    return () => { stop = true; if (exPollRef.current) clearTimeout(exPollRef.current); };
-  }, [exStatus, exUuid]); // eslint-disable-line
 
   if (step === 'execute') {
     const fields = EXEC_FIELDS[product.id] || [];
