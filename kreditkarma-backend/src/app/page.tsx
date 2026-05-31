@@ -45,7 +45,7 @@ const TICKER = [
 // ─── XRPL SERVICES — DONE FOR YOU (mirrors xrpl.org tutorials) ───
 const PRODUCTS = [
   // WALLET SECURITY
-  { id:'multisig', cat:'Wallet Security', emoji:'🏰', name:'Multi-Sig Fortress', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:60, priceXRP:195,
+  { id:'multisig', cat:'Wallet Security', emoji:'🏰', name:'Multi-Sig Fortress', featured:false, tag:'HOT', comingSoon:false, color:'#10b981', priceRLUSD:60, priceXRP:195,
     amendment:'SignerListSet', tagline:'Require multiple signatures for every transaction',
     desc:'You tell us the signers and quorum. AI builds the exact SignerListSet transaction parameters. You sign once in Xaman. Your wallet then requires M-of-N signatures for every outgoing transaction.',
     aiDetail:'AI assembles a SignerListSet transaction with your quorum and signer list. After you sign in Xaman it is permanent on XRPL mainnet (~4s). No single key can move funds alone.',
@@ -71,7 +71,7 @@ const PRODUCTS = [
     aiDetail:'AI assembles AccountSet with asfDisableMaster. Disables the master key — ensure a regular key or signer list is active first.',
     features:['asfDisableMaster built to spec','Hardens against master-key theft','Run after regkey/multisig','You sign once in Xaman','TX hash receipt'] },
   // TOKEN ISSUER
-  { id:'issuerdecl', cat:'Token Issuer', emoji:'📜', name:'Issuer Trustless Declaration', featured:true, comingSoon:false, color:'#f59e0b', priceRLUSD:40, priceXRP:130,
+  { id:'issuerdecl', cat:'Token Issuer', emoji:'📜', name:'Issuer Trustless Declaration', featured:false, tag:'POPULAR', comingSoon:false, color:'#f59e0b', priceRLUSD:40, priceXRP:130,
     amendment:'AccountSet · asfNoFreeze', tagline:'As an issuer, permanently give up freeze authority',
     desc:'For token issuers: AI builds AccountSet (asfNoFreeze), permanently surrendering your ability to freeze holders\u2019 trust lines — a credible trustless signal. You sign once in Xaman.',
     aiDetail:'AI assembles AccountSet with asfNoFreeze on YOUR issuing account. This permanently removes your freeze authority over tokens you issue. It does not affect tokens others issue to you.',
@@ -86,7 +86,7 @@ const PRODUCTS = [
     desc:'Domain, transfer fee, tick size, and issuer flags configured together. AI builds the transaction set; you sign in Xaman.',
     aiDetail:'AI assembles the full AccountSet configuration for a production token issuer — domain, TransferRate, TickSize, and flags.',
     features:['Full issuer AccountSet','Domain + fee + tick size','Issuer flags configured','You sign in Xaman','TX hash receipt'] },
-  { id:'trustline', cat:'Token Issuer', emoji:'🔗', name:'Trust Line Configurator', featured:false, comingSoon:false, color:'#fbbf24', priceRLUSD:20, priceXRP:65,
+  { id:'trustline', cat:'Token Issuer', emoji:'🔗', name:'Trust Line Configurator', featured:false, tag:'SALE', comingSoon:false, color:'#fbbf24', priceRLUSD:20, priceXRP:65,
     amendment:'TrustSet', tagline:'Create or adjust a trust line with precise limits',
     desc:'AI builds a TrustSet transaction with your currency, issuer, and limit. You sign once.',
     aiDetail:'AI assembles TrustSet with your specified currency, issuer, and limit value.',
@@ -102,7 +102,7 @@ const PRODUCTS = [
     desc:'You give the pair and price. AI builds the OfferCreate transaction. You sign once — the order rests on the XRPL order book.',
     aiDetail:'AI assembles OfferCreate with your TakerPays / TakerGets. Placed directly on the XRPL DEX after you sign. No smart contract risk.',
     features:['OfferCreate built to your spec','Native XRPL DEX','You sign once in Xaman','No smart-contract risk','TX hash receipt'] },
-  { id:'ammlaunch', cat:'DeFi', emoji:'🌀', name:'AMM Pool Launch', featured:true, comingSoon:false, color:'#8b5cf6', priceRLUSD:75, priceXRP:245,
+  { id:'ammlaunch', cat:'DeFi', emoji:'🌀', name:'AMM Pool Launch', featured:false, tag:'HOT', comingSoon:false, color:'#8b5cf6', priceRLUSD:75, priceXRP:245,
     amendment:'AMMCreate', tagline:'Launch a new AMM liquidity pool',
     desc:'You choose the asset pair and seed amounts. AI builds the AMMCreate transaction. You sign once in Xaman.',
     aiDetail:'AI assembles AMMCreate for your asset pair and seed liquidity. After you sign, the pool exists on XRPL mainnet.',
@@ -123,7 +123,7 @@ const PRODUCTS = [
     aiDetail:'AI assembles PaymentChannelCreate. After signing, you can stream off-ledger claims with one final settlement.',
     features:['PaymentChannelCreate built','Off-ledger micropayments','You sign once in Xaman','Configurable settle delay','TX hash receipt'] },
   // NFT
-  { id:'nftmint', cat:'NFT', emoji:'🎨', name:'NFT Minter', featured:false, comingSoon:false, color:'#ec4899', priceRLUSD:30, priceXRP:95,
+  { id:'nftmint', cat:'NFT', emoji:'🎨', name:'NFT Minter', featured:false, tag:'HOT', comingSoon:false, color:'#ec4899', priceRLUSD:30, priceXRP:95,
     amendment:'NFTokenMint', tagline:'Mint an NFT with up to 50% royalties',
     desc:'You give the metadata URI and royalty. AI builds NFTokenMint. You sign once in Xaman.',
     aiDetail:'AI assembles NFTokenMint with your URI, transfer fee (0–50%), and flags. Minted to your wallet after signing.',
@@ -155,14 +155,14 @@ const PRODUCTS = [
     aiDetail:'AI assembles the combined identity transactions (AccountSet domain/email + DIDSet) for a complete verifiable profile.',
     features:['Identity + domain + DID','One guided flow','You sign in Xaman','Explorer-recognized','TX hash receipts'] },
   // ESCROW
-  { id:'escrow', cat:'Escrow', emoji:'🏛️', name:'Escrow Setup', featured:false, comingSoon:false, color:'#f97316', priceRLUSD:40, priceXRP:130,
+  { id:'escrow', cat:'Escrow', emoji:'🏛️', name:'Escrow Setup', featured:false, tag:'POPULAR', comingSoon:false, color:'#f97316', priceRLUSD:40, priceXRP:130,
     amendment:'EscrowCreate', tagline:'Time-lock XRP with a release condition',
     desc:'You set the amount and release time. AI builds EscrowCreate. You sign once — funds release on your terms.',
     aiDetail:'AI assembles EscrowCreate with your FinishAfter time and optional condition. You later finish or cancel it.',
     features:['EscrowCreate built to spec','Time or crypto-condition','You sign once in Xaman','On-chain audit trail','TX hash receipt'] },
 
   // TOKENS (v2 + management) — mirrors xrpl.org/docs/tutorials/tokens, done for you
-  { id:'mptissue', cat:'Token Issuer', emoji:'🎫', name:'Multi-Purpose Token (MPT) Issuance', featured:true, comingSoon:false, color:'#38bdf8', priceRLUSD:55, priceXRP:180,
+  { id:'mptissue', cat:'Token Issuer', emoji:'🎫', name:'Multi-Purpose Token (MPT) Issuance', featured:true, tag:'NEW', comingSoon:false, color:'#38bdf8', priceRLUSD:55, priceXRP:180,
     amendment:'MPTokenIssuanceCreate', tagline:'Issue an asset-backed token on the new v2 standard',
     desc:'The XRPL tutorial walks developers through coding an MPT in JavaScript. We do it for you. You give us the token specs (supply, scale, flags, metadata). AI builds the exact MPTokenIssuanceCreate transaction. You sign once in Xaman.',
     aiDetail:'AI assembles MPTokenIssuanceCreate with your maximum amount, asset scale, transfer fee, and metadata. After you sign in Xaman it is permanent on mainnet (~4s). MPT is the modern v2 fungible standard — ideal for stablecoins, RWAs, and asset-backed tokens.',
@@ -189,7 +189,7 @@ const PRODUCTS = [
     features:['TrustSet tfSetFreeze built to spec','Targets one holder','Reversible','You sign once in Xaman','TX hash receipt'] },
 
   // PAYMENTS — mirrors xrpl.org/docs/tutorials/payments, done for you
-  { id:'checkcreate', cat:'Payments', emoji:'🧾', name:'Create a Check', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65,
+  { id:'checkcreate', cat:'Payments', emoji:'🧾', name:'Create a Check', featured:false, tag:'NEW', comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65,
     amendment:'CheckCreate', tagline:'Write a deferred on-chain check the recipient can cash later',
     desc:'You set recipient and amount. AI builds the CheckCreate transaction. You sign in Xaman; the recipient cashes it whenever they choose.',
     aiDetail:'AI assembles CheckCreate with your destination, SendMax, and optional expiration. Like a paper check on-chain — the recipient pulls funds when ready.',
@@ -211,7 +211,7 @@ const PRODUCTS = [
     features:['AccountSet asfRequireDest built to spec','Prevents untagged deposits','Exchange-grade control','You sign once in Xaman','TX hash receipt'] },
 
   // DEFI — mirrors xrpl.org/docs/tutorials/defi, done for you
-  { id:'dextrade', cat:'DeFi', emoji:'📊', name:'DEX Trade Execution', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:25, priceXRP:80,
+  { id:'dextrade', cat:'DeFi', emoji:'📊', name:'DEX Trade Execution', featured:false, tag:'NEW', comingSoon:false, color:'#10b981', priceRLUSD:25, priceXRP:80,
     amendment:'OfferCreate', tagline:'Place a buy or sell order on the native XRPL DEX',
     desc:'The tutorial shows the code to trade on the decentralized exchange. We build it for you. AI assembles the OfferCreate to your price and size. You sign in Xaman.',
     aiDetail:'AI assembles OfferCreate with your TakerGets/TakerPays for a buy or sell on the native XRPL DEX. You sign in Xaman; the order books on mainnet.',
@@ -235,7 +235,7 @@ const PRODUCTS = [
     features:['PermissionedDomainSet built to spec','Credential-gated access','Compliant DeFi','You sign once in Xaman','TX hash receipt'] },
 
   // CREDIT
-  { id:'credit', cat:'XRPLScore', emoji:'📈', name:'XRPLScore Builder', featured:true, comingSoon:false, color:'#10b981', priceRLUSD:15, priceXRP:50, isMonthly:true,
+  { id:'credit', cat:'XRPLScore', emoji:'📈', name:'XRPLScore Builder', featured:false, tag:'POPULAR', comingSoon:false, color:'#10b981', priceRLUSD:15, priceXRP:50, isMonthly:true,
     amendment:'Payment · On-chain reputation', tagline:'Build your XRPLScore with monthly on-chain payments',
     desc:'The first on-chain reputation builder native to the XRP Ledger. Each monthly payment writes a verifiable record to your wallet history that feeds directly into your proprietary XRPLScore — the more consistent your on-chain activity, the higher your score climbs. This is XRPLHub\u2019s own score, computed from the ledger. No FICO. No credit bureaus. No SSN. Just your own verifiable XRPL reputation.',
     aiDetail:'Each monthly payment is recorded on-chain with a structured memo and factors into your 8-signal XRPLScore (transaction velocity, account age, reserve ratio, and more). Build a consistent on-chain history and watch your score rise over time.',
@@ -387,6 +387,23 @@ const GLASS: React.CSSProperties = { background:'rgba(6,6,22,.72)', backdropFilt
 const INP: React.CSSProperties   = { width:'100%', background:'rgba(255,255,255,.07)', border:'1px solid rgba(255,255,255,.13)', borderRadius:12, padding:'12px 15px', fontSize:14, color:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box', transition:'border-color .15s' };
 const LBL: React.CSSProperties   = { display:'block', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.32)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 };
 
+// Product tag pill — HOT/POPULAR/SALE/NEW. Position absolute on a card.
+function tagStyle(tag: string, prodColor: string, pos: React.CSSProperties): React.CSSProperties {
+  const palette: Record<string,{bg:string;fg:string;sh:string}> = {
+    HOT:     { bg:'#ef4444', fg:'#fff', sh:'0 0 14px rgba(239,68,68,.55)' },
+    POPULAR: { bg:'#f59e0b', fg:'#000', sh:'0 0 14px rgba(245,158,11,.5)' },
+    SALE:    { bg:'#10b981', fg:'#000', sh:'0 0 14px rgba(16,185,129,.55)' },
+    NEW:     { bg:'#38bdf8', fg:'#000', sh:'0 0 14px rgba(56,189,248,.55)' },
+  };
+  const c = palette[tag.toUpperCase()] || { bg:prodColor, fg:'#000', sh:`0 0 14px ${prodColor}66` };
+  return {
+    position:'absolute', zIndex:2,
+    background:c.bg, color:c.fg, fontWeight:900, letterSpacing:'.1em',
+    textTransform:'uppercase', borderRadius:99, fontFamily:"'IBM Plex Mono',monospace",
+    boxShadow:c.sh, ...pos,
+  };
+}
+
 function Btn(v: 'green'|'ghost'|'color', color?: string, extra?: React.CSSProperties): React.CSSProperties {
   const base: React.CSSProperties = { display:'inline-flex', alignItems:'center', justifyContent:'center', gap:7, border:'none', borderRadius:99, fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'inherit', padding:'12px 26px', transition:'all .18s', ...extra };
   if (v === 'green') return { ...base, background:'#10b981', color:'#000' };
@@ -429,6 +446,57 @@ function Overlay({ show, onClose, children, wide=false }: { show:boolean; onClos
       <div onClick={e => e.stopPropagation()} style={{ ...GLASS, borderRadius:26, padding:'32px 28px', width:'100%', maxWidth:wide?700:520, position:'relative', animation:'popIn .26s cubic-bezier(.34,1.56,.64,1) both', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 0 80px rgba(16,185,129,.08),0 40px 100px rgba(0,0,0,.85)' }}>
         <button onClick={onClose} style={{ position:'absolute', top:16, right:16, width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,.08)', border:'none', color:'rgba(255,255,255,.6)', cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center', zIndex:2 }}>✕</button>
         {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── TREASURY STATS LIVE COUNTER ───
+// Polls /api/treasury-stats every 30s. Shows treasury balance, total donated,
+// grants funded. Pure social-proof for donors/applicants.
+function TreasuryStatsBar() {
+  const [stats, setStats] = useState<{ balanceXRP:number; balanceUSD:number; totalDonated:number; grantsFunded:number }|null>(null);
+  useEffect(() => {
+    let stop = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/treasury-stats`);
+        if (!res.ok) return;
+        const d = await res.json();
+        if (!stop) setStats({
+          balanceXRP: Number(d.balanceXRP || d.balance || 0),
+          balanceUSD: Number(d.balanceUSD || d.usdValue || 0),
+          totalDonated: Number(d.totalDonated || 0),
+          grantsFunded: Number(d.grantsFunded || d.grantsApproved || 0),
+        });
+      } catch {}
+    };
+    load();
+    const iv = setInterval(load, 30_000);
+    return () => { stop = true; clearInterval(iv); };
+  }, []);
+  const fmt = (n:number) => n >= 1000 ? n.toLocaleString('en-US', { maximumFractionDigits:0 }) : n.toFixed(0);
+  const Cell = ({ label, value, suffix, color }: { label:string; value:string; suffix?:string; color:string }) => (
+    <div style={{ flex:1, minWidth:140, textAlign:'center', padding:'14px 12px' }}>
+      <div style={{ fontSize:11,fontWeight:700,color:'rgba(255,255,255,.36)',letterSpacing:'.13em',textTransform:'uppercase',marginBottom:6 }}>{label}</div>
+      <div style={{ fontSize:'clamp(20px,2.4vw,26px)',fontWeight:900,color,fontFamily:"'IBM Plex Mono',monospace" }}>
+        {value}{suffix && <span style={{ fontSize:11,fontWeight:600,color:'rgba(255,255,255,.4)',marginLeft:5 }}>{suffix}</span>}
+      </div>
+    </div>
+  );
+  return (
+    <div style={{ background:'linear-gradient(135deg,rgba(139,92,246,.07),rgba(16,185,129,.06),rgba(6,6,22,.85))',border:'1px solid rgba(139,92,246,.22)',borderRadius:18,padding:'4px 10px',marginBottom:24,backdropFilter:'blur(20px)' }}>
+      <div style={{ display:'flex',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:0 }}>
+        <Cell label="Treasury Balance" value={stats ? fmt(stats.balanceXRP) : '—'} suffix="XRP"     color="#10b981" />
+        <Cell label="≈ USD Value"      value={stats ? '$'+fmt(stats.balanceUSD) : '—'}              color="#34d399" />
+        <Cell label="Total Donated"    value={stats ? fmt(stats.totalDonated) : '—'} suffix="XRP"   color="#38bdf8" />
+        <Cell label="Grants Funded"    value={stats ? fmt(stats.grantsFunded) : '—'}                color="#8b5cf6" />
+      </div>
+      <div style={{ textAlign:'center',padding:'4px 0 10px' }}>
+        <a href={`https://xrpscan.com/account/${TREASURY}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.13em',textTransform:'uppercase',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:6 }}>
+          <span style={{ width:5,height:5,borderRadius:'50%',background:'#10b981',boxShadow:'0 0 8px #10b981',animation:'pulse 2s infinite' }} />
+          Live on XRPL ↗
+        </a>
       </div>
     </div>
   );
@@ -1360,6 +1428,10 @@ export default function XRPLHubHome() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes borderPulse{0%,100%{border-color:rgba(16,185,129,.22)}50%{border-color:rgba(16,185,129,.55)}}
         @keyframes tickerScroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+        .prod-grid{grid-template-columns:repeat(4,1fr)}
+        @media(max-width:1024px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
+        @media(max-width:720px){.prod-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:480px){.prod-grid{grid-template-columns:1fr}}
         .ticker-track{will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
         .ticker-track:hover{animation-play-state:paused}
         .pcard-featured{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard-featured:hover{transform:translateY(-6px);box-shadow:0 0 60px rgba(16,185,129,.18),0 28px 70px rgba(0,0,0,.6)!important}
@@ -1396,7 +1468,7 @@ export default function XRPLHubHome() {
                 : <button className="wallet-btn" onClick={()=>setShowConnect(true)}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>setShowDonate(true)}>Donate</button>
               <button className="navbtn" onClick={()=>setShowGrant(true)}>Apply for Grant</button>
-              {user?<><span style={{ fontSize:12,color:'rgba(255,255,255,.42)',maxWidth:80,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user.name||user.email}</span><button className="navbtn" onClick={handleLogout}>Log Out</button></>:<button className="navbtn" onClick={()=>setShowLogin(true)}>Log In</button>}
+              {user?<><a className="navbtn" href="/account" style={{ textDecoration:'none' }}>My Account</a><button className="navbtn" onClick={handleLogout}>Log Out</button></>:<button className="navbtn" onClick={()=>setShowLogin(true)}>Log In</button>}
               <button onClick={()=>fetchScore()} style={{ padding:'8px 18px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:13,cursor:'pointer',border:'none',background:'#10b981',color:'#000',whiteSpace:'nowrap' }}>Get XRPLScore</button>
             </div>
             <button className="nav-mobile-toggle" onClick={()=>setMM(!mobileMenu)} style={{ alignItems:'center',justifyContent:'center',width:42,height:42,borderRadius:10,background:'rgba(16,185,129,.12)',border:'1px solid rgba(16,185,129,.28)',color:'#10b981',cursor:'pointer',fontSize:20,fontWeight:700 }} aria-label="Menu">{mobileMenu?'✕':'☰'}</button>
@@ -1408,7 +1480,7 @@ export default function XRPLHubHome() {
                 : <button className="wallet-btn" onClick={()=>{setShowConnect(true);setMM(false);}}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>{setShowDonate(true);setMM(false);}}>Donate</button>
               <button className="navbtn" onClick={()=>{setShowGrant(true);setMM(false);}}>Apply for Grant</button>
-              {user?<button className="navbtn" onClick={()=>{handleLogout();setMM(false);}}>Log Out</button>:<button className="navbtn" onClick={()=>{setShowLogin(true);setMM(false);}}>Log In</button>}
+              {user?<><a className="navbtn" href="/account" style={{ textDecoration:'none' }} onClick={()=>setMM(false)}>My Account</a><button className="navbtn" onClick={()=>{handleLogout();setMM(false);}}>Log Out</button></>:<button className="navbtn" onClick={()=>{setShowLogin(true);setMM(false);}}>Log In</button>}
               <button onClick={()=>{fetchScore();setMM(false);}} style={{ padding:'12px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:14,cursor:'pointer',border:'none',background:'#10b981',color:'#000' }}>Get XRPLScore</button>
             </div>
           )}
@@ -1475,33 +1547,42 @@ export default function XRPLHubHome() {
             <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:560,margin:'0 auto' }}>Pay once in Xaman → we verify your transaction on XRPL mainnet → your service is built. No payment, no activation.</p>
             <p style={{ fontSize:12,color:'rgba(255,255,255,.32)',maxWidth:540,margin:'10px auto 0',lineHeight:1.6 }}>Every one of these is a documented XRPL operation. You can code it yourself from the developer tutorials — or pay here and AI builds the exact transaction for you to sign in one tap. No coding, no errors.</p>
           </div>
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:18,marginBottom:18 }}>
+          <div style={{ display:'grid',gridTemplateColumns:'1fr',gap:18,marginBottom:18 }}>
             {featured.map(p=>(
-              <div key={p.id} className="pcard-featured" onClick={()=>setAP(p)} style={{ background:`linear-gradient(135deg,${p.color}10,rgba(6,6,22,.8))`,border:`1px solid ${p.color}30`,borderRadius:22,padding:26,position:'relative',overflow:'hidden' }}>
-                <div style={{ position:'absolute',top:-30,right:-30,width:150,height:150,borderRadius:'50%',background:`radial-gradient(circle,${p.color}14 0%,transparent 70%)`,pointerEvents:'none' }} />
-                <div style={{ width:50,height:50,borderRadius:14,background:`${p.color}18`,border:`1px solid ${p.color}28`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,marginBottom:14,animation:'float 4s ease-in-out infinite' }}>{p.emoji}</div>
-                <div style={{ fontSize:9,fontWeight:700,color:p.color,letterSpacing:'.13em',textTransform:'uppercase',marginBottom:7,fontFamily:"'IBM Plex Mono',monospace" }}>{p.cat} · {p.amendment}</div>
-                <h3 style={{ fontSize:18,fontWeight:900,marginBottom:8 }}>{p.name}</h3>
-                <p style={{ fontSize:12,color:'rgba(255,255,255,.46)',lineHeight:1.7,marginBottom:16 }}>{p.tagline}</p>
-                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',borderTop:`1px solid ${p.color}18`,paddingTop:14,gap:8,flexWrap:'wrap' }}>
-                  <div><span style={{ fontSize:20,fontWeight:900,color:p.color }}>{p.priceRLUSD} RLUSD</span><span style={{ fontSize:11,color:'rgba(255,255,255,.3)',marginLeft:8 }}>or {p.priceXRP} XRP{p.isMonthly?'/mo':''}</span></div>
-                  <button style={{ padding:'8px 16px',borderRadius:99,background:p.color,color:'#000',border:'none',fontWeight:800,fontSize:12,cursor:'pointer',fontFamily:'inherit' }}>Buy Now →</button>
+              <div key={p.id} className="pcard-hero" onClick={()=>setAP(p)} style={{ background:`linear-gradient(135deg,${p.color}14,rgba(6,6,22,.85))`,border:`1px solid ${p.color}38`,borderRadius:22,padding:'28px 30px',position:'relative',overflow:'hidden',cursor:'pointer' }}>
+                <div style={{ position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:`radial-gradient(circle,${p.color}18 0%,transparent 70%)`,pointerEvents:'none' }} />
+                {p.tag && <span style={tagStyle(p.tag, p.color, {top:14, right:14, fontSize:10, padding:'5px 11px'})}>★ {p.tag} · HERO</span>}
+                <div style={{ display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:24,alignItems:'center' }}>
+                  <div>
+                    <div style={{ display:'flex',alignItems:'center',gap:14,marginBottom:14 }}>
+                      <div style={{ width:60,height:60,borderRadius:16,background:`${p.color}20`,border:`1px solid ${p.color}38`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,animation:'float 4s ease-in-out infinite',flexShrink:0 }}>{p.emoji}</div>
+                      <div>
+                        <div style={{ fontSize:10,fontWeight:700,color:p.color,letterSpacing:'.13em',textTransform:'uppercase',marginBottom:4,fontFamily:"'IBM Plex Mono',monospace" }}>{p.cat} · {p.amendment}</div>
+                        <h3 style={{ fontSize:'clamp(20px,2.4vw,26px)',fontWeight:900,letterSpacing:'-.5px' }}>{p.name}</h3>
+                      </div>
+                    </div>
+                    <p style={{ fontSize:14,color:'rgba(255,255,255,.55)',lineHeight:1.7,marginBottom:0,maxWidth:540 }}>{p.tagline}</p>
+                  </div>
+                  <div style={{ textAlign:'right',flexShrink:0 }}>
+                    <div style={{ fontSize:'clamp(22px,2.4vw,28px)',fontWeight:900,color:p.color,whiteSpace:'nowrap' }}>{p.priceRLUSD} RLUSD</div>
+                    <div style={{ fontSize:11,color:'rgba(255,255,255,.32)',marginBottom:12,whiteSpace:'nowrap' }}>or {p.priceXRP} XRP{p.isMonthly?'/mo':''}</div>
+                    <button style={{ padding:'12px 22px',borderRadius:99,background:p.color,color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Buy Now →</button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:14 }}>
+          <div className="prod-grid" style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14 }}>
             {others.map(p=>(
-              <div key={p.id} className="pcard" onClick={()=>setAP(p)} style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(16px)',border:`1px solid ${p.color}20`,borderRadius:18,padding:20,position:'relative',overflow:'hidden' }}>
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12 }}>
-                  <div style={{ width:42,height:42,borderRadius:12,background:`${p.color}18`,border:`1px solid ${p.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20 }}>{p.emoji}</div>
-                  <span style={{ fontSize:9,fontWeight:700,color:p.color,fontFamily:"'IBM Plex Mono',monospace",textTransform:'uppercase',letterSpacing:'.09em',border:`1px solid ${p.color}28`,borderRadius:99,padding:'3px 8px' }}>{p.cat}</span>
-                </div>
-                <h3 style={{ fontSize:15,fontWeight:800,marginBottom:5 }}>{p.name}</h3>
-                <p style={{ fontSize:11,color:'rgba(255,255,255,.42)',lineHeight:1.6,marginBottom:12 }}>{p.tagline}</p>
-                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:12,borderTop:`1px solid ${p.color}15`,gap:8,flexWrap:'wrap' }}>
-                  <span style={{ fontSize:15,fontWeight:900,color:p.color }}>{p.priceRLUSD} RLUSD{p.isMonthly?'/mo':''}</span>
-                  <button style={{ padding:'6px 14px',borderRadius:99,background:`${p.color}18`,border:`1px solid ${p.color}28`,color:p.color,fontWeight:700,fontSize:11,cursor:'pointer',fontFamily:'inherit' }}>{p.isMonthly?'Subscribe →':'Buy →'}</button>
+              <div key={p.id} className="pcard" onClick={()=>setAP(p)} style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(16px)',border:`1px solid ${p.color}22`,borderRadius:18,padding:18,position:'relative',overflow:'hidden',cursor:'pointer',display:'flex',flexDirection:'column',minHeight:230 }}>
+                {p.tag && <span style={tagStyle(p.tag, p.color, {top:10, right:10, fontSize:9, padding:'3px 8px'})}>{p.tag}</span>}
+                <div style={{ width:42,height:42,borderRadius:12,background:`${p.color}18`,border:`1px solid ${p.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,marginBottom:12 }}>{p.emoji}</div>
+                <div style={{ fontSize:9,fontWeight:700,color:p.color,letterSpacing:'.11em',textTransform:'uppercase',marginBottom:6,fontFamily:"'IBM Plex Mono',monospace",opacity:.85 }}>{p.cat}</div>
+                <h3 style={{ fontSize:14,fontWeight:800,marginBottom:5,lineHeight:1.25 }}>{p.name}</h3>
+                <p style={{ fontSize:11,color:'rgba(255,255,255,.42)',lineHeight:1.55,marginBottom:12,flex:1 }}>{p.tagline}</p>
+                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',paddingTop:10,borderTop:`1px solid ${p.color}15`,gap:6,marginTop:'auto' }}>
+                  <span style={{ fontSize:14,fontWeight:900,color:p.color,whiteSpace:'nowrap' }}>{p.priceRLUSD}{p.isMonthly?'/mo':''}</span>
+                  <button style={{ padding:'6px 12px',borderRadius:99,background:`${p.color}18`,border:`1px solid ${p.color}32`,color:p.color,fontWeight:700,fontSize:10,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>{p.isMonthly?'Subscribe':'Buy'} →</button>
                 </div>
               </div>
             ))}
@@ -1583,6 +1664,7 @@ export default function XRPLHubHome() {
             <h2 style={{ fontSize:'clamp(22px,3.5vw,34px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>Real people. Real money. Wallet to wallet.</h2>
             <p style={{ fontSize:13,color:'rgba(255,255,255,.48)',lineHeight:1.8,maxWidth:580,margin:'0 auto' }}>Donors fund a public XRPL treasury. AI reviews every application. Approved grants go directly to recipients&apos; wallets — 100% verifiable on the XRP Ledger.</p>
           </div>
+          <TreasuryStatsBar />
           <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:20 }}>
 
             {/* Donate */}
