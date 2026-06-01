@@ -1211,10 +1211,10 @@ function GrantModal({ show, onClose, connectedWallet, user }: { show:boolean; on
       <div style={{ textAlign:'center', padding:'20px 0' }}>
         <div style={{ fontSize:56, marginBottom:12 }}>❤️</div>
         <h3 style={{ fontSize:24, fontWeight:900, color:'#8b5cf6', marginBottom:10 }}>Application Received</h3>
-        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, lineHeight:1.75, marginBottom:10 }}>Your ${form.amount} grant request has been reviewed by AI and is now awaiting final approval.</p>
+        <p style={{ color:'rgba(255,255,255,.55)', fontSize:14, lineHeight:1.75, marginBottom:10 }}>Your ${form.amount} grant request has been received. Our AI has reviewed your application — allow <strong style={{ color:'#fff' }}>24–48 hours</strong> for a final decision. We help as many people as we can based on need, available treasury funds, and urgency.</p>
         {aiResult?.summary && (
           <div style={{ background:'rgba(139,92,246,.08)', border:'1px solid rgba(139,92,246,.22)', borderRadius:12, padding:'14px 16px', margin:'0 auto 16px', maxWidth:420, textAlign:'left' }}>
-            <p style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6, fontFamily:"'IBM Plex Mono',monospace" }}>🤖 AI Review {aiResult.recommendation?`· ${aiResult.recommendation}`:''}</p>
+            <p style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6, fontFamily:"'IBM Plex Mono',monospace" }}>🤖 Reviewed by Our AI Team</p>
             <p style={{ fontSize:12, color:'rgba(255,255,255,.6)', lineHeight:1.65 }}>{aiResult.summary}</p>
           </div>
         )}
@@ -1271,6 +1271,7 @@ function AboutModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
         <p><strong style={{ color:'#10b981' }}>XRPLScore™</strong> is our proprietary on-chain rating, 300–850, computed live from your wallet. No FICO. No bureau. No SSN. The Builder lets you grow it over time through verifiable on-chain history.</p>
         <p>Our <strong style={{ color:'#fff' }}>XRPL Services</strong> are AI-delivered on-chain tools covering major XRPL transaction types — pay in Xaman, AI verifies on mainnet, the service activates in seconds.</p>
         <p><strong style={{ color:'#10b981' }}>Community Grants</strong>: donors fund a public XRPL treasury. AI reviews every application, and approved grants go wallet-to-wallet after final human approval. No NGO. No middlemen. Permanently verifiable on-chain.</p>
+        <p style={{ fontSize:12,color:'rgba(255,255,255,.4)',fontStyle:'italic' }}>XRPLScore™ methodology is proprietary and licensable to financial institutions, DeFi platforms, and on-chain data partners. Partnership inquiries: <a href="mailto:partners@xrplhub.io" style={{ color:'#10b981' }}>partners@xrplhub.io</a></p>
       </div>
       <button onClick={onClose} style={{ ...Btn('green',undefined,{marginTop:24}) }}>Close</button>
     </Overlay>
@@ -1324,7 +1325,7 @@ function TermsModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
         <span style={H}>3. XRPL Services & AI Verification</span>
         <p style={P}>Services are on-chain operational tools. You pay in Xaman, and our AI verifies the transaction on XRPL mainnet. <strong style={{ color:'rgba(255,255,255,.8)' }}>All XRPL transactions are final and irrevocable.</strong> Services are not insurance contracts, securities, or financial instruments.</p>
         <span style={H}>4. XRPLScore™</span>
-        <p style={P}>XRPLScore™ is our proprietary on-chain assessment derived from public XRPL wallet data. It is not a FICO score, consumer credit report, or NRSRO rating, and has no affiliation with any credit bureau.</p>
+        <p style={P}>XRPLScore™ is our proprietary on-chain assessment derived from public XRPL wallet data. It is not a FICO score, consumer credit report, or NRSRO rating, and has no affiliation with any credit bureau. The XRPLScore™ name, methodology, signal weighting, and underlying framework are intellectual property of XRPLHub and are available for commercial licensing.</p>
         <span style={H}>5. XRPLScore Builder</span>
         <p style={P}>Monthly subscriptions build on-chain history that factors into your XRPLScore. Subscriptions cancel at end-of-cycle. All payments are non-refundable (irrevocable XRPL transactions).</p>
         <span style={H}>6. Community Grant Program</span>
@@ -1646,8 +1647,9 @@ export default function XRPLHubHome() {
                 {/* score checker */}
                 <div style={{ display:'flex',gap:9,flexWrap:'wrap' }}>
                   <input className="score-inp" type="text" value={walletInput} onChange={e=>setWI(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchScore(walletInput)} placeholder={connectedWallet?trunc(connectedWallet):"Paste any XRPL wallet address…"} style={{ ...INP,flex:1,minWidth:180,borderRadius:99,paddingLeft:20,fontFamily:"'IBM Plex Mono',monospace",fontSize:12 }} />
-                  <button onClick={()=>fetchScore(walletInput||connectedWallet)} style={{ padding:'12px 22px',borderRadius:99,background:'#10b981',color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Check Score →</button>
+                  <button onClick={()=>fetchScore(walletInput||connectedWallet)} style={{ padding:'12px 22px',borderRadius:99,background:'#10b981',color:'#000',border:'none',fontWeight:800,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>Quick Check →</button>
                 </div>
+                <a href={connectedWallet ? '/score' : '/score'} style={{ display:'inline-flex',alignItems:'center',gap:6,marginTop:14,padding:'10px 18px',borderRadius:99,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.3)',color:'#10b981',fontWeight:800,fontSize:13,textDecoration:'none' }}>📊 Open Full XRPLScore Deep Dive →</a>
                 {!connectedWallet && <p style={{ fontSize:11,color:'rgba(255,255,255,.28)',marginTop:10 }}>or <button onClick={()=>setShowConnect(true)} style={{ background:'none',border:'none',color:'#10b981',cursor:'pointer',fontWeight:700,fontSize:11,fontFamily:'inherit',padding:0 }}>connect your Xaman wallet</button> for instant one-tap scoring</p>}
               </div>
 
