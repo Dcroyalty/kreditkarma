@@ -1,13 +1,24 @@
+// src/app/api/grants/submit/route.ts
+// Persist a new grant application. Columns match LIVE Neon schema exactly.
+
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// POST /api/grants/submit — persist a new grant application as PENDING
+// Map our form's free-text category to a simple urgency tier
+const urgencyFor = (cat: string): string => {
+  const c = (cat || '').toLowerCase();
+  if (c.includes('medical') || c.includes('rent') || c.includes('housing')) return 'HIGH';
+  if (c.includes('food') || c.includes('utilities')) return 'MEDIUM';
+  return 'NORMAL';
+};
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { name, wallet, email, phone, category, need, amount } = body || {};
+    // The frontend still sends these field names — we map them to DB columns here.
+    const { name, wallet, email, phone, category, need, amount, currency } = body || {};
 
     if (!wallet || !need || !category) {
       return NextResponse.json({ error: 'wallet, category, and need are required' }, { status: 400 });
@@ -18,22 +29,30 @@ export async function POST(req: Request) {
 
     const amt = Math.max(0, Math.min(100, Number(amount) || 0));
 
+    // Fold name/email/phone into description so we don't lose them (no columns for them).
+    const contactBlock = [
+      name && name !== 'Anonymous' ? `Name: ${name}` : null,
+      email ? `Email: ${email}` : null,
+      phone ? `Phone: ${phone}` : null,
+    ].filter(Boolean).join(' · ');
+    const description = contactBlock ? `${need}\n\n— ${contactBlock}` : need;
+
     const grant = await prisma.grantRequest.create({
       data: {
-        name: name || 'Anonymous',
-        wallet: String(wallet),
-        email: email || null,
-        phone: phone || null,
-        category: String(category),
-        need: String(need),
-        amount: amt,
-        status: 'PENDING',
+        walletAddress:   String(wallet),
+        category:        String(category),
+        amountRequested: amt,
+        currency:        String(currency || 'RLUSD'),
+        description,
+        urgency:         urgencyFor(category),
+        status:          'PENDING',
       },
     });
 
     return NextResponse.json({ ok: true, id: grant.id, status: grant.status });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'submit failed';
+    console.error('[grants/submit]', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

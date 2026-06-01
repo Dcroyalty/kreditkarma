@@ -1,7 +1,6 @@
 // src/app/api/grants/review/route.ts
-// Autonomous grant review: Grok (xAI) + Anthropic Claude review the application,
-// the most conservative verdict wins, verdict is written to the GrantRequest row.
-// On error, returns DETAILED diagnostic so we know exactly what failed in production.
+// Autonomous grant review: Grok (xAI) + Anthropic Claude.
+// Writes verdict to LIVE Neon columns: aiScore, aiReasoning, riskFlags.
 
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
@@ -101,7 +100,7 @@ async function reviewWithAnthropic(app: AppInput): Promise<{ verdict: Partial<Ve
 function combine(grok: Partial<Verdict> | null, claude: Partial<Verdict> | null): Verdict {
   const reviews = [grok, claude].filter(Boolean) as Partial<Verdict>[];
   if (reviews.length === 0) {
-    return { recommendation: 'REVIEW', confidence: 0, summary: 'Our AI is reviewing your application. Allow 24–48 hours for a complete review by our team.', flags: [], source: 'fallback' };
+    return { recommendation: 'REVIEW', confidence: 0, summary: 'Our team is reviewing your application. Allow 24–48 hours.', flags: [], source: 'fallback' };
   }
   const rank: Record<string, number> = { REJECT: 3, REVIEW: 2, APPROVE: 1 };
   let worst = reviews[0];
@@ -129,21 +128,21 @@ export async function POST(req: Request) {
     debugBag.push(grokResult.debug, claudeResult.debug);
     const verdict = combine(grokResult.verdict, claudeResult.verdict);
 
+    // Attach verdict to most recent PENDING grant for this wallet
     if (app.wallet) {
       try {
         const latest = await prisma.grantRequest.findFirst({
-          where: { wallet: String(app.wallet), status: 'PENDING' },
+          where: { walletAddress: String(app.wallet), status: 'PENDING' },
           orderBy: { createdAt: 'desc' },
         });
         if (latest) {
           await prisma.grantRequest.update({
             where: { id: latest.id },
             data: {
-              status: 'REVIEWING',
-              aiRecommendation: verdict.recommendation,
-              aiSummary: verdict.summary,
-              aiConfidence: verdict.confidence,
-              aiFlags: verdict.flags.join(', '),
+              status:       'REVIEWING',
+              aiScore:      verdict.confidence,          // live column
+              aiReasoning:  `${verdict.recommendation}: ${verdict.summary}`,
+              riskFlags:    verdict.flags.join(', ') || null,
             },
           });
           debugBag.push(`db update ok for ${latest.id}`);
@@ -155,7 +154,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Customer-friendly response — never says "unavailable"
     const customerMessage =
       verdict.source === 'fallback'
         ? 'Your application has been received. Our team is reviewing it — allow 24–48 hours. If approved, funds go directly to your XRPL wallet. We help as many people as we can based on need, available funds, and the situation described.'
@@ -163,11 +161,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       recommendation: verdict.recommendation,
-      confidence: verdict.confidence,
-      summary: customerMessage,
-      flags: verdict.flags,
-      reviewers: verdict.source,
-      _debug: debugBag, // safe to leak; helps you diagnose live
+      confidence:     verdict.confidence,
+      summary:        customerMessage,
+      flags:          verdict.flags,
+      reviewers:      verdict.source,
+      _debug:         debugBag,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'review failed';
