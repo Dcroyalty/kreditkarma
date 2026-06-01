@@ -8,6 +8,16 @@ const TREASURY_DOMAIN = 'xrplhub.xrp';
 const XAMAN_DL       = 'https://xaman.app/';
 const BG             = '/xrpl-background.jpg';
 
+// ─── TEST MODE ──────────────────────────────────────────────────────────
+// While TEST_MODE = true, every product charges 0.000001 XRP (1 drop ≈ free)
+// so you can run real Xaman swipes through every transaction family without
+// burning real money. Card prices still SHOW the real prices.
+// FLIP TO false BEFORE LAUNCH.
+const TEST_MODE = true;
+const TEST_PRICE_XRP   = 0.000001;
+const TEST_PRICE_RLUSD = 0.01; // RLUSD has 2-decimal minimum on issuer; this is the smallest practical
+// ────────────────────────────────────────────────────────────────────────
+
 type Currency = 'RLUSD' | 'XRP';
 const fmt   = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const trunc = (a: string) => a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '';
@@ -65,11 +75,6 @@ const PRODUCTS = [
     desc:'AI builds AccountSet with asfRequireDest. You sign once — prevents misrouted deposits.',
     aiDetail:'AI assembles AccountSet (asfRequireDest). After signing, payments without a destination tag are rejected.',
     features:['asfRequireDest set on-chain','Prevents misrouted deposits','You sign once in Xaman','Permanent on mainnet','TX hash receipt'] },
-  { id:'lockdown', cat:'Wallet Security', emoji:'🔒', name:'XRP Lockdown', featured:false, comingSoon:false, color:'#10b981', priceRLUSD:15, priceXRP:50,
-    amendment:'AccountSet · asfDisableMaster', tagline:'Disable the master key after a regular key is set',
-    desc:'For advanced users. AI builds AccountSet (asfDisableMaster). Only run this after a regular key or signer list is in place.',
-    aiDetail:'AI assembles AccountSet with asfDisableMaster. Disables the master key — ensure a regular key or signer list is active first.',
-    features:['asfDisableMaster built to spec','Hardens against master-key theft','Run after regkey/multisig','You sign once in Xaman','TX hash receipt'] },
   // TOKEN ISSUER
   { id:'issuerdecl', cat:'Token Issuer', emoji:'📜', name:'Issuer Trustless Declaration', featured:false, tag:'POPULAR', comingSoon:false, color:'#f59e0b', priceRLUSD:40, priceXRP:130,
     amendment:'AccountSet · asfNoFreeze', tagline:'As an issuer, permanently give up freeze authority',
@@ -641,7 +646,8 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
   const isCB    = product?.id === 'credit';
   const tiers   = (isCB && product && 'tiers' in product) ? (product as { tiers: ReadonlyArray<{ name:string; priceRLUSD:number; priceXRP:number; color:string; perks:string }> }).tiers : null;
   const at      = tiers ? tiers[tierIdx] : null;
-  const price   = isCB && at ? (currency==='RLUSD' ? at.priceRLUSD : at.priceXRP) : (product ? (currency==='RLUSD' ? product.priceRLUSD : product.priceXRP) : 0);
+  const displayPrice = isCB && at ? (currency==='RLUSD' ? at.priceRLUSD : at.priceXRP) : (product ? (currency==='RLUSD' ? product.priceRLUSD : product.priceXRP) : 0);
+  const price = TEST_MODE ? (currency==='RLUSD' ? TEST_PRICE_RLUSD : TEST_PRICE_XRP) : displayPrice;
 
   // Payment polling — verified only when on-chain TX confirms
   useEffect(() => {
@@ -858,7 +864,7 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
     <Overlay show={show} onClose={handleClose}>
       <div style={{ fontSize:10,fontWeight:700,color:product.color,letterSpacing:'.12em',textTransform:'uppercase',marginBottom:5,fontFamily:"'IBM Plex Mono',monospace" }}>{product.amendment}</div>
       <h3 style={{ fontSize:20,fontWeight:900,marginBottom:4 }}>{product.name}</h3>
-      <p style={{ fontSize:12,color:'rgba(255,255,255,.4)',marginBottom:14 }}>{price} {currency}{isCB?'/mo':''} — one swipe in Xaman</p>
+      <p style={{ fontSize:12,color:'rgba(255,255,255,.4)',marginBottom:14 }}>{displayPrice} {currency}{isCB?'/mo':''} — one swipe in Xaman {TEST_MODE && <span style={{ color:'#f59e0b',fontWeight:700 }}>· TEST MODE (charging {price} {currency})</span>}</p>
 
       {payStatus === 'creating' && (
         <div style={{ textAlign:'center', padding:'32px 0' }}>
@@ -939,6 +945,7 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
           <div style={{ display:'flex',gap:10 }}>
             <button onClick={()=>setStep('info')} style={{ ...Btn('ghost',undefined,{flex:1}) }}>← Back</button>
             <button onClick={handleBuyNow} style={{ ...Btn('color',product.color,{flex:2,fontSize:15}) }}>📱 Pay {price} {currency} →</button>
+            {TEST_MODE && <p style={{ fontSize:10,color:'#f59e0b',textAlign:'center',marginTop:6,fontWeight:700,letterSpacing:'.08em' }}>⚠️ TEST MODE — real launch price is {displayPrice} {currency}</p>}
           </div>
         </>
       )}
@@ -1432,10 +1439,11 @@ export default function XRPLHubHome() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
         @keyframes borderPulse{0%,100%{border-color:rgba(16,185,129,.22)}50%{border-color:rgba(16,185,129,.55)}}
         @keyframes tickerScroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
-        .prod-grid{grid-template-columns:repeat(4,1fr)}
-        @media(max-width:1024px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
-        @media(max-width:720px){.prod-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:480px){.prod-grid{grid-template-columns:1fr}}
+        .prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14}
+        @media(max-width:900px){.prod-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:520px){.prod-grid{grid-template-columns:1fr}}
+        .pcard-hero-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24;align-items:center}
+        @media(max-width:640px){.pcard-hero-row{grid-template-columns:1fr;text-align:center}.pcard-hero-row > div:last-child{text-align:center}}
         .ticker-track{will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
         .ticker-track:hover{animation-play-state:paused}
         .pcard-featured{transition:transform .22s,box-shadow .22s;cursor:pointer}.pcard-featured:hover{transform:translateY(-6px);box-shadow:0 0 60px rgba(16,185,129,.18),0 28px 70px rgba(0,0,0,.6)!important}
@@ -1490,6 +1498,11 @@ export default function XRPLHubHome() {
           )}
         </nav>
 
+        {TEST_MODE && (
+          <div style={{ background:'linear-gradient(90deg,#f59e0b,#ef4444,#f59e0b)', color:'#000', textAlign:'center', padding:'6px 12px', fontSize:11, fontWeight:900, letterSpacing:'.12em', textTransform:'uppercase', fontFamily:"'IBM Plex Mono',monospace" }}>
+            ⚠️ Test Mode Active · All purchases charge ~1 drop · Flip TEST_MODE=false in page.tsx before launch
+          </div>
+        )}
         <TickerBar />
 
         {/* HERO */}
@@ -1556,7 +1569,7 @@ export default function XRPLHubHome() {
               <div key={p.id} className="pcard-hero" onClick={()=>setAP(p)} style={{ background:`linear-gradient(135deg,${p.color}14,rgba(6,6,22,.85))`,border:`1px solid ${p.color}38`,borderRadius:22,padding:'28px 30px',position:'relative',overflow:'hidden',cursor:'pointer' }}>
                 <div style={{ position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:`radial-gradient(circle,${p.color}18 0%,transparent 70%)`,pointerEvents:'none' }} />
                 {p.tag && <span style={tagStyle(p.tag, p.color, {top:14, right:14, fontSize:10, padding:'5px 11px'})}>★ {p.tag} · HERO</span>}
-                <div style={{ display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:24,alignItems:'center' }}>
+                <div className="pcard-hero-row">
                   <div>
                     <div style={{ display:'flex',alignItems:'center',gap:14,marginBottom:14 }}>
                       <div style={{ width:60,height:60,borderRadius:16,background:`${p.color}20`,border:`1px solid ${p.color}38`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,animation:'float 4s ease-in-out infinite',flexShrink:0 }}>{p.emoji}</div>
@@ -1576,7 +1589,7 @@ export default function XRPLHubHome() {
               </div>
             ))}
           </div>
-          <div className="prod-grid" style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14 }}>
+          <div className="prod-grid">
             {others.map(p=>(
               <div key={p.id} className="pcard" onClick={()=>setAP(p)} style={{ background:'rgba(6,6,22,.72)',backdropFilter:'blur(16px)',border:`1px solid ${p.color}22`,borderRadius:18,padding:18,position:'relative',overflow:'hidden',cursor:'pointer',display:'flex',flexDirection:'column',minHeight:230 }}>
                 {p.tag && <span style={tagStyle(p.tag, p.color, {top:10, right:10, fontSize:9, padding:'3px 8px'})}>{p.tag}</span>}
