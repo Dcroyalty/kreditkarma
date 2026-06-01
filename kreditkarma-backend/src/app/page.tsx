@@ -167,7 +167,7 @@ const PRODUCTS = [
     features:['EscrowCreate built to spec','Time or crypto-condition','You sign once in Xaman','On-chain audit trail','TX hash receipt'] },
 
   // TOKENS (v2 + management) — mirrors xrpl.org/docs/tutorials/tokens, done for you
-  { id:'mptissue', cat:'Token Issuer', emoji:'🎫', name:'Multi-Purpose Token (MPT) Issuance', featured:true, tag:'NEW', comingSoon:false, color:'#38bdf8', priceRLUSD:55, priceXRP:180,
+  { id:'mptissue', cat:'Token Issuer', emoji:'🎫', name:'Multi-Purpose Token (MPT) Issuance', featured:false, tag:'NEW', comingSoon:false, color:'#38bdf8', priceRLUSD:55, priceXRP:180,
     amendment:'MPTokenIssuanceCreate', tagline:'Issue an asset-backed token on the new v2 standard',
     desc:'The XRPL tutorial walks developers through coding an MPT in JavaScript. We do it for you. You give us the token specs (supply, scale, flags, metadata). AI builds the exact MPTokenIssuanceCreate transaction. You sign once in Xaman.',
     aiDetail:'AI assembles MPTokenIssuanceCreate with your maximum amount, asset scale, transfer fee, and metadata. After you sign in Xaman it is permanent on mainnet (~4s). MPT is the modern v2 fungible standard — ideal for stablecoins, RWAs, and asset-backed tokens.',
@@ -194,17 +194,17 @@ const PRODUCTS = [
     features:['TrustSet tfSetFreeze built to spec','Targets one holder','Reversible','You sign once in Xaman','TX hash receipt'] },
 
   // PAYMENTS — mirrors xrpl.org/docs/tutorials/payments, done for you
-  { id:'checkcreate', cat:'Payments', emoji:'🧾', name:'Create a Check', featured:false, tag:'NEW', comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65,
+  { id:'checkcreate', cat:'Payments', emoji:'🧾', name:'Create a Check', featured:true, tag:'#1', comingSoon:false, color:'#a78bfa', priceRLUSD:20, priceXRP:65,
     amendment:'CheckCreate', tagline:'Write a deferred on-chain check the recipient can cash later',
     desc:'You set recipient and amount. AI builds the CheckCreate transaction. You sign in Xaman; the recipient cashes it whenever they choose.',
     aiDetail:'AI assembles CheckCreate with your destination, SendMax, and optional expiration. Like a paper check on-chain — the recipient pulls funds when ready.',
     features:['CheckCreate built to spec','Recipient cashes on their schedule','Optional expiration','You sign once in Xaman','TX hash receipt'] },
-  { id:'checkcash', cat:'Payments', emoji:'💵', name:'Cash a Check', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:15, priceXRP:50,
+  { id:'checkcash', cat:'Payments', emoji:'💵', name:'Cash a Check', featured:false, tag:'#2', comingSoon:false, color:'#a78bfa', priceRLUSD:15, priceXRP:50,
     amendment:'CheckCash', tagline:'Cash a check written to you, for a flexible amount',
     desc:'Someone wrote you an on-chain check. AI builds the CheckCash transaction. You sign in Xaman and the funds land in your wallet.',
     aiDetail:'AI assembles CheckCash for the check ID, supporting flexible-amount cashing up to the SendMax. You sign in Xaman; funds settle on mainnet.',
     features:['CheckCash built to spec','Flexible amount supported','You sign once in Xaman','Funds to your wallet','TX hash receipt'] },
-  { id:'checkcancel', cat:'Payments', emoji:'🚫', name:'Cancel a Check', featured:false, comingSoon:false, color:'#a78bfa', priceRLUSD:15, priceXRP:50,
+  { id:'checkcancel', cat:'Payments', emoji:'🚫', name:'Cancel a Check', featured:false, tag:'#3', comingSoon:false, color:'#a78bfa', priceRLUSD:15, priceXRP:50,
     amendment:'CheckCancel', tagline:'Void an on-chain check without moving money',
     desc:'Need to void a check you wrote (or one written to you)? AI builds the CheckCancel transaction. You sign in Xaman.',
     aiDetail:'AI assembles CheckCancel for the check ID. No funds move; the check is removed from the ledger.',
@@ -399,6 +399,9 @@ function tagStyle(tag: string, prodColor: string, pos: React.CSSProperties): Rea
     POPULAR: { bg:'#f59e0b', fg:'#000', sh:'0 0 14px rgba(245,158,11,.5)' },
     SALE:    { bg:'#10b981', fg:'#000', sh:'0 0 14px rgba(16,185,129,.55)' },
     NEW:     { bg:'#38bdf8', fg:'#000', sh:'0 0 14px rgba(56,189,248,.55)' },
+    '#1':    { bg:'#fde047', fg:'#000', sh:'0 0 16px rgba(253,224,71,.7)' },
+    '#2':    { bg:'#e5e7eb', fg:'#000', sh:'0 0 14px rgba(229,231,235,.5)' },
+    '#3':    { bg:'#fb923c', fg:'#000', sh:'0 0 14px rgba(251,146,60,.55)' },
   };
   const c = palette[tag.toUpperCase()] || { bg:prodColor, fg:'#000', sh:`0 0 14px ${prodColor}66` };
   return {
@@ -1135,9 +1138,19 @@ function DonateModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
 }
 
 // ─── GRANT MODAL — submit → real AI review (Grok + Anthropic) → admin queue ───
-function GrantModal({ show, onClose }: { show:boolean; onClose:()=>void }) {
+function GrantModal({ show, onClose, connectedWallet, user }: { show:boolean; onClose:()=>void; connectedWallet?:string; user?:{email:string;name:string}|null }) {
   const [step, setStep] = useState<'form'|'reviewing'|'success'>('form');
   const [form, setForm] = useState({ name:'', wallet:'', email:'', phone:'', category:'', need:'', amount:'25' });
+  // Prefill wallet + email when the modal opens or props arrive
+  useEffect(() => {
+    if (!show) return;
+    setForm(f => ({
+      ...f,
+      wallet: f.wallet || connectedWallet || '',
+      email:  f.email  || user?.email      || '',
+      name:   f.name   || user?.name       || '',
+    }));
+  }, [show, connectedWallet, user]);
   const [errors, setErrors] = useState<Record<string,string>>({});
   const [aiResult, setAiResult] = useState<{ recommendation?:string; summary?:string }|null>(null);
   const cats = ['Food & Groceries','Rent / Housing','Medical Bills','Utilities','Transportation','Other'];
@@ -1419,7 +1432,14 @@ export default function XRPLHubHome() {
 
   const handleLogout = () => { setUser(null); if (typeof window !== 'undefined') localStorage.removeItem('xh_user'); };
   const featured = PRODUCTS.filter(p => p.featured);
-  const others   = PRODUCTS.filter(p => !p.featured);
+  const TOP_ORDER = ['checkcash','checkcancel']; // appear first in non-featured grid
+  const others   = PRODUCTS.filter(p => !p.featured).sort((a,b) => {
+    const ai = TOP_ORDER.indexOf(a.id), bi = TOP_ORDER.indexOf(b.id);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
   return (
     <>
@@ -1568,7 +1588,7 @@ export default function XRPLHubHome() {
             {featured.map(p=>(
               <div key={p.id} className="pcard-hero" onClick={()=>setAP(p)} style={{ background:`linear-gradient(135deg,${p.color}14,rgba(6,6,22,.85))`,border:`1px solid ${p.color}38`,borderRadius:22,padding:'28px 30px',position:'relative',overflow:'hidden',cursor:'pointer' }}>
                 <div style={{ position:'absolute',top:-40,right:-40,width:220,height:220,borderRadius:'50%',background:`radial-gradient(circle,${p.color}18 0%,transparent 70%)`,pointerEvents:'none' }} />
-                {p.tag && <span style={tagStyle(p.tag, p.color, {top:14, right:14, fontSize:10, padding:'5px 11px'})}>★ {p.tag} · HERO</span>}
+                {p.tag && <span style={tagStyle(p.tag, p.color, {top:14, right:14, fontSize:10, padding:'5px 11px'})}>★ {p.tag} · TOP PICK</span>}
                 <div className="pcard-hero-row">
                   <div>
                     <div style={{ display:'flex',alignItems:'center',gap:14,marginBottom:14 }}>
@@ -1753,7 +1773,7 @@ export default function XRPLHubHome() {
       <ScoreModal show={showScore} onClose={()=>setShowScore(false)} scoreData={scoreData} loading={scoreLoading} error={scoreError} onRetry={()=>fetchScore(walletInput||connectedWallet)} walletAddress={walletInput||connectedWallet} />
       <ProductModal show={!!activeProduct} onClose={()=>setAP(null)} product={activeProduct} connectedWallet={connectedWallet} />
       <DonateModal show={showDonate} onClose={()=>setShowDonate(false)} />
-      <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} />
+      <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} connectedWallet={connectedWallet} user={user} />
       <LoginModal show={showLogin} onClose={()=>setShowLogin(false)} onLoggedIn={u=>setUser(u)} />
       <AboutModal show={showAbout} onClose={()=>setShowAbout(false)} />
       <FAQModal show={showFaq} onClose={()=>setShowFaq(false)} />
