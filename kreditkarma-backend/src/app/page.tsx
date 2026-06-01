@@ -13,7 +13,7 @@ const BG             = '/xrpl-background.jpg';
 // so you can run real Xaman swipes through every transaction family without
 // burning real money. Card prices still SHOW the real prices.
 // FLIP TO false BEFORE LAUNCH.
-const TEST_MODE = true;
+const TEST_MODE = false;
 const TEST_PRICE_XRP   = 0.000001;
 const TEST_PRICE_RLUSD = 0.01; // RLUSD has 2-decimal minimum on issuer; this is the smallest practical
 // ────────────────────────────────────────────────────────────────────────
