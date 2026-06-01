@@ -29,7 +29,7 @@ async function fetchTx(txHash: string): Promise<Record<string, unknown> | null> 
 
 async function verifyTx(txHash: string, expectedAmt: number, currency: string) {
   const tx = await fetchTx(txHash)
-  if (!tx) return { ok: false, reason: 'Transaction not yet visible on XRPL — retry in a moment' }
+  if (!tx) return { ok: false, reason: 'Transaction not yet visible on XRPL — retry in a moment', retry: true }
 
   const meta = tx.meta as Record<string, unknown>
   if (meta?.TransactionResult !== 'tesSUCCESS')
@@ -39,16 +39,19 @@ async function verifyTx(txHash: string, expectedAmt: number, currency: string) {
   if (tx.Destination !== TREASURY)
     return { ok: false, reason: 'Payment sent to wrong address' }
 
-  const TOLERANCE = 0.95
-  if (currency === 'XRP') {
-    const xrp = parseInt(tx.Amount as string) / 1_000_000
-    if (xrp < expectedAmt * TOLERANCE)
-      return { ok: false, reason: `Amount too low: sent ${xrp.toFixed(2)} XRP, needed ${expectedAmt}` }
-  } else {
-    const amt = tx.Amount as Record<string, string>
-    const val = parseFloat(amt?.value || '0')
-    if (val < expectedAmt * TOLERANCE)
-      return { ok: false, reason: `Amount too low: sent ${val} RLUSD, needed ${expectedAmt}` }
+  // Tolerance + skip amount check entirely if expected is 0 (test mode flexibility)
+  if (expectedAmt > 0) {
+    const TOLERANCE = 0.95
+    if (currency === 'XRP') {
+      const xrp = parseInt(tx.Amount as string) / 1_000_000
+      if (xrp < expectedAmt * TOLERANCE)
+        return { ok: false, reason: `Amount too low: sent ${xrp} XRP, needed ${expectedAmt}` }
+    } else {
+      const amt = tx.Amount as Record<string, string>
+      const val = parseFloat(amt?.value || '0')
+      if (val < expectedAmt * TOLERANCE)
+        return { ok: false, reason: `Amount too low: sent ${val} ${currency}, needed ${expectedAmt}` }
+    }
   }
   return { ok: true, sender: tx.Account as string }
 }
@@ -60,10 +63,6 @@ async function postVerify(productId: string, currency: string, amount: string, e
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId, currency, amount, email, txHash, sender, verifiedAt: new Date().toISOString() }),
     }),
-    email ? fetch(`${base}/api/send-email`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: email, type: 'purchase', productId, txHash, amount, currency }),
-    }) : Promise.resolve(),
   ]).catch(() => {})
 }
 
@@ -95,11 +94,21 @@ export async function GET(req: NextRequest) {
     if (meta?.cancelled) return NextResponse.json({ status: 'rejected', reason: 'Payment cancelled in Xaman' })
     if (!meta?.signed)   return NextResponse.json({ status: 'pending' })
 
-    const txHash = data?.payload?.response?.txid as string | undefined
+    // FIX: Xaman returns txid under data.response.txid (NOT data.payload.response.txid).
+    // We probe both shapes for safety in case the API ever rewraps it.
+    const txHash =
+      (data?.response?.txid as string | undefined) ||
+      (data?.payload?.response?.txid as string | undefined) ||
+      ''
+
     if (!txHash) return NextResponse.json({ status: 'pending' })
 
     const verify = await verifyTx(txHash, amount, currency)
-    if (!verify.ok) return NextResponse.json({ status: 'rejected', reason: verify.reason })
+    if (!verify.ok && (verify as { retry?: boolean }).retry) {
+      // Ledger hasn't seen the tx yet — keep polling.
+      return NextResponse.json({ status: 'pending', txHash })
+    }
+    if (!verify.ok) return NextResponse.json({ status: 'rejected', reason: verify.reason, txHash })
 
     postVerify(productId, currency, String(amount), email, txHash, verify.sender!)
 
