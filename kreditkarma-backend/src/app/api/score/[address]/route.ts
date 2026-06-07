@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const XRPL_API = 'https://xrplcluster.com';
 
 // ─── SCORING WEIGHTS (proprietary — © 2026 XRPLHub.io) ───────────────────────
 const W = {
@@ -25,13 +24,40 @@ function grade(score: number) {
 }
 
 // ─── XRPL FETCHERS ───────────────────────────────────────────────────────────
-async function xrplCall(method: string, params: object) {
-  const res = await fetch(XRPL_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ method, params: [params] }),
-  });
-  return res.json();
+// Robust against:
+//   - xrplcluster.com rate-limiting (returns "Rate limit" plain text)
+//   - HTML 502/503 error pages from any node
+//   - Network timeouts
+// Tries primary node, falls back to secondary, returns empty object as last resort
+// so individual signal failures don't kill the whole score.
+const XRPL_NODES = [
+  'https://xrplcluster.com',
+  'https://s1.ripple.com:51234',
+  'https://s2.ripple.com:51234',
+];
+
+async function xrplCallOne(url: string, method: string, params: object): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method, params: [params] }),
+      signal: AbortSignal.timeout(9_000),
+    });
+    // Defensive: only attempt JSON parse if we actually got JSON
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return null;
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+async function xrplCall(method: string, params: object): Promise<Record<string, unknown>> {
+  for (const url of XRPL_NODES) {
+    const result = await xrplCallOne(url, method, params);
+    if (result) return result;
+  }
+  return {}; // all nodes failed — return empty so the catch chain doesn't break
 }
 
 // ─── SCORE COMPUTATION ───────────────────────────────────────────────────────

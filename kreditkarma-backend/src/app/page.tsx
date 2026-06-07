@@ -944,7 +944,7 @@ function ProductModal({ show, onClose, product, connectedWallet }: { show:boolea
           <label style={LBL}>Email for Receipt (optional)</label>
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" style={{ ...INP, marginBottom:16 }} />
           <div style={{ background:'rgba(16,185,129,.05)',border:'1px solid rgba(16,185,129,.15)',borderRadius:12,padding:'11px 14px',marginBottom:16,fontSize:12,color:'rgba(255,255,255,.45)',lineHeight:1.6 }}>
-            <strong style={{ color:'#10b981' }}>How it works:</strong> Tap below → Xaman opens pre-filled → slide to sign → we verify the transaction on XRPL mainnet → service activates. No payment, no activation.
+            <strong style={{ color:'#10b981' }}>How it works:</strong> Tap below → Xaman opens pre-filled → slide to sign → we verify the transaction on XRPL mainnet → service activates.
           </div>
           <div style={{ display:'flex',gap:10 }}>
             <button onClick={()=>setStep('info')} style={{ ...Btn('ghost',undefined,{flex:1}) }}>← Back</button>
@@ -1722,6 +1722,7 @@ export default function XRPLHubHome() {
         .footer-lnk{background:none;border:none;color:rgba(255,255,255,.38);font-size:13px;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}.footer-lnk:hover{color:#fff}
         .wallet-btn{padding:8px 18px;border-radius:99px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#10b981;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}.wallet-btn:hover{background:rgba(16,185,129,.22);border-color:#10b981}
         .bg-surface{background-image:linear-gradient(to bottom,rgba(3,4,14,.82) 0%,rgba(3,4,14,.92) 100%),url('${BG}');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
+        @media(max-width:900px){.bg-surface{background-attachment:scroll}}
         .nav-desktop{display:flex}.nav-mobile-toggle{display:none}.nav-mobile-drawer{display:none}
         @media(max-width:880px){.nav-desktop{display:none}.nav-mobile-toggle{display:flex}.nav-mobile-drawer{display:flex;flex-direction:column;gap:8px;padding:16px;background:rgba(3,3,10,.95);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px)}.nav-mobile-drawer .navbtn,.nav-mobile-drawer .wallet-btn{width:100%;text-align:center;padding:12px;justify-content:center}}
         @media(max-width:640px){h1{letter-spacing:-2px!important}.section-pad{padding-left:16px!important;padding-right:16px!important}.hero-buttons{flex-direction:column}.hero-buttons button{width:100%}}
@@ -1828,7 +1829,7 @@ export default function XRPLHubHome() {
               <span style={{ fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.14em',textTransform:'uppercase' }}>{PRODUCTS.length} XRPL Services · Done For You</span>
             </div>
             <h2 style={{ fontSize:'clamp(24px,4vw,42px)',fontWeight:900,letterSpacing:'-2px',marginBottom:12 }}>You sign. We build. The ledger settles.</h2>
-            <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:560,margin:'0 auto' }}>Pay once in Xaman → we verify your transaction on XRPL mainnet → your service is built. No payment, no activation.</p>
+            <p style={{ fontSize:14,color:'rgba(255,255,255,.44)',maxWidth:560,margin:'0 auto' }}>Pay once in Xaman → we verify your transaction on XRPL mainnet → your service is built.</p>
             <p style={{ fontSize:12,color:'rgba(255,255,255,.32)',maxWidth:540,margin:'10px auto 0',lineHeight:1.6 }}>Every one of these is a documented XRPL operation. You can code it yourself from the developer tutorials — or pay here and AI builds the exact transaction for you to sign in one tap. No coding, no errors.</p>
           </div>
           <div style={{ display:'grid',gridTemplateColumns:'1fr',gap:18,marginBottom:18 }}>
