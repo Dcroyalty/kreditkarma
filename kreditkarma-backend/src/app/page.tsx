@@ -37,19 +37,20 @@ function Wordmark({ size = 18 }: { size?: number }) {
 }
 
 const TICKER = [
+  'Write a check on XRPL — yes, really. Create, cash, or cancel a Check in one tap',
   'XRPLScore™ — your own on-chain credit score. No FICO. No bureau. No SSN.',
+  'Send money safely with on-chain Escrow — funds release exactly when you choose',
+  'Behind on rent or groceries? Apply for a Community Grant — money straight to your wallet',
+  'Mint NFTs with royalties baked in — your digital art, yours forever',
   'One leaked key shouldn\'t drain your wallet — lock it down with Multi-Sig Fortress',
   'Build XRPLScore™ monthly — turn on-chain history into real reputation',
-  'Behind on rent or groceries? Apply for a Community Grant — money straight to your wallet',
   'Launch a token the right way — Issuer Trustless Declaration in one signed transaction',
-  'Protect your assets from clawback — permanent on-chain shield in ~4 seconds',
   'Spin up an AMM liquidity pool with a single Xaman signature',
-  'Mint NFTs with protocol-level royalties baked in — yours forever',
+  'Put your identity on-chain — verifiable, portable, yours',
   'Donate to the Community Grant treasury — 100% reaches real people, verifiable on-chain',
-  'Time-lock funds with on-chain Escrow — release exactly when you choose',
   'Check any XRPL wallet\'s XRPLScore™ free — instant, live from mainnet',
   'Found an XRPL tutorial but don\'t code? Skip it — pay here, AI does it for you',
-  '36 XRPL services done for you · You sign once in Xaman · Live on mainnet in ~4 seconds',
+  '35 XRPL services done for you · You sign once in Xaman · Live on mainnet in ~4 seconds',
   'XRPLHub.io — XRPL Services · Community Grants · XRPLScore™',
 ];
 
@@ -1648,7 +1649,7 @@ export default function XRPLHubHome() {
       try {
         const [sRes, hRes] = await Promise.all([
           fetch(`${API_URL}/api/score/${encodeURIComponent(connectedWallet)}`),
-          fetch(`${API_URL}/api/score-history?wallet=${encodeURIComponent(connectedWallet)}`).catch(()=>null),
+          fetch(`${API_URL}/api/score/history/${encodeURIComponent(connectedWallet)}`).catch(()=>null),
         ]);
         if (cancelled) return;
         if (sRes.ok) {
@@ -1667,7 +1668,7 @@ export default function XRPLHubHome() {
         if (hRes && hRes.ok) {
           const h = await hRes.json();
           const arr = Array.isArray(h) ? h : (h.history || []);
-          setScoreHistory(arr.map((p:Record<string,unknown>) => ({ score: Number(p.score) || 0, scannedAt: String(p.scannedAt || p.checkedAt || '') })));
+          setScoreHistory(arr.map((p:Record<string,unknown>) => ({ score: Number(p.score) || 0, scannedAt: String(p.date || p.scannedAt || p.checkedAt || '') })));
         }
       } catch {}
       if (!cancelled) setPersonalLoading(false);
@@ -1677,7 +1678,49 @@ export default function XRPLHubHome() {
 
   const handleLogout = () => { setUser(null); if (typeof window !== 'undefined') localStorage.removeItem('xh_user'); };
   const featured = PRODUCTS.filter(p => p.featured);
-  const TOP_ORDER = ['checkcash','checkcancel']; // appear first in non-featured grid
+  // Order the grid by how a normal person relates to it, NOT by technical category.
+  // Checks & everyday money first → familiar concepts (escrow=safe-hold, NFT=digital art,
+  // identity) → then the power-user / wizard tools (DeFi, token issuing, wallet security) last.
+  const TOP_ORDER = [
+    // ── Everyday money: "I can write/cash/cancel a check, send money safely" ──
+    'checkcash',      // Cash a Check
+    'checkcancel',    // Cancel a Check
+    'escrow',         // Hold money safely until a date (like a deposit in escrow)
+    'paychannel',     // Stream / channel payments
+    'desttagreq',     // Require a tag so payments arrive correctly
+    'trustsend',      // Set up to receive a currency
+    // ── Familiar digital things: art, collectibles, identity ──
+    'nftmint',        // Mint an NFT (digital art / collectible)
+    'nftoffer',       // Sell an NFT
+    'nftburn',        // Burn an NFT
+    'identity',       // Put your identity on-chain
+    'did',            // Digital ID
+    'credentialissue',// Issue a credential / certificate
+    'compliance',     // Compliance bundle
+    'permdomain',     // Permissioned domain
+    // ── Money tools: tokens, trust lines, fees ──
+    'trustline',      // Connect to a token
+    'tokenfee',       // Set a transfer fee
+    'issuerdecl',     // Become a token issuer
+    'issuercfg',      // Full issuer setup
+    'mptissue',       // Issue a multi-purpose token
+    'mptsend',        // Send a multi-purpose token
+    'rippling',       // Rippling control
+    'globalfreeze',   // Freeze your token globally
+    'freezeline',     // Freeze a single trust line
+    // ── Trading / DeFi (power users) ──
+    'dexorder',       // Place a DEX order
+    'dextrade',       // Execute a trade
+    'smartswap',      // Smart swap
+    'ammlaunch',      // Launch an AMM pool
+    'ammentry',       // Add liquidity
+    'tickets',        // Create tickets
+    // ── Wallet security (advanced, last) ──
+    'multisig',       // Multi-sig
+    'regkey',         // Regular key
+    'depositauth',    // Deposit auth
+    'desttag',        // Destination tag lock
+  ];
   const others   = PRODUCTS.filter(p => !p.featured).sort((a,b) => {
     const ai = TOP_ORDER.indexOf(a.id), bi = TOP_ORDER.indexOf(b.id);
     if (ai === -1 && bi === -1) return 0;
