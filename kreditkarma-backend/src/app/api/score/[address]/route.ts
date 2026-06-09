@@ -3,16 +3,24 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Treasury that receives XRPLHub service & Builder subscription payments.
+// Payments from a wallet TO this address are real, on-chain proof of commitment
+// to the platform and feed the Builder Commitment signal below.
+const TREASURY = 'rs59g3amo5iT6T64Cg96XXMAWuw3WPQcLF';
+
 // ─── SCORING WEIGHTS (proprietary — © 2026 XRPLHub.io) ───────────────────────
+// Rebalanced to include builderCommitment as a 9th signal while keeping the
+// total at 1.00 so the 300–850 range is unchanged (no score inflation).
 const W = {
-  accountAge:    0.20,
-  txVelocity:    0.22,
-  trustLines:    0.15,
-  dexActivity:   0.12,
-  ammActivity:   0.08,
-  reserveRatio:  0.10,
-  nftActivity:   0.05,
-  securityFlags: 0.08,
+  accountAge:        0.18,
+  txVelocity:        0.20,
+  trustLines:        0.13,
+  dexActivity:       0.10,
+  ammActivity:       0.07,
+  reserveRatio:      0.09,
+  nftActivity:       0.05,
+  securityFlags:     0.08,
+  builderCommitment: 0.10,
 };
 
 function grade(score: number) {
@@ -24,12 +32,9 @@ function grade(score: number) {
 }
 
 // ─── XRPL FETCHERS ───────────────────────────────────────────────────────────
-// Robust against:
-//   - xrplcluster.com rate-limiting (returns "Rate limit" plain text)
-//   - HTML 502/503 error pages from any node
-//   - Network timeouts
-// Tries primary node, falls back to secondary, returns empty object as last resort
-// so individual signal failures don't kill the whole score.
+// Robust against rate-limiting (plain-text "Rate limit"), HTML error pages, and
+// timeouts. Tries primary node, falls back to secondaries, returns {} as a last
+// resort so individual signal failures don't kill the whole score.
 const XRPL_NODES = [
   'https://xrplcluster.com',
   'https://s1.ripple.com:51234',
@@ -44,7 +49,6 @@ async function xrplCallOne(url: string, method: string, params: object): Promise
       body: JSON.stringify({ method, params: [params] }),
       signal: AbortSignal.timeout(9_000),
     });
-    // Defensive: only attempt JSON parse if we actually got JSON
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) return null;
     if (!res.ok) return null;
@@ -57,7 +61,7 @@ async function xrplCall(method: string, params: object): Promise<Record<string, 
     const result = await xrplCallOne(url, method, params);
     if (result) return result;
   }
-  return {}; // all nodes failed — return empty so the catch chain doesn't break
+  return {};
 }
 
 // ─── SCORE COMPUTATION ───────────────────────────────────────────────────────
@@ -70,27 +74,29 @@ function computeScore(signals: Record<string, number>): number {
 
 function buildRecommendations(signals: Record<string, number>, hasEscrow: boolean) {
   const recs: { action: string; points: string; priority: 'high'|'medium'|'low' }[] = [];
-  if (signals.txVelocity < 60)    recs.push({ action: 'Make 10 more on-chain payments', points: '+8\u201312 pts', priority: 'high' });
-  if (signals.trustLines < 50)    recs.push({ action: 'Add 2 more XRPL trust lines', points: '+6\u201310 pts', priority: 'high' });
-  if (signals.dexActivity < 40)   recs.push({ action: 'Place a DEX limit order', points: '+5\u20138 pts', priority: 'medium' });
-  if (signals.ammActivity < 30)   recs.push({ action: 'Deposit into an AMM pool', points: '+4\u20137 pts', priority: 'medium' });
-  if (signals.securityFlags < 50) recs.push({ action: 'Enable multi-sig on your wallet', points: '+4\u20136 pts', priority: 'medium' });
-  if (signals.nftActivity < 20)   recs.push({ action: 'Mint or hold an XRPL NFT', points: '+2\u20134 pts', priority: 'low' });
-  if (!hasEscrow)                 recs.push({ action: 'Create an escrow transaction', points: '+3\u20135 pts', priority: 'low' });
-  if (signals.reserveRatio < 60)  recs.push({ action: 'Increase XRP balance above 20 XRP', points: '+3\u20135 pts', priority: 'medium' });
+  if (signals.txVelocity < 60)        recs.push({ action: 'Make 10 more on-chain payments', points: '+8\u201312 pts', priority: 'high' });
+  if (signals.builderCommitment < 50) recs.push({ action: 'Subscribe to XRPLScore Builder \u2014 each payment builds your score', points: '+6\u201310 pts', priority: 'high' });
+  if (signals.trustLines < 50)        recs.push({ action: 'Add 2 more XRPL trust lines', points: '+6\u201310 pts', priority: 'high' });
+  if (signals.dexActivity < 40)       recs.push({ action: 'Place a DEX limit order', points: '+5\u20138 pts', priority: 'medium' });
+  if (signals.ammActivity < 30)       recs.push({ action: 'Deposit into an AMM pool', points: '+4\u20137 pts', priority: 'medium' });
+  if (signals.securityFlags < 50)     recs.push({ action: 'Enable multi-sig on your wallet', points: '+4\u20136 pts', priority: 'medium' });
+  if (signals.nftActivity < 20)       recs.push({ action: 'Mint or hold an XRPL NFT', points: '+2\u20134 pts', priority: 'low' });
+  if (!hasEscrow)                     recs.push({ action: 'Create an escrow transaction', points: '+3\u20135 pts', priority: 'low' });
+  if (signals.reserveRatio < 60)      recs.push({ action: 'Increase XRP balance above 20 XRP', points: '+3\u20135 pts', priority: 'medium' });
   return recs.slice(0, 5);
 }
 
 function buildBreakdown(signals: Record<string, number>) {
   return [
-    { label: 'Account Lifecycle',  signal: 'accountAge',    score: Math.round(signals.accountAge),    weight: '20%', desc: 'Account age and maturity on XRPL mainnet' },
-    { label: 'Payment History',    signal: 'txVelocity',    score: Math.round(signals.txVelocity),    weight: '22%', desc: 'Transaction count, frequency, and consistency' },
-    { label: 'Asset Diversity',    signal: 'trustLines',    score: Math.round(signals.trustLines),    weight: '15%', desc: 'Trust line breadth and token portfolio quality' },
-    { label: 'DEX Participation',  signal: 'dexActivity',   score: Math.round(signals.dexActivity),   weight: '12%', desc: 'Active DEX trading and order book presence' },
-    { label: 'AMM Liquidity',      signal: 'ammActivity',   score: Math.round(signals.ammActivity),   weight: '8%',  desc: 'Liquidity provision and AMM pool positions' },
-    { label: 'Reserve Management', signal: 'reserveRatio',  score: Math.round(signals.reserveRatio),  weight: '10%', desc: 'XRP balance relative to reserve requirements' },
-    { label: 'NFT Portfolio',      signal: 'nftActivity',   score: Math.round(signals.nftActivity),   weight: '5%',  desc: 'NFT holdings and on-chain digital asset activity' },
-    { label: 'Security Config',    signal: 'securityFlags', score: Math.round(signals.securityFlags), weight: '8%',  desc: 'Multi-sig, regular key, domain verification setup' },
+    { label: 'Account Lifecycle',   signal: 'accountAge',        score: Math.round(signals.accountAge),        weight: '18%', desc: 'Account age and maturity on XRPL mainnet' },
+    { label: 'Payment History',     signal: 'txVelocity',        score: Math.round(signals.txVelocity),        weight: '20%', desc: 'Transaction count, frequency, and consistency' },
+    { label: 'Asset Diversity',     signal: 'trustLines',        score: Math.round(signals.trustLines),        weight: '13%', desc: 'Trust line breadth and token portfolio quality' },
+    { label: 'DEX Participation',   signal: 'dexActivity',       score: Math.round(signals.dexActivity),       weight: '10%', desc: 'Active DEX trading and order book presence' },
+    { label: 'AMM Liquidity',       signal: 'ammActivity',       score: Math.round(signals.ammActivity),       weight: '7%',  desc: 'Liquidity provision and AMM pool positions' },
+    { label: 'Reserve Management',  signal: 'reserveRatio',      score: Math.round(signals.reserveRatio),      weight: '9%',  desc: 'XRP balance relative to reserve requirements' },
+    { label: 'NFT Portfolio',       signal: 'nftActivity',       score: Math.round(signals.nftActivity),       weight: '5%',  desc: 'NFT holdings and on-chain digital asset activity' },
+    { label: 'Security Config',     signal: 'securityFlags',     score: Math.round(signals.securityFlags),     weight: '8%',  desc: 'Multi-sig, regular key, domain verification setup' },
+    { label: 'Builder Commitment',  signal: 'builderCommitment', score: Math.round(signals.builderCommitment), weight: '10%', desc: 'On-chain payment history with XRPLHub \u2014 sustained commitment builds reputation' },
   ];
 }
 
@@ -135,7 +141,7 @@ export async function GET(
     const nfts         = nftsRes?.result?.account_nfts || [];
     const escrows      = escrowRes?.result?.account_objects || [];
 
-    // ── PARSE ────────────────────────────────────────────────────────────────
+    // ── PARSE ──────────────────────────────────────────────────────────────
     const balanceXRP = Number(accountInfo.Balance) / 1_000_000;
     const txCount    = transactions.length;
     const sequence   = accountInfo.Sequence || 0;
@@ -167,6 +173,23 @@ export async function GET(
     const reserveXRP   = 10 + objectCount * 2;
     const reserveRatio = balanceXRP > 0 ? Math.min(100, (balanceXRP / reserveXRP) * 50) : 0;
 
+    // ── BUILDER COMMITMENT (on-chain payments from this wallet to XRPLHub) ──
+    // Counts Payment transactions sent by this wallet TO the XRPLHub treasury.
+    // This is real, verifiable proof of platform commitment — service purchases
+    // and Builder subscriptions both land here. Sustained payers score higher.
+    // Fail-safe: any parsing issue leaves the signal at 0, never throws.
+    let builderPayments = 0;
+    try {
+      builderPayments = transactions.filter((t: { tx?: { TransactionType?: string; Destination?: string; Account?: string } }) => {
+        const tx = t.tx || {};
+        return tx.TransactionType === 'Payment'
+          && tx.Destination === TREASURY
+          && tx.Account === address; // sent BY this wallet, not received
+      }).length;
+    } catch { builderPayments = 0; }
+    // 1 payment = solid start, 6+ = strong sustained commitment (caps at 100)
+    const builderCommitment = Math.min(100, builderPayments * 18);
+
     // ── SIGNALS (0–100) ──────────────────────────────────────────────────────
     const signals: Record<string, number> = {
       accountAge:   Math.min(100, (accountAgeDays / 1095) * 100),
@@ -179,6 +202,7 @@ export async function GET(
       securityFlags: Math.min(100,
         (hasMultiSig ? 35 : 0) + (hasRegKey ? 20 : 0) +
         (hasDomain ? 20 : 0) + (hasEmailHash ? 15 : 0) + (hasEscrow ? 10 : 0)),
+      builderCommitment,
     };
 
     const ledgerScore = computeScore(signals);
@@ -194,16 +218,15 @@ export async function GET(
       hasOffers, hasAMM, nftCount,
       hasMultiSig, hasRegKey, hasDomain, hasEmailHash, hasEscrow,
       dexTxCount, ammTxCount, objectCount, reserveXRP, sequence,
+      builderPayments,
     };
 
     // ── SAVE TO DB (history + current snapshot) — fire and forget ───────────
     const breakdownJSON = JSON.stringify(signals);
     Promise.allSettled([
-      // every check logged for progress-over-time
       prisma.scoreHistory.create({
         data: { address, score: ledgerScore, tier: scoreGrade, percentile, breakdown: breakdownJSON },
       }),
-      // current snapshot upsert
       prisma.ledgerScore.upsert({
         where:  { address },
         update: { score: ledgerScore, tier: scoreGrade, breakdown: breakdownJSON, rawData: JSON.stringify(details) },
@@ -211,7 +234,7 @@ export async function GET(
       }),
     ]).catch(() => { /* DB write failure shouldn't break the score response */ });
 
-    // ── RESPONSE ─────────────────────────────────────────────────────────────
+    // ── RESPONSE ──────────────────────────────────────────────────────────────
     return NextResponse.json({
       ledgerScore,
       xrplScore: ledgerScore,
@@ -224,12 +247,12 @@ export async function GET(
       details,
       address,
       scannedAt: new Date().toISOString(),
-      methodology: 'XRPLHub XRPLScore v1.0 \u2014 8-signal native on-chain behavioral scoring',
+      methodology: 'XRPLHub XRPLScore v1.1 \u2014 9-signal native on-chain behavioral scoring',
       copyright: '\u00a9 2026 XRPLHub.io \u00b7 XRPLScore\u2122 \u00b7 All Rights Reserved',
     }, {
       headers: {
         'Cache-Control': 'no-store',
-        'X-Score-Version': '1.0',
+        'X-Score-Version': '1.1',
         'X-Score-Provider': 'XRPLHub',
       }
     });
