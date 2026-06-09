@@ -1601,7 +1601,6 @@ export default function XRPLHubHome() {
   const [showScore, setShowScore]     = useState(false);
   const [showDonate, setShowDonate]   = useState(false);
   const [showGrant, setShowGrant]     = useState(false);
-  const [showLogin, setShowLogin]     = useState(false);
   const [showAbout, setShowAbout]     = useState(false);
   const [showFaq, setShowFaq]         = useState(false);
   const [showTerms, setShowTerms]     = useState(false);
@@ -1791,7 +1790,6 @@ export default function XRPLHubHome() {
                 : <button className="wallet-btn" onClick={()=>setShowConnect(true)}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>setShowDonate(true)}>Donate</button>
               <button className="navbtn" onClick={()=>setShowGrant(true)}>Apply for Grant</button>
-              {user?<><span style={{ fontSize:12,color:'rgba(255,255,255,.42)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user.name||user.email}</span><button className="navbtn" onClick={handleLogout}>Log Out</button></>:<button className="navbtn" onClick={()=>setShowLogin(true)}>Log In</button>}
               <button onClick={()=>fetchScore()} style={{ padding:'8px 18px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:13,cursor:'pointer',border:'none',background:'#10b981',color:'#000',whiteSpace:'nowrap' }}>Get XRPLScore</button>
             </div>
             <button className="nav-mobile-toggle" onClick={()=>setMM(!mobileMenu)} style={{ alignItems:'center',justifyContent:'center',width:42,height:42,borderRadius:10,background:'rgba(16,185,129,.12)',border:'1px solid rgba(16,185,129,.28)',color:'#10b981',cursor:'pointer',fontSize:20,fontWeight:700 }} aria-label="Menu">{mobileMenu?'✕':'☰'}</button>
@@ -1803,7 +1801,6 @@ export default function XRPLHubHome() {
                 : <button className="wallet-btn" onClick={()=>{setShowConnect(true);setMM(false);}}>🔐 Connect Wallet</button>}
               <button className="navbtn" onClick={()=>{setShowDonate(true);setMM(false);}}>Donate</button>
               <button className="navbtn" onClick={()=>{setShowGrant(true);setMM(false);}}>Apply for Grant</button>
-              {user?<button className="navbtn" onClick={()=>{handleLogout();setMM(false);}}>Log Out</button>:<button className="navbtn" onClick={()=>{setShowLogin(true);setMM(false);}}>Log In</button>}
               <button onClick={()=>{fetchScore();setMM(false);}} style={{ padding:'12px',borderRadius:99,fontFamily:'inherit',fontWeight:700,fontSize:14,cursor:'pointer',border:'none',background:'#10b981',color:'#000' }}>Get XRPLScore</button>
             </div>
           )}
@@ -2075,7 +2072,6 @@ export default function XRPLHubHome() {
       <ProductModal show={!!activeProduct} onClose={()=>setAP(null)} product={activeProduct} connectedWallet={connectedWallet} />
       <DonateModal show={showDonate} onClose={()=>setShowDonate(false)} />
       <GrantModal show={showGrant} onClose={()=>setShowGrant(false)} connectedWallet={connectedWallet} user={user} />
-      <LoginModal show={showLogin} onClose={()=>setShowLogin(false)} onLoggedIn={u=>setUser(u)} />
       <AboutModal show={showAbout} onClose={()=>setShowAbout(false)} />
       <FAQModal show={showFaq} onClose={()=>setShowFaq(false)} />
       <TermsModal show={showTerms} onClose={()=>setShowTerms(false)} />
