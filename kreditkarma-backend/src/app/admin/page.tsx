@@ -63,12 +63,27 @@ function GrantActions({ grant, onUpdate }: { grant: Grant; onUpdate: () => void 
   const act = async (action: string, body: object) => {
     setLoading(action);
     try {
-      await fetch(`${API_URL}/api/grants/${grant.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...body }),
+      // 'review' uses the review route; approve/reject/pay use the approve route.
+      const isReview = action === 'review';
+      const url = isReview ? `${API_URL}/api/grants/review` : `${API_URL}/api/grants/approve`;
+      // Map UI action → route action verb
+      const verbMap: Record<string,string> = { approve:'APPROVE', reject:'REJECT', pay:'PAID' };
+      const payload = isReview
+        ? { wallet: grant.walletAddress }
+        : { id: grant.id, action: verbMap[action] || action.toUpperCase(), secret: ADMIN_PWD, ...body };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': ADMIN_PWD },
+        body: JSON.stringify(payload),
       });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error) {
+        alert(`Action failed: ${json.error || res.status}. The grant was not updated.`);
+      }
       onUpdate();
-    } catch { /* silent */ }
+    } catch (e) {
+      alert(`Network error — grant not updated. ${e instanceof Error ? e.message : ''}`);
+    }
     finally { setLoading(''); }
   };
 

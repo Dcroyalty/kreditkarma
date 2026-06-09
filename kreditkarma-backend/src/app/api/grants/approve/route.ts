@@ -6,7 +6,18 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+// Accept either the server env secret OR the admin-panel password.
+// The admin page authenticates the human with ADMIN_PWD client-side, then sends it here.
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const ADMIN_PWD = 'xrplhub2026'; // must match ADMIN_PWD in the admin page
+
+function isAuthed(secret: string, headerSecret: string): boolean {
+  const provided = secret || headerSecret;
+  if (!provided) return false;
+  if (ADMIN_SECRET && provided === ADMIN_SECRET) return true;
+  if (provided === ADMIN_PWD) return true;
+  return false;
+}
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +25,7 @@ export async function POST(req: Request) {
     const { id, action, txHash, approvedAmount, rejectionReason, secret } = body || {};
 
     const headerSecret = req.headers.get('x-admin-secret') || '';
-    if (!ADMIN_SECRET || (secret !== ADMIN_SECRET && headerSecret !== ADMIN_SECRET)) {
+    if (!isAuthed(String(secret || ''), headerSecret)) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
     if (!id || !action) {
